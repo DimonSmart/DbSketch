@@ -21,6 +21,12 @@
     <Authors>DbSketch contributors</Authors>
     <Description>Generate Graphviz DOT database schema diagrams from live databases.</Description>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/DimonSmart/DbSketch</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/DimonSmart/DbSketch</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>database;schema;diagram;graphviz;dot;cli;tool</PackageTags>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
   </PropertyGroup>
 
   <ItemGroup>

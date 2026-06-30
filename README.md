@@ -4,33 +4,57 @@ DbSketch is a small C# CLI tool that reads a live database schema and writes a c
 
 The MVP supports SQL Server, PostgreSQL, and MySQL. It reads schemas/namespaces, tables, columns, primary key markers, and real foreign key relationships, then applies include/exclude table filters before rendering DOT.
 
-## Install and Run
+## Install
+
+### Global tool
+
+```bash
+dotnet tool install --global DbSketch
+dbsketch generate --config dbsketch.yml
+```
+
+### Local tool in repository
+
+```bash
+dotnet new tool-manifest
+dotnet tool install DbSketch --version 0.1.0
+dotnet tool restore
+dotnet tool run dbsketch -- generate --config dbsketch.yml
+```
+
+### One-shot run
+
+```bash
+dotnet tool exec DbSketch@0.1.0 -- generate --config dbsketch.yml
+```
+
+With .NET 10, `dnx` can also run the tool:
+
+```bash
+dnx DbSketch@0.1.0 -- generate --config dbsketch.yml
+```
+
+### CI example
+
+```yaml
+- name: Restore local tools
+  run: dotnet tool restore
+
+- name: Generate DB schema diagram
+  env:
+    DB_CONNECTION: ${{ secrets.DB_CONNECTION }}
+  run: dotnet tool run dbsketch -- generate --config dbsketch.yml
+```
+
+## Development
 
 Build and test:
 
 ```bash
-dotnet restore
-dotnet build
-dotnet test
+dotnet restore DbSketch.sln
+dotnet build DbSketch.sln
+dotnet test DbSketch.sln
 dotnet pack src/DbSketch.Cli/DbSketch.Cli.csproj -c Release
-```
-
-One-shot run after packing from the local package source:
-
-```bash
-dotnet tool exec --source ./src/DbSketch.Cli/bin/Release dbsketch -- generate --config samples/sqlserver/dbsketch.yml
-```
-
-Expected package command:
-
-```bash
-dnx dbsketch generate --config dbsketch.yml
-```
-
-Alternative:
-
-```bash
-dotnet tool exec dbsketch -- generate --config dbsketch.yml
 ```
 
 Direct CLI options can override config values:

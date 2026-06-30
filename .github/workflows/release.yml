@@ -1,0 +1,328 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-test:
+    name: Build and test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate version tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid release tag: $GITHUB_REF_NAME" >&2
+            exit 1
+          fi
+          version="${GITHUB_REF_NAME#v}"
+          {
+            echo "VERSION=$version"
+            echo "ASSEMBLY_VERSION=$version.0"
+          } >> "$GITHUB_ENV"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore DbSketch.sln
+
+      - name: Build
+        run: dotnet build DbSketch.sln --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test DbSketch.sln --configuration Release --no-build --verbosity normal
+
+  publish-binaries:
+    name: Publish ${{ matrix.runtime }}
+    needs: build-test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            runtime: win-x64
+            binary: dbsketch.exe
+            archive: zip
+            assetSuffix: win-x64.zip
+          - os: ubuntu-latest
+            runtime: linux-x64
+            binary: dbsketch
+            archive: tar.gz
+            assetSuffix: linux-x64.tar.gz
+    steps:
+      - name: Validate version tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid release tag: $GITHUB_REF_NAME" >&2
+            exit 1
+          fi
+          version="${GITHUB_REF_NAME#v}"
+          {
+            echo "VERSION=$version"
+            echo "ASSEMBLY_VERSION=$version.0"
+          } >> "$GITHUB_ENV"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Publish CLI
+        shell: pwsh
+        run: |
+          $publishDir = Join-Path $env:RUNNER_TEMP "dbsketch-${{ matrix.runtime }}"
+          dotnet publish src/DbSketch.Cli/DbSketch.Cli.csproj `
+            --configuration Release `
+            --runtime "${{ matrix.runtime }}" `
+            --self-contained true `
+            --output $publishDir `
+            /p:PublishSingleFile=true `
+            /p:IncludeNativeLibrariesForSelfExtract=true `
+            /p:DebugType=None `
+            /p:DebugSymbols=false `
+            /p:Version=$env:VERSION `
+            /p:AssemblyVersion=$env:ASSEMBLY_VERSION `
+            /p:FileVersion=$env:ASSEMBLY_VERSION `
+            /p:InformationalVersion=$env:GITHUB_REF_NAME
+
+          $publishedBinaryName = if ($IsWindows) { "DbSketch.Cli.exe" } else { "DbSketch.Cli" }
+          $publishedBinary = Join-Path $publishDir $publishedBinaryName
+          $binary = Join-Path $publishDir "${{ matrix.binary }}"
+          if (-not (Test-Path $publishedBinary)) {
+            throw "Published binary not found: $publishedBinary"
+          }
+
+          if ($publishedBinary -ne $binary) {
+            Move-Item -LiteralPath $publishedBinary -Destination $binary -Force
+          }
+
+          if (-not (Test-Path $binary)) {
+            throw "Published binary not found: $binary"
+          }
+
+          $pdb = Get-ChildItem -Path $publishDir -Filter "*.pdb" -Recurse
+          if ($pdb.Count -gt 0) {
+            throw "Publish output contains PDB files."
+          }
+
+          if (-not $IsWindows) {
+            chmod +x $binary
+          }
+
+          & $binary --version
+          & $binary --help
+
+          $asset = "DbSketch-$env:GITHUB_REF_NAME-${{ matrix.assetSuffix }}"
+          $archivePath = Join-Path $env:RUNNER_TEMP $asset
+          if ("${{ matrix.archive }}" -eq "zip") {
+            Compress-Archive -Path (Join-Path $publishDir "*") -DestinationPath $archivePath -Force
+          }
+          else {
+            tar -czf $archivePath -C $publishDir .
+          }
+
+          $hash = (Get-FileHash -Algorithm SHA256 $archivePath).Hash.ToLowerInvariant()
+          "$hash  $asset" | Set-Content -Path "$archivePath.sha256" -NoNewline
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DbSketch-${{ github.ref_name }}-${{ matrix.runtime }}
+          path: |
+            ${{ runner.temp }}/DbSketch-${{ github.ref_name }}-${{ matrix.assetSuffix }}
+            ${{ runner.temp }}/DbSketch-${{ github.ref_name }}-${{ matrix.assetSuffix }}.sha256
+          if-no-files-found: error
+
+  pack-nuget:
+    name: Pack .NET tool
+    needs: build-test
+    runs-on: ubuntu-latest
+    env:
+      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+    steps:
+      - name: Validate version tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid release tag: $GITHUB_REF_NAME" >&2
+            exit 1
+          fi
+          version="${GITHUB_REF_NAME#v}"
+          {
+            echo "VERSION=$version"
+            echo "ASSEMBLY_VERSION=$version.0"
+          } >> "$GITHUB_ENV"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Pack tool
+        shell: pwsh
+        run: |
+          $packageDir = Join-Path $env:RUNNER_TEMP "packages"
+          dotnet pack src/DbSketch.Cli/DbSketch.Cli.csproj `
+            --configuration Release `
+            --output $packageDir `
+            /p:Version=$env:VERSION `
+            /p:AssemblyVersion=$env:ASSEMBLY_VERSION `
+            /p:FileVersion=$env:ASSEMBLY_VERSION `
+            /p:InformationalVersion=$env:GITHUB_REF_NAME
+
+          $packagePath = Join-Path $packageDir "DbSketch.$env:VERSION.nupkg"
+          if (-not (Test-Path $packagePath)) {
+            throw "Package not found: $packagePath"
+          }
+
+          $toolDir = Join-Path $env:RUNNER_TEMP "dbsketch-tool"
+          New-Item -ItemType Directory -Force -Path $toolDir | Out-Null
+
+          dotnet tool install DbSketch `
+            --tool-path $toolDir `
+            --add-source $packageDir `
+            --version $env:VERSION
+
+          $dbsketch = Join-Path $toolDir "dbsketch"
+          if ($IsWindows) {
+            $dbsketch = Join-Path $toolDir "dbsketch.exe"
+          }
+
+          & $dbsketch --version
+          & $dbsketch --help
+
+          "PACKAGE_PATH=$packagePath" >> $env:GITHUB_ENV
+
+      - name: Publish to NuGet.org
+        if: env.NUGET_API_KEY != ''
+        shell: pwsh
+        run: |
+          dotnet nuget push "$env:PACKAGE_PATH" `
+            --api-key "$env:NUGET_API_KEY" `
+            --source "https://api.nuget.org/v3/index.json" `
+            --skip-duplicate
+
+      - name: Skip NuGet.org publish
+        if: env.NUGET_API_KEY == ''
+        run: echo "NUGET_API_KEY is not configured. Skipping NuGet.org publish."
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DbSketch-${{ github.ref_name }}-nuget
+          path: ${{ runner.temp }}/packages/*.nupkg
+          if-no-files-found: error
+
+  release:
+    name: Create GitHub Release
+    needs:
+      - publish-binaries
+      - pack-nuget
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate version tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid release tag: $GITHUB_REF_NAME" >&2
+            exit 1
+          fi
+          version="${GITHUB_REF_NAME#v}"
+          {
+            echo "VERSION=$version"
+            echo "ASSEMBLY_VERSION=$version.0"
+          } >> "$GITHUB_ENV"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare release assets and notes
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-assets
+          find artifacts -type f \( -name '*.zip' -o -name '*.tar.gz' -o -name '*.nupkg' \) -exec cp {} release-assets/ \;
+          cd release-assets
+          sha256sum * > SHA256SUMS.txt
+          cd ..
+
+          previous_tag="$(git tag --list 'v*.*.*' --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | grep -v "^${GITHUB_REF_NAME}$" | head -n 1 || true)"
+          if [[ -n "$previous_tag" ]]; then
+            changes="$(git log --pretty=format:'* %s (%h)' "${previous_tag}..${GITHUB_REF_NAME}")"
+          else
+            changes="$(git log --pretty=format:'* %s (%h)' "${GITHUB_REF_NAME}")"
+          fi
+
+          if [[ -z "$changes" ]]; then
+            changes='* Initial release.'
+          fi
+
+          cat > release-notes.md <<EOF
+          ## DbSketch ${GITHUB_REF_NAME}
+
+          CLI tool for generating Graphviz DOT database schema diagrams.
+
+          ### Install as .NET tool
+
+          \`\`\`bash
+          dotnet tool install --global DbSketch --version ${VERSION}
+          dbsketch --help
+          \`\`\`
+
+          ### One-shot run
+
+          \`\`\`bash
+          dotnet tool exec DbSketch@${VERSION} -- generate --config dbsketch.yml
+          \`\`\`
+
+          ### Portable binaries
+
+          * Windows x64: download \`DbSketch-${GITHUB_REF_NAME}-win-x64.zip\`
+          * Linux x64: download \`DbSketch-${GITHUB_REF_NAME}-linux-x64.tar.gz\`
+
+          ### Verify checksums
+
+          \`\`\`bash
+          sha256sum -c SHA256SUMS.txt
+          \`\`\`
+
+          ### Changes
+
+          ${changes}
+          EOF
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: release-notes.md
+          files: release-assets/*
