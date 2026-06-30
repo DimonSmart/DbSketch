@@ -155,8 +155,9 @@ jobs:
     name: Pack .NET tool
     needs: build-test
     runs-on: ubuntu-latest
-    env:
-      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Validate version tag
         shell: bash
@@ -215,18 +216,19 @@ jobs:
 
           "PACKAGE_PATH=$packagePath" >> $env:GITHUB_ENV
 
+      - name: NuGet login
+        uses: NuGet/login@v1
+        id: nuget_login
+        with:
+          user: DimonSmart
+
       - name: Publish to NuGet.org
-        if: env.NUGET_API_KEY != ''
         shell: pwsh
         run: |
           dotnet nuget push "$env:PACKAGE_PATH" `
-            --api-key "$env:NUGET_API_KEY" `
+            --api-key "${{ steps.nuget_login.outputs.NUGET_API_KEY }}" `
             --source "https://api.nuget.org/v3/index.json" `
             --skip-duplicate
-
-      - name: Skip NuGet.org publish
-        if: env.NUGET_API_KEY == ''
-        run: echo "NUGET_API_KEY is not configured. Skipping NuGet.org publish."
 
       - name: Upload package artifact
         uses: actions/upload-artifact@v4
