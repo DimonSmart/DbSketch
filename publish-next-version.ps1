@@ -17,18 +17,44 @@ function Invoke-Git {
         [string[]] $Arguments
     )
 
-    $output = & git @Arguments 2>&1
-    if ($LASTEXITCODE -ne 0) {
+    $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
+    $startInfo.FileName = "git"
+    $startInfo.UseShellExecute = $false
+    $startInfo.RedirectStandardOutput = $true
+    $startInfo.RedirectStandardError = $true
+
+    foreach ($argument in $Arguments) {
+        $startInfo.ArgumentList.Add($argument)
+    }
+
+    $process = [System.Diagnostics.Process]::Start($startInfo)
+    if ($null -eq $process) {
+        throw "Failed to start git."
+    }
+
+    $stdout = $process.StandardOutput.ReadToEnd()
+    $stderr = $process.StandardError.ReadToEnd()
+    $process.WaitForExit()
+
+    if ($process.ExitCode -ne 0) {
         $command = "git " + ($Arguments -join " ")
-        $message = ($output | Out-String).Trim()
+        $message = $stderr.Trim()
         if ([string]::IsNullOrWhiteSpace($message)) {
-            $message = "exit code $LASTEXITCODE"
+            $message = $stdout.Trim()
+        }
+
+        if ([string]::IsNullOrWhiteSpace($message)) {
+            $message = "exit code $($process.ExitCode)"
         }
 
         throw "$command failed: $message"
     }
 
-    return $output
+    if ([string]::IsNullOrEmpty($stdout)) {
+        return @()
+    }
+
+    return $stdout -split "\r?\n" | Where-Object { $_ -ne "" }
 }
 
 function Test-Version {
