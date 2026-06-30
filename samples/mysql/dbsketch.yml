@@ -1,0 +1,6 @@
+provider: mysql
+connectionString: ${DBSKETCH_MYSQL_CONNECTION}
+
+output:
+  path: samples/output/schema.dot
+  format: dot

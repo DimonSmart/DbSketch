@@ -1,0 +1,10 @@
+provider: postgres
+connectionString: ${DBSKETCH_POSTGRES_CONNECTION}
+
+include:
+  tables:
+    - "public.*"
+
+output:
+  path: samples/output/schema.dot
+  format: dot

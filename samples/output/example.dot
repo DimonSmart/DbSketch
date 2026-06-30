@@ -1,0 +1,39 @@
+digraph DbSketch {
+  graph [
+    rankdir=LR,
+    labelloc="t",
+    label="Database schema"
+  ];
+
+  node [
+    shape=plain
+  ];
+
+  edge [
+    fontsize=10
+  ];
+
+  "table_dbo_Users" [
+    label=<
+      <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0">
+        <TR><TD BGCOLOR="#EEEEEE"><B>dbo.Users</B></TD></TR>
+        <TR><TD PORT="col_Id">PK Id</TD></TR>
+        <TR><TD PORT="col_Name">Name</TD></TR>
+      </TABLE>
+    >
+  ];
+
+  "table_dbo_Orders" [
+    label=<
+      <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0">
+        <TR><TD BGCOLOR="#EEEEEE"><B>dbo.Orders</B></TD></TR>
+        <TR><TD PORT="col_Id">PK Id</TD></TR>
+        <TR><TD PORT="col_UserId">FK UserId</TD></TR>
+      </TABLE>
+    >
+  ];
+
+  "table_dbo_Orders":"col_UserId" -> "table_dbo_Users":"col_Id" [
+    label="FK_Orders_Users"
+  ];
+}

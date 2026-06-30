@@ -1,0 +1,28 @@
+provider: sqlserver
+connectionString: ${DBSKETCH_SQLSERVER_CONNECTION}
+
+include:
+  tables:
+    - "dbo.*"
+
+exclude:
+  tables:
+    - "dbo.__EFMigrationsHistory"
+
+output:
+  path: samples/output/schema.dot
+  format: dot
+
+diagram:
+  title: "Database schema"
+  rankdir: LR
+  compact: true
+  show:
+    schemaName: true
+    columnTypes: false
+    nullability: false
+    primaryKeys: true
+    foreignKeys: true
+
+descriptions:
+  enabled: false
