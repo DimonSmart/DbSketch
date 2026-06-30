@@ -21,7 +21,6 @@
     <Authors>DbSketch contributors</Authors>
     <Description>Generate Graphviz DOT database schema diagrams from live databases.</Description>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageIcon>icon.png</PackageIcon>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/DimonSmart/DbSketch</PackageProjectUrl>
     <RepositoryUrl>https://github.com/DimonSmart/DbSketch</RepositoryUrl>
@@ -32,7 +31,6 @@
 
   <ItemGroup>
     <None Include="..\..\README.md" Pack="true" PackagePath="\" />
-    <None Include="icon.png" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>
