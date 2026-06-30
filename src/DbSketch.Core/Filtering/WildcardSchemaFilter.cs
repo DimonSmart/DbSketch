@@ -1,8 +1,8 @@
 using System.Text.RegularExpressions;
-using DbSketch.Core.Model;
-using DbSketch.Core.Schema;
+using DimonSmart.DbSketch.Core.Model;
+using DimonSmart.DbSketch.Core.Schema;
 
-namespace DbSketch.Core.Filtering;
+namespace DimonSmart.DbSketch.Core.Filtering;
 
 public sealed class WildcardSchemaFilter : ISchemaFilter
 {

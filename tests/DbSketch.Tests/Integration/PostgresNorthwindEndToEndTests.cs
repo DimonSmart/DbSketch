@@ -1,9 +1,9 @@
-using DbSketch.Cli;
-using DbSketch.Tests.Infrastructure;
+using DimonSmart.DbSketch.Cli;
+using DimonSmart.DbSketch.Tests.Infrastructure;
 using Npgsql;
 using Testcontainers.PostgreSql;
 
-namespace DbSketch.Tests.Integration;
+namespace DimonSmart.DbSketch.Tests.Integration;
 
 public sealed class PostgresNorthwindEndToEndTests
 {
@@ -22,7 +22,7 @@ public sealed class PostgresNorthwindEndToEndTests
         var connectionString = postgres.GetConnectionString();
         await ApplySchemaAsync(connectionString);
 
-        var tempDirectory = Path.Combine(Path.GetTempPath(), "DbSketch.Tests", Guid.NewGuid().ToString("N"));
+        var tempDirectory = Path.Combine(Path.GetTempPath(), "DimonSmart.DbSketch.Tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempDirectory);
 
         try

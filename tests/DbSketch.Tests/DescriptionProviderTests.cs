@@ -1,7 +1,7 @@
-using DbSketch.Core.Descriptions;
-using DbSketch.Core.Model;
+using DimonSmart.DbSketch.Core.Descriptions;
+using DimonSmart.DbSketch.Core.Model;
 
-namespace DbSketch.Tests;
+namespace DimonSmart.DbSketch.Tests;
 
 public sealed class DescriptionProviderTests
 {

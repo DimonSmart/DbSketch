@@ -103,7 +103,7 @@ jobs:
             /p:FileVersion=$env:ASSEMBLY_VERSION `
             /p:InformationalVersion=$env:GITHUB_REF_NAME
 
-          $publishedBinaryName = if ($IsWindows) { "DbSketch.Cli.exe" } else { "DbSketch.Cli" }
+          $publishedBinaryName = if ($IsWindows) { "DimonSmart.DbSketch.Cli.exe" } else { "DimonSmart.DbSketch.Cli" }
           $publishedBinary = Join-Path $publishDir $publishedBinaryName
           $binary = Join-Path $publishDir "${{ matrix.binary }}"
           if (-not (Test-Path $publishedBinary)) {
@@ -193,7 +193,7 @@ jobs:
             /p:FileVersion=$env:ASSEMBLY_VERSION `
             /p:InformationalVersion=$env:GITHUB_REF_NAME
 
-          $packagePath = Join-Path $packageDir "DbSketch.$env:VERSION.nupkg"
+          $packagePath = Join-Path $packageDir "DimonSmart.DbSketch.$env:VERSION.nupkg"
           if (-not (Test-Path $packagePath)) {
             throw "Package not found: $packagePath"
           }
@@ -201,7 +201,7 @@ jobs:
           $toolDir = Join-Path $env:RUNNER_TEMP "dbsketch-tool"
           New-Item -ItemType Directory -Force -Path $toolDir | Out-Null
 
-          dotnet tool install DbSketch `
+          dotnet tool install DimonSmart.DbSketch `
             --tool-path $toolDir `
             --add-source $packageDir `
             --version $env:VERSION
@@ -233,7 +233,7 @@ jobs:
       - name: Upload package artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DbSketch-${{ github.ref_name }}-nuget
+          name: DimonSmart.DbSketch-${{ github.ref_name }}-nuget
           path: ${{ runner.temp }}/packages/*.nupkg
           if-no-files-found: error
 
@@ -297,14 +297,14 @@ jobs:
           ### Install as .NET tool
 
           \`\`\`bash
-          dotnet tool install --global DbSketch --version ${VERSION}
+          dotnet tool install --global DimonSmart.DbSketch --version ${VERSION}
           dbsketch --help
           \`\`\`
 
           ### One-shot run
 
           \`\`\`bash
-          dotnet tool exec DbSketch@${VERSION} -- generate --config dbsketch.yml
+          dotnet tool exec DimonSmart.DbSketch@${VERSION} -- generate --config dbsketch.yml
           \`\`\`
 
           ### Portable binaries

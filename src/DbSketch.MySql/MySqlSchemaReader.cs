@@ -1,8 +1,8 @@
-using DbSketch.Core.Model;
-using DbSketch.Core.Schema;
+using DimonSmart.DbSketch.Core.Model;
+using DimonSmart.DbSketch.Core.Schema;
 using MySqlConnector;
 
-namespace DbSketch.MySql;
+namespace DimonSmart.DbSketch.MySql;
 
 public sealed class MySqlSchemaReader : IDatabaseSchemaReader
 {

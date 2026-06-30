@@ -1,6 +1,6 @@
-using DbSketch.Core.Model;
+using DimonSmart.DbSketch.Core.Model;
 
-namespace DbSketch.Core.Descriptions;
+namespace DimonSmart.DbSketch.Core.Descriptions;
 
 public interface IDescriptionProvider
 {

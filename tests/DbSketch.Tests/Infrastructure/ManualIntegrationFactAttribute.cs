@@ -1,6 +1,6 @@
 using System.Runtime.CompilerServices;
 
-namespace DbSketch.Tests.Infrastructure;
+namespace DimonSmart.DbSketch.Tests.Infrastructure;
 
 public sealed class ManualIntegrationFactAttribute : FactAttribute
 {

@@ -10,6 +10,8 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>DimonSmart.DbSketch.MySql</RootNamespace>
+    <AssemblyName>DimonSmart.DbSketch.MySql</AssemblyName>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>

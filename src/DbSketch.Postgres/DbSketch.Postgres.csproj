@@ -10,6 +10,8 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>DimonSmart.DbSketch.Postgres</RootNamespace>
+    <AssemblyName>DimonSmart.DbSketch.Postgres</AssemblyName>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>

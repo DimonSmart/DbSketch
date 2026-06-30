@@ -1,8 +1,8 @@
-using DbSketch.Core.Model;
-using DbSketch.Core.Schema;
+using DimonSmart.DbSketch.Core.Model;
+using DimonSmart.DbSketch.Core.Schema;
 using Npgsql;
 
-namespace DbSketch.Postgres;
+namespace DimonSmart.DbSketch.Postgres;
 
 public sealed class PostgresSchemaReader : IDatabaseSchemaReader
 {

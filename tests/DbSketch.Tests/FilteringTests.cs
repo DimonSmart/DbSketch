@@ -1,8 +1,8 @@
-using DbSketch.Core.Filtering;
-using DbSketch.Core.Model;
-using DbSketch.Core.Schema;
+using DimonSmart.DbSketch.Core.Filtering;
+using DimonSmart.DbSketch.Core.Model;
+using DimonSmart.DbSketch.Core.Schema;
 
-namespace DbSketch.Tests;
+namespace DimonSmart.DbSketch.Tests;
 
 public sealed class FilteringTests
 {

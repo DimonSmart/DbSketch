@@ -9,7 +9,7 @@ The MVP supports SQL Server, PostgreSQL, and MySQL. It reads schemas/namespaces,
 ### Global tool
 
 ```bash
-dotnet tool install --global DbSketch
+dotnet tool install --global DimonSmart.DbSketch
 dbsketch generate --config dbsketch.yml
 ```
 
@@ -17,7 +17,7 @@ dbsketch generate --config dbsketch.yml
 
 ```bash
 dotnet new tool-manifest
-dotnet tool install DbSketch --version 0.1.0
+dotnet tool install DimonSmart.DbSketch --version 0.1.0
 dotnet tool restore
 dotnet tool run dbsketch -- generate --config dbsketch.yml
 ```
@@ -25,13 +25,13 @@ dotnet tool run dbsketch -- generate --config dbsketch.yml
 ### One-shot run
 
 ```bash
-dotnet tool exec DbSketch@0.1.0 -- generate --config dbsketch.yml
+dotnet tool exec DimonSmart.DbSketch@0.1.0 -- generate --config dbsketch.yml
 ```
 
 With .NET 10, `dnx` can also run the tool:
 
 ```bash
-dnx DbSketch@0.1.0 -- generate --config dbsketch.yml
+dnx DimonSmart.DbSketch@0.1.0 -- generate --config dbsketch.yml
 ```
 
 ### CI example
@@ -56,6 +56,8 @@ dotnet build DbSketch.sln
 dotnet test DbSketch.sln
 dotnet pack src/DbSketch.Cli/DbSketch.Cli.csproj -c Release
 ```
+
+The .NET tool package id is `DimonSmart.DbSketch`; the installed command remains `dbsketch`.
 
 Direct CLI options can override config values:
 
@@ -110,7 +112,7 @@ DbSketch has explicit manual integration tests that use Testcontainers and requi
 Run them explicitly:
 
 ```bash
-dotnet test --filter-method "DbSketch.Tests.Integration.PostgresNorthwindEndToEndTests.Generate_WithPostgresNorthwind_WritesDotSchema" --explicit only
+dotnet test --filter-method "DimonSmart.DbSketch.Tests.Integration.PostgresNorthwindEndToEndTests.Generate_WithPostgresNorthwind_WritesDotSchema" --explicit only
 ```
 
 ## Example DOT

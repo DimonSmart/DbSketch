@@ -1,4 +1,4 @@
-namespace DbSketch.Core.Model;
+namespace DimonSmart.DbSketch.Core.Model;
 
 public sealed record DatabaseModel(
     string Provider,

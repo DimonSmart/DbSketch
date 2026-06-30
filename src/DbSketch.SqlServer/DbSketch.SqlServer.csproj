@@ -10,6 +10,8 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>DimonSmart.DbSketch.SqlServer</RootNamespace>
+    <AssemblyName>DimonSmart.DbSketch.SqlServer</AssemblyName>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>

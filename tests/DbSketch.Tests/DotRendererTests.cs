@@ -1,7 +1,7 @@
-using DbSketch.Core.Model;
-using DbSketch.Core.Rendering;
+using DimonSmart.DbSketch.Core.Model;
+using DimonSmart.DbSketch.Core.Rendering;
 
-namespace DbSketch.Tests;
+namespace DimonSmart.DbSketch.Tests;
 
 public sealed class DotRendererTests
 {

@@ -1,4 +1,4 @@
-namespace DbSketch.Core.Config;
+namespace DimonSmart.DbSketch.Core.Config;
 
 public sealed class DbSketchConfig
 {

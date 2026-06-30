@@ -1,13 +1,13 @@
 using System.Reflection;
-using DbSketch.Core.Config;
-using DbSketch.Core.Filtering;
-using DbSketch.Core.Rendering;
-using DbSketch.Core.Schema;
-using DbSketch.MySql;
-using DbSketch.Postgres;
-using DbSketch.SqlServer;
+using DimonSmart.DbSketch.Core.Config;
+using DimonSmart.DbSketch.Core.Filtering;
+using DimonSmart.DbSketch.Core.Rendering;
+using DimonSmart.DbSketch.Core.Schema;
+using DimonSmart.DbSketch.MySql;
+using DimonSmart.DbSketch.Postgres;
+using DimonSmart.DbSketch.SqlServer;
 
-namespace DbSketch.Cli;
+namespace DimonSmart.DbSketch.Cli;
 
 public static class DbSketchApp
 {

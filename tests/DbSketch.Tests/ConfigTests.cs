@@ -1,7 +1,7 @@
-using DbSketch.Cli;
-using DbSketch.Core.Config;
+using DimonSmart.DbSketch.Cli;
+using DimonSmart.DbSketch.Core.Config;
 
-namespace DbSketch.Tests;
+namespace DimonSmart.DbSketch.Tests;
 
 public sealed class ConfigTests
 {

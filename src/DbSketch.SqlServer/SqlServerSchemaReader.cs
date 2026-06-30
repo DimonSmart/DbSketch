@@ -1,8 +1,8 @@
-using DbSketch.Core.Model;
-using DbSketch.Core.Schema;
+using DimonSmart.DbSketch.Core.Model;
+using DimonSmart.DbSketch.Core.Schema;
 using Microsoft.Data.SqlClient;
 
-namespace DbSketch.SqlServer;
+namespace DimonSmart.DbSketch.SqlServer;
 
 public sealed class SqlServerSchemaReader : IDatabaseSchemaReader
 {

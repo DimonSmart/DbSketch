@@ -1,8 +1,8 @@
-using DbSketch.Core.Config;
-using DbSketch.Core.Rendering;
-using DbSketch.Core.Schema;
+using DimonSmart.DbSketch.Core.Config;
+using DimonSmart.DbSketch.Core.Rendering;
+using DimonSmart.DbSketch.Core.Schema;
 
-namespace DbSketch.Cli;
+namespace DimonSmart.DbSketch.Cli;
 
 public sealed record ResolvedGenerateOptions(string Provider, string ConnectionString, string OutputPath, string Format, bool Verbose, bool DryRun, SchemaFilterOptions Filter, DiagramRenderOptions Diagram);
 

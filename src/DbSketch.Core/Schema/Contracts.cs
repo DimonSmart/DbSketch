@@ -1,6 +1,6 @@
-using DbSketch.Core.Model;
+using DimonSmart.DbSketch.Core.Model;
 
-namespace DbSketch.Core.Schema;
+namespace DimonSmart.DbSketch.Core.Schema;
 
 public interface IDatabaseSchemaReader
 {

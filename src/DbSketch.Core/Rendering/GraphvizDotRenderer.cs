@@ -1,7 +1,7 @@
 using System.Text;
-using DbSketch.Core.Model;
+using DimonSmart.DbSketch.Core.Model;
 
-namespace DbSketch.Core.Rendering;
+namespace DimonSmart.DbSketch.Core.Rendering;
 
 public sealed class GraphvizDotRenderer : IDiagramRenderer
 {

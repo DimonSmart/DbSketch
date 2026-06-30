@@ -1,9 +1,9 @@
 using System.Text.RegularExpressions;
-using DbSketch.Core.Config;
+using DimonSmart.DbSketch.Core.Config;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
-namespace DbSketch.Cli;
+namespace DimonSmart.DbSketch.Cli;
 
 public static class ConfigLoader
 {

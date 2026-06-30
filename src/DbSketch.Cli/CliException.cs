@@ -1,3 +1,3 @@
-namespace DbSketch.Cli;
+namespace DimonSmart.DbSketch.Cli;
 
 public sealed class CliException(string message) : Exception(message);
