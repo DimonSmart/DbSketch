@@ -79,6 +79,16 @@ Provider aliases: `mssql` maps to `sqlserver`, and `postgresql` maps to `postgre
 
 Use `format: md-dot` or `--format md-dot` to write Markdown with a fenced `dot` block instead of a raw `.dot` file.
 
+## Manual Integration Tests
+
+DbSketch has explicit manual integration tests that use Testcontainers and require Docker. They are not run by default.
+
+Run them explicitly:
+
+```bash
+dotnet test --filter-method "DbSketch.Tests.Integration.PostgresNorthwindEndToEndTests.Generate_WithPostgresNorthwind_WritesDotSchema" --explicit only
+```
+
 ## Example DOT
 
 ```dot
