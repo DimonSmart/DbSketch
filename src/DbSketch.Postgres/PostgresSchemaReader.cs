@@ -11,12 +11,12 @@ public sealed class PostgresSchemaReader : IDatabaseSchemaReader
         await using var connection = new NpgsqlConnection(options.ConnectionString);
         await connection.OpenAsync(cancellationToken);
 
-        var tables = await ReadTablesAsync(connection, cancellationToken);
-        var primaryKeys = await ReadPrimaryKeysAsync(connection, cancellationToken);
-        var foreignKeys = await ReadForeignKeysAsync(connection, cancellationToken);
+        var tables = await ReadTablesAsync(connection, options.CommandTimeoutSeconds, cancellationToken);
+        var primaryKeys = await ReadPrimaryKeysAsync(connection, options.CommandTimeoutSeconds, cancellationToken);
+        var foreignKeys = await ReadForeignKeysAsync(connection, options.CommandTimeoutSeconds, cancellationToken);
         var foreignKeyColumns = foreignKeys.SelectMany(fk => fk.SourceColumns.Select(column => (fk.SourceTable.FullName, Column: column))).ToHashSet();
-        var comments = options.ReadComments ? await ReadCommentsAsync(connection, cancellationToken) : DatabaseComments.Empty;
-        var columns = await ReadColumnsAsync(connection, primaryKeys, foreignKeyColumns, comments, cancellationToken);
+        var comments = options.ReadComments ? await ReadCommentsAsync(connection, options.CommandTimeoutSeconds, cancellationToken) : DatabaseComments.Empty;
+        var columns = await ReadColumnsAsync(connection, primaryKeys, foreignKeyColumns, comments, options.CommandTimeoutSeconds, cancellationToken);
 
         return new DatabaseModel(
             options.Provider,
@@ -29,7 +29,7 @@ public sealed class PostgresSchemaReader : IDatabaseSchemaReader
             foreignKeys);
     }
 
-    private static async Task<IReadOnlyList<TableRef>> ReadTablesAsync(NpgsqlConnection connection, CancellationToken cancellationToken)
+    private static async Task<IReadOnlyList<TableRef>> ReadTablesAsync(NpgsqlConnection connection, int? timeout, CancellationToken cancellationToken)
     {
         const string sql = """
             select table_schema, table_name
@@ -39,7 +39,7 @@ public sealed class PostgresSchemaReader : IDatabaseSchemaReader
             order by table_schema, table_name;
             """;
         var result = new List<TableRef>();
-        await using var command = new NpgsqlCommand(sql, connection);
+        await using var command = CreateCommand(sql, connection, timeout);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
         {
@@ -49,7 +49,7 @@ public sealed class PostgresSchemaReader : IDatabaseSchemaReader
         return result;
     }
 
-    private static async Task<Dictionary<TableRef, IReadOnlyList<ColumnModel>>> ReadColumnsAsync(NpgsqlConnection connection, HashSet<(string Table, string Column)> primaryKeys, HashSet<(string Table, string Column)> foreignKeyColumns, DatabaseComments comments, CancellationToken cancellationToken)
+    private static async Task<Dictionary<TableRef, IReadOnlyList<ColumnModel>>> ReadColumnsAsync(NpgsqlConnection connection, HashSet<(string Table, string Column)> primaryKeys, HashSet<(string Table, string Column)> foreignKeyColumns, DatabaseComments comments, int? timeout, CancellationToken cancellationToken)
     {
         const string sql = """
             select table_schema, table_name, column_name,
@@ -60,7 +60,7 @@ public sealed class PostgresSchemaReader : IDatabaseSchemaReader
             order by table_schema, table_name, ordinal_position;
             """;
         var result = new Dictionary<TableRef, List<ColumnModel>>();
-        await using var command = new NpgsqlCommand(sql, connection);
+        await using var command = CreateCommand(sql, connection, timeout);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
         {
@@ -84,7 +84,7 @@ public sealed class PostgresSchemaReader : IDatabaseSchemaReader
         return result.ToDictionary(pair => pair.Key, pair => (IReadOnlyList<ColumnModel>)pair.Value);
     }
 
-    private static async Task<DatabaseComments> ReadCommentsAsync(NpgsqlConnection connection, CancellationToken cancellationToken)
+    private static async Task<DatabaseComments> ReadCommentsAsync(NpgsqlConnection connection, int? timeout, CancellationToken cancellationToken)
     {
         const string tableSql = """
             select
@@ -113,7 +113,7 @@ public sealed class PostgresSchemaReader : IDatabaseSchemaReader
             """;
 
         var tableComments = new List<(string SchemaName, string TableName, string? Comment)>();
-        await using (var command = new NpgsqlCommand(tableSql, connection))
+        await using (var command = CreateCommand(tableSql, connection, timeout))
         await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
         {
             while (await reader.ReadAsync(cancellationToken))
@@ -123,7 +123,7 @@ public sealed class PostgresSchemaReader : IDatabaseSchemaReader
         }
 
         var columnComments = new List<(string SchemaName, string TableName, string ColumnName, string? Comment)>();
-        await using (var command = new NpgsqlCommand(columnSql, connection))
+        await using (var command = CreateCommand(columnSql, connection, timeout))
         await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
         {
             while (await reader.ReadAsync(cancellationToken))
@@ -135,7 +135,7 @@ public sealed class PostgresSchemaReader : IDatabaseSchemaReader
         return new DatabaseComments(tableComments, columnComments);
     }
 
-    private static async Task<HashSet<(string Table, string Column)>> ReadPrimaryKeysAsync(NpgsqlConnection connection, CancellationToken cancellationToken)
+    private static async Task<HashSet<(string Table, string Column)>> ReadPrimaryKeysAsync(NpgsqlConnection connection, int? timeout, CancellationToken cancellationToken)
     {
         const string sql = """
             select ns.nspname, cls.relname, att.attname
@@ -148,7 +148,7 @@ public sealed class PostgresSchemaReader : IDatabaseSchemaReader
               and ns.nspname not in ('pg_catalog', 'information_schema');
             """;
         var result = new HashSet<(string Table, string Column)>();
-        await using var command = new NpgsqlCommand(sql, connection);
+        await using var command = CreateCommand(sql, connection, timeout);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
         {
@@ -158,14 +158,15 @@ public sealed class PostgresSchemaReader : IDatabaseSchemaReader
         return result;
     }
 
-    private static async Task<IReadOnlyList<ForeignKeyModel>> ReadForeignKeysAsync(NpgsqlConnection connection, CancellationToken cancellationToken)
+    private static async Task<IReadOnlyList<ForeignKeyModel>> ReadForeignKeysAsync(NpgsqlConnection connection, int? timeout, CancellationToken cancellationToken)
     {
         const string sql = """
-            select con.conname,
+            select con_ns.nspname, con.conname,
                    src_ns.nspname, src_cls.relname, src_att.attname,
                    tgt_ns.nspname, tgt_cls.relname, tgt_att.attname,
                    src_cols.ord
             from pg_constraint con
+            join pg_namespace con_ns on con_ns.oid = con.connamespace
             join pg_class src_cls on src_cls.oid = con.conrelid
             join pg_namespace src_ns on src_ns.oid = src_cls.relnamespace
             join pg_class tgt_cls on tgt_cls.oid = con.confrelid
@@ -177,22 +178,27 @@ public sealed class PostgresSchemaReader : IDatabaseSchemaReader
             where con.contype = 'f'
               and src_ns.nspname not in ('pg_catalog', 'information_schema')
               and tgt_ns.nspname not in ('pg_catalog', 'information_schema')
-            order by con.conname, src_cols.ord;
+            order by con_ns.nspname, src_ns.nspname, src_cls.relname, con.conname, src_cols.ord;
             """;
-        var rows = new List<FkRow>();
-        await using var command = new NpgsqlCommand(sql, connection);
+        var rows = new List<ForeignKeyColumnRow>();
+        await using var command = CreateCommand(sql, connection, timeout);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
         {
-            rows.Add(new FkRow(reader.GetString(0), new TableRef(reader.GetString(1), reader.GetString(2)), reader.GetString(3), new TableRef(reader.GetString(4), reader.GetString(5)), reader.GetString(6), reader.GetInt32(7)));
+            rows.Add(new ForeignKeyColumnRow(reader.GetString(0), reader.GetString(1), new TableRef(reader.GetString(2), reader.GetString(3)), reader.GetString(4), new TableRef(reader.GetString(5), reader.GetString(6)), reader.GetString(7), reader.GetInt32(8)));
         }
 
-        return rows.GroupBy(row => row.Name).Select(group =>
-        {
-            var ordered = group.OrderBy(row => row.Ordinal).ToArray();
-            return new ForeignKeyModel(group.Key, ordered[0].SourceTable, ordered.Select(row => row.SourceColumn).ToArray(), ordered[0].TargetTable, ordered.Select(row => row.TargetColumn).ToArray());
-        }).ToArray();
+        return ForeignKeyModelBuilder.Build(rows);
     }
 
-    private sealed record FkRow(string Name, TableRef SourceTable, string SourceColumn, TableRef TargetTable, string TargetColumn, int Ordinal);
+    private static NpgsqlCommand CreateCommand(string sql, NpgsqlConnection connection, int? timeout)
+    {
+        var command = new NpgsqlCommand(sql, connection);
+        if (timeout is { } value)
+        {
+            command.CommandTimeout = value;
+        }
+
+        return command;
+    }
 }

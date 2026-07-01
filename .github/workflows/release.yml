@@ -8,6 +8,9 @@ on:
 permissions:
   contents: write
 
+env:
+  HUSKY: 0
+
 jobs:
   build-test:
     name: Build and test
@@ -295,7 +298,7 @@ jobs:
           cat > release-notes.md <<EOF
           ## DbSketch ${GITHUB_REF_NAME}
 
-          CLI tool for generating Graphviz DOT database schema diagrams.
+          CLI tool for generating database schema diagrams as Graphviz DOT, Mermaid, or Markdown.
 
           ### Install as .NET tool
 

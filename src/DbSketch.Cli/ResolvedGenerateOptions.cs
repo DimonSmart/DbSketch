@@ -4,7 +4,21 @@ using DimonSmart.DbSketch.Core.Schema;
 
 namespace DimonSmart.DbSketch.Cli;
 
-public sealed record ResolvedGenerateOptions(string Provider, string ConnectionString, string OutputPath, DiagramFormat DiagramRenderer, OutputFormat Output, bool Verbose, bool DryRun, SchemaFilterOptions Filter, DiagramRenderOptions Diagram, bool ReadComments, CommentOverridesConfig CommentOverrides);
+public sealed record ResolvedGenerateOptions(
+    string Provider,
+    string ConnectionString,
+    string OutputPath,
+    DiagramFormat DiagramRenderer,
+    OutputFormat Output,
+    bool Verbose,
+    bool Quiet,
+    bool NoProgress,
+    bool DryRun,
+    SchemaFilterOptions Filter,
+    DiagramRenderOptions Diagram,
+    bool ReadComments,
+    int? CommandTimeoutSeconds,
+    CommentOverridesConfig CommentOverrides);
 
 public static class GenerateOptionsResolver
 {
@@ -22,6 +36,7 @@ public static class GenerateOptionsResolver
         var direction = DiagramDirectionParser.Parse(config.Diagram.Direction);
         var diagramTitle = string.IsNullOrWhiteSpace(config.Diagram.Title) ? "Database schema" : config.Diagram.Title;
         ValidateComments(config);
+        ValidateDatabase(config);
         var markdownOptions = outputFormat == OutputContainerFormat.Markdown
             ? new MarkdownRenderOptions(
                 GetMarkdownFenceLanguage(config.Output.Markdown.FenceLanguage, diagramRenderer),
@@ -32,10 +47,12 @@ public static class GenerateOptionsResolver
         return new ResolvedGenerateOptions(
             provider,
             connectionString,
-            cli.OutputPath ?? config.Output.Path ?? "dbsketch.dot",
+            cli.OutputPath ?? config.Output.Path ?? GetDefaultOutputPath(diagramRenderer, outputFormat),
             diagramRenderer,
             new OutputFormat(outputFormat, markdownOptions),
             cli.Verbose,
+            cli.Quiet,
+            cli.NoProgress,
             cli.DryRun,
             new SchemaFilterOptions(config.Include.Tables, config.Exclude.Tables),
             new DiagramRenderOptions(
@@ -46,6 +63,7 @@ public static class GenerateOptionsResolver
                 new MermaidRenderOptions(config.Diagram.Mermaid.EmitDirection),
                 new DiagramCommentRenderOptions(config.Diagram.Comments.MaxLength)),
             config.Comments.Enabled,
+            config.Database.CommandTimeoutSeconds,
             config.Comments.Overrides);
     }
 
@@ -76,6 +94,23 @@ public static class GenerateOptionsResolver
             }
         }
     }
+
+    private static void ValidateDatabase(DbSketchConfig config)
+    {
+        if (config.Database.CommandTimeoutSeconds is <= 0)
+        {
+            throw new CliException("database.commandTimeoutSeconds must be greater than zero.");
+        }
+    }
+
+    private static string GetDefaultOutputPath(DiagramFormat renderer, OutputContainerFormat outputFormat) =>
+        outputFormat switch
+        {
+            OutputContainerFormat.Markdown => "dbsketch.md",
+            OutputContainerFormat.Raw when renderer == DiagramFormat.Dot => "dbsketch.dot",
+            OutputContainerFormat.Raw when renderer == DiagramFormat.Mermaid => "dbsketch.mmd",
+            _ => throw new ArgumentOutOfRangeException(nameof(outputFormat), outputFormat, null)
+        };
 
     private static string GetMarkdownFenceLanguage(string? configuredLanguage, DiagramFormat renderer)
     {

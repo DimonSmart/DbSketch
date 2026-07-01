@@ -114,6 +114,34 @@ public sealed class ConfigTests
     }
 
     [Fact]
+    public void LoadsQuotedEnvironmentVariableInYaml()
+    {
+        Environment.SetEnvironmentVariable("DBSKETCH_TEST_QUOTED_CONNECTION", "Host=localhost;Database=app");
+        var path = WriteTempConfig("""
+            provider: postgres
+            connectionString: "${DBSKETCH_TEST_QUOTED_CONNECTION}"
+            """);
+
+        var config = ConfigLoader.Load(path);
+
+        Assert.Equal("Host=localhost;Database=app", config.ConnectionString);
+    }
+
+    [Fact]
+    public void LoadsEnvironmentVariableFallbackInYaml()
+    {
+        Environment.SetEnvironmentVariable("DBSKETCH_TEST_FALLBACK_CONNECTION", null);
+        var path = WriteTempConfig("""
+            provider: postgres
+            connectionString: "${DBSKETCH_TEST_FALLBACK_CONNECTION:-Host=localhost;Database=app}"
+            """);
+
+        var config = ConfigLoader.Load(path);
+
+        Assert.Equal("Host=localhost;Database=app", config.ConnectionString);
+    }
+
+    [Fact]
     public void ThrowsReadableErrorWhenEnvVarIsMissing()
     {
         Environment.SetEnvironmentVariable("DBSKETCH_MISSING_CONNECTION", null);
@@ -180,7 +208,7 @@ public sealed class ConfigTests
             Output = new OutputConfig { Path = "config.dot", Format = "raw" },
             Diagram = new DiagramConfig { Renderer = "dot" }
         };
-        var cli = new CliOptions(null, "postgresql", "Host=cli", "cli.md", "mermaid", "markdown", true, true);
+        var cli = new CliOptions(null, "postgresql", "Host=cli", "cli.md", "mermaid", "markdown", true, false, false, true);
 
         var resolved = GenerateOptionsResolver.Resolve(config, cli);
 
@@ -192,6 +220,8 @@ public sealed class ConfigTests
         Assert.NotNull(resolved.Output.Markdown);
         Assert.Equal("mermaid", resolved.Output.Markdown.FenceLanguage);
         Assert.True(resolved.Verbose);
+        Assert.False(resolved.Quiet);
+        Assert.False(resolved.NoProgress);
         Assert.True(resolved.DryRun);
     }
 
@@ -220,7 +250,7 @@ public sealed class ConfigTests
             ConnectionString = "Server=config",
             Diagram = new DiagramConfig { Renderer = "dot" }
         };
-        var cli = new CliOptions(null, null, null, null, "mermaid", null, false, false);
+        var cli = new CliOptions(null, null, null, null, "mermaid", null, false, false, false, false);
 
         var resolved = GenerateOptionsResolver.Resolve(config, cli);
 
@@ -567,15 +597,68 @@ public sealed class ConfigTests
     }
 
     [Fact]
-    public void CliParserReadsRendererAndFormat()
+    public void ResolverUsesMarkdownDefaultOutputPath()
     {
-        var cli = CliParser.ParseGenerate(["--renderer", "mermaid", "--format", "markdown"]);
+        var config = new DbSketchConfig
+        {
+            Provider = "sqlserver",
+            ConnectionString = "Server=config",
+            Output = new OutputConfig { Format = "markdown" }
+        };
 
-        Assert.Equal("mermaid", cli.Renderer);
-        Assert.Equal("markdown", cli.Format);
+        var resolved = GenerateOptionsResolver.Resolve(config, EmptyCli());
+
+        Assert.Equal("dbsketch.md", resolved.OutputPath);
     }
 
-    private static CliOptions EmptyCli() => new(null, null, null, null, null, null, false, false);
+    [Fact]
+    public void ResolverUsesMermaidRawDefaultOutputPath()
+    {
+        var config = new DbSketchConfig
+        {
+            Provider = "sqlserver",
+            ConnectionString = "Server=config",
+            Diagram = new DiagramConfig { Renderer = "mermaid" }
+        };
+
+        var resolved = GenerateOptionsResolver.Resolve(config, EmptyCli());
+
+        Assert.Equal("dbsketch.mmd", resolved.OutputPath);
+    }
+
+    [Fact]
+    public void ResolverUsesConfiguredCommandTimeout()
+    {
+        var config = new DbSketchConfig
+        {
+            Provider = "sqlserver",
+            ConnectionString = "Server=config",
+            Database = new DatabaseConfig { CommandTimeoutSeconds = 30 }
+        };
+
+        var resolved = GenerateOptionsResolver.Resolve(config, EmptyCli());
+
+        Assert.Equal(30, resolved.CommandTimeoutSeconds);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void ResolverRejectsNonPositiveCommandTimeout(int timeout)
+    {
+        var config = new DbSketchConfig
+        {
+            Provider = "sqlserver",
+            ConnectionString = "Server=config",
+            Database = new DatabaseConfig { CommandTimeoutSeconds = timeout }
+        };
+
+        var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, EmptyCli()));
+
+        Assert.Equal("database.commandTimeoutSeconds must be greater than zero.", exception.Message);
+    }
+
+    private static CliOptions EmptyCli() => new(null, null, null, null, null, null, false, false, false, false);
 
     private static string WriteTempConfig(string content)
     {

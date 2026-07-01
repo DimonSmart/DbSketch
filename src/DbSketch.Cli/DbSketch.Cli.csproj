@@ -8,6 +8,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="2.0.9" />
     <PackageReference Include="YamlDotNet" Version="18.1.0" />
   </ItemGroup>
 
@@ -22,13 +23,13 @@
     <Title>DimonSmart DbSketch</Title>
     <Version>0.1.0</Version>
     <Authors>DimonSmart</Authors>
-    <Description>Generate Graphviz DOT database schema diagrams from live databases.</Description>
+    <Description>Generate database schema diagrams from live SQL Server, PostgreSQL, and MySQL databases as Graphviz DOT, Mermaid, or Markdown.</Description>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/DimonSmart/DbSketch</PackageProjectUrl>
     <RepositoryUrl>https://github.com/DimonSmart/DbSketch</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageTags>database;schema;diagram;graphviz;dot;cli;tool</PackageTags>
+    <PackageTags>database;schema;diagram;graphviz;dot;mermaid;markdown;cli;tool;sqlserver;postgresql;mysql;documentation</PackageTags>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
   </PropertyGroup>
 

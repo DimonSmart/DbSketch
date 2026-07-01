@@ -68,6 +68,20 @@ public sealed class DotRendererTests
     }
 
     [Fact]
+    public void RendersPrimaryKeyAndForeignKeyMarkersTogether()
+    {
+        var model = new DatabaseModel(
+            "sqlserver",
+            null,
+            [new TableModel("dbo", "UserRoles", [new ColumnModel("UserId", "int", false, true, true)])],
+            []);
+
+        var dot = Render(model);
+
+        Assert.Contains("PK FK UserId", dot);
+    }
+
+    [Fact]
     public void HandlesCompositeForeignKey()
     {
         var model = new DatabaseModel(

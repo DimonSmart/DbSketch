@@ -87,7 +87,8 @@ public sealed class GraphvizDotRenderer : IDiagramRenderer
         {
             parts.Add("PK");
         }
-        else if (options.Show.ForeignKeys && column.IsForeignKey)
+
+        if (options.Show.ForeignKeys && column.IsForeignKey)
         {
             parts.Add("FK");
         }

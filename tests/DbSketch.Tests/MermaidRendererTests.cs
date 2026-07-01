@@ -64,6 +64,20 @@ public sealed class MermaidRendererTests
     }
 
     [Fact]
+    public void RendersPrimaryKeyAndForeignKeyMarkersTogether()
+    {
+        var model = new DatabaseModel(
+            "sqlserver",
+            null,
+            [new TableModel("dbo", "UserRoles", [new ColumnModel("UserId", "int", false, true, true)])],
+            []);
+
+        var mermaid = Render(model, showColumnTypes: true);
+
+        Assert.Contains("int UserId PK FK", mermaid);
+    }
+
+    [Fact]
     public void UsesGenericTypeWhenColumnTypesAreHidden()
     {
         var mermaid = Render(Model(), showColumnTypes: false);

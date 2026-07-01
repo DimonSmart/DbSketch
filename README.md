@@ -6,7 +6,7 @@ DbSketch is a small .NET CLI tool for developers who want database documentation
 
 It is useful when you need a quick architecture sketch, onboarding documentation, a Markdown-friendly database map, or a repeatable way to visualize schema changes without opening a full database modeling tool.
 
-The MVP supports SQL Server, PostgreSQL, and MySQL. It applies include/exclude table filters before rendering Graphviz DOT or Mermaid.
+The MVP supports SQL Server, PostgreSQL, and MySQL. It applies include/exclude table filters before rendering Graphviz DOT, Mermaid, or Markdown-wrapped output.
 
 ## Install
 
@@ -95,11 +95,39 @@ Direct CLI options can override config values:
 dbsketch generate --provider sqlserver --connection "Server=.;Database=AppDb;Trusted_Connection=True;TrustServerCertificate=True" --renderer dot --format raw --out docs/db/schema.dot
 ```
 
+Useful CLI entry points:
+
+```bash
+dbsketch
+dbsketch --help
+dbsketch generate --help
+dbsketch generate --config dbsketch.yml
+dbsketch generate --config dbsketch.yml --quiet
+dbsketch generate --config dbsketch.yml --out -
+```
+
+Use `--quiet` to suppress all non-error output.
+Use `--no-progress` to suppress progress messages while keeping warnings.
+Use `--verbose` for diagnostic output.
+
+### Write to stdout
+
+Use `--out -` to write generated diagram text to stdout:
+
+```bash
+dbsketch generate --config dbsketch.yml --out - > schema.mmd
+```
+
+Progress messages are not written to stdout in this mode.
+
 ## Config
 
 ```yaml
 provider: sqlserver
-connectionString: ${DB_CONNECTION}
+connectionString: "${DB_CONNECTION}"
+
+database:
+  commandTimeoutSeconds: 30
 
 include:
   tables:
@@ -144,7 +172,7 @@ diagram:
     columnComments: false
 
   comments:
-    maxLength:
+    maxLength: 80
 
 comments:
   enabled: true
@@ -160,6 +188,36 @@ comments:
 
 Provider aliases: `mssql` maps to `sqlserver`, and `postgresql` maps to `postgres`.
 
+If `output.path` and `--out` are omitted, DbSketch chooses a default file name:
+
+- `dbsketch.dot` for raw DOT.
+- `dbsketch.mmd` for raw Mermaid.
+- `dbsketch.md` for Markdown output.
+
+### Environment variables in config
+
+DbSketch expands `${NAME}` placeholders before YAML is parsed:
+
+```yaml
+connectionString: "${DB_CONNECTION}"
+```
+
+A fallback value can be provided:
+
+```yaml
+connectionString: "${DB_CONNECTION:-Host=localhost;Database=app}"
+```
+
+Recommended form: wrap placeholders in YAML quotes. This is safer for connection strings because they often contain `:`, `;`, `#`, spaces, backslashes, or other characters that may have special meaning in YAML.
+
+For CI:
+
+```yaml
+env:
+  DB_CONNECTION: ${{ secrets.DB_CONNECTION }}
+run: dbsketch generate --config dbsketch.yml
+```
+
 When `comments.enabled` is true, DbSketch reads database-native table and column comments into the internal schema model.
 
 Current providers:
@@ -171,6 +229,10 @@ Current providers:
 `comments.enabled: true` reads database-native comments. YAML `comments.overrides` can replace or add table and column comments and is applied even when database comment reading is disabled.
 
 `diagram.show.tableComments: true` renders table comments where the renderer supports them. `diagram.show.columnComments: true` renders column comments. DOT supports table and column comments. Mermaid ER supports column comments; table comments are not emitted because Mermaid ER has no natural table comment syntax.
+
+DOT supports column-to-column edges.
+Mermaid ER renders relationships between entities, not specific column ports.
+Mermaid ER does not emit table comments because Mermaid ER has no natural table comment syntax.
 
 `diagram.comments.maxLength` limits rendered diagram comments after inline whitespace normalization. It is optional; by default comments are not truncated.
 

@@ -9,6 +9,12 @@ public sealed class DbSketchConfig
     public OutputConfig Output { get; init; } = new();
     public DiagramConfig Diagram { get; init; } = new();
     public CommentsConfig Comments { get; init; } = new();
+    public DatabaseConfig Database { get; init; } = new();
+}
+
+public sealed class DatabaseConfig
+{
+    public int? CommandTimeoutSeconds { get; init; }
 }
 
 public sealed class IncludeExcludeConfig

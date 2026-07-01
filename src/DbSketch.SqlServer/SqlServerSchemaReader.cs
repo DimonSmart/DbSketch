@@ -14,12 +14,12 @@ public sealed class SqlServerSchemaReader : IDatabaseSchemaReader
         await connection.OpenAsync(cancellationToken);
 
         var databaseName = connection.Database;
-        var tables = await ReadTablesAsync(connection, cancellationToken);
-        var primaryKeys = await ReadPrimaryKeysAsync(connection, cancellationToken);
-        var foreignKeys = await ReadForeignKeysAsync(connection, cancellationToken);
+        var tables = await ReadTablesAsync(connection, options.CommandTimeoutSeconds, cancellationToken);
+        var primaryKeys = await ReadPrimaryKeysAsync(connection, options.CommandTimeoutSeconds, cancellationToken);
+        var foreignKeys = await ReadForeignKeysAsync(connection, options.CommandTimeoutSeconds, cancellationToken);
         var foreignKeyColumns = foreignKeys.SelectMany(fk => fk.SourceColumns.Select(column => (fk.SourceTable.FullName, Column: column))).ToHashSet();
-        var comments = options.ReadComments ? await ReadCommentsAsync(connection, cancellationToken) : DatabaseComments.Empty;
-        var columns = await ReadColumnsAsync(connection, primaryKeys, foreignKeyColumns, comments, cancellationToken);
+        var comments = options.ReadComments ? await ReadCommentsAsync(connection, options.CommandTimeoutSeconds, cancellationToken) : DatabaseComments.Empty;
+        var columns = await ReadColumnsAsync(connection, primaryKeys, foreignKeyColumns, comments, options.CommandTimeoutSeconds, cancellationToken);
 
         var models = tables
             .Select(table => new TableModel(
@@ -32,7 +32,7 @@ public sealed class SqlServerSchemaReader : IDatabaseSchemaReader
         return new DatabaseModel(options.Provider, databaseName, models, foreignKeys);
     }
 
-    private static async Task<IReadOnlyList<TableRef>> ReadTablesAsync(SqlConnection connection, CancellationToken cancellationToken)
+    private static async Task<IReadOnlyList<TableRef>> ReadTablesAsync(SqlConnection connection, int? timeout, CancellationToken cancellationToken)
     {
         const string sql = """
             select s.name, t.name
@@ -43,7 +43,7 @@ public sealed class SqlServerSchemaReader : IDatabaseSchemaReader
             """;
 
         var result = new List<TableRef>();
-        await using var command = new SqlCommand(sql, connection);
+        await using var command = CreateCommand(sql, connection, timeout);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
         {
@@ -53,7 +53,7 @@ public sealed class SqlServerSchemaReader : IDatabaseSchemaReader
         return result;
     }
 
-    private static async Task<Dictionary<TableRef, IReadOnlyList<ColumnModel>>> ReadColumnsAsync(SqlConnection connection, HashSet<(string Table, string Column)> primaryKeys, HashSet<(string Table, string Column)> foreignKeyColumns, DatabaseComments comments, CancellationToken cancellationToken)
+    private static async Task<Dictionary<TableRef, IReadOnlyList<ColumnModel>>> ReadColumnsAsync(SqlConnection connection, HashSet<(string Table, string Column)> primaryKeys, HashSet<(string Table, string Column)> foreignKeyColumns, DatabaseComments comments, int? timeout, CancellationToken cancellationToken)
     {
         const string sql = """
             select s.name, t.name, c.name,
@@ -73,7 +73,7 @@ public sealed class SqlServerSchemaReader : IDatabaseSchemaReader
             """;
 
         var result = new Dictionary<TableRef, List<ColumnModel>>();
-        await using var command = new SqlCommand(sql, connection);
+        await using var command = CreateCommand(sql, connection, timeout);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
         {
@@ -98,7 +98,7 @@ public sealed class SqlServerSchemaReader : IDatabaseSchemaReader
         return result.ToDictionary(pair => pair.Key, pair => (IReadOnlyList<ColumnModel>)pair.Value);
     }
 
-    private static async Task<DatabaseComments> ReadCommentsAsync(SqlConnection connection, CancellationToken cancellationToken)
+    private static async Task<DatabaseComments> ReadCommentsAsync(SqlConnection connection, int? timeout, CancellationToken cancellationToken)
     {
         var tableSql = $"""
             select
@@ -133,7 +133,7 @@ public sealed class SqlServerSchemaReader : IDatabaseSchemaReader
             """;
 
         var tableComments = new List<(string SchemaName, string TableName, string? Comment)>();
-        await using (var command = new SqlCommand(tableSql, connection))
+        await using (var command = CreateCommand(tableSql, connection, timeout))
         await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
         {
             while (await reader.ReadAsync(cancellationToken))
@@ -143,7 +143,7 @@ public sealed class SqlServerSchemaReader : IDatabaseSchemaReader
         }
 
         var columnComments = new List<(string SchemaName, string TableName, string ColumnName, string? Comment)>();
-        await using (var command = new SqlCommand(columnSql, connection))
+        await using (var command = CreateCommand(columnSql, connection, timeout))
         await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
         {
             while (await reader.ReadAsync(cancellationToken))
@@ -155,7 +155,7 @@ public sealed class SqlServerSchemaReader : IDatabaseSchemaReader
         return new DatabaseComments(tableComments, columnComments);
     }
 
-    private static async Task<HashSet<(string Table, string Column)>> ReadPrimaryKeysAsync(SqlConnection connection, CancellationToken cancellationToken)
+    private static async Task<HashSet<(string Table, string Column)>> ReadPrimaryKeysAsync(SqlConnection connection, int? timeout, CancellationToken cancellationToken)
     {
         const string sql = """
             select s.name, t.name, c.name
@@ -168,7 +168,7 @@ public sealed class SqlServerSchemaReader : IDatabaseSchemaReader
             """;
 
         var result = new HashSet<(string Table, string Column)>();
-        await using var command = new SqlCommand(sql, connection);
+        await using var command = CreateCommand(sql, connection, timeout);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
         {
@@ -178,7 +178,7 @@ public sealed class SqlServerSchemaReader : IDatabaseSchemaReader
         return result;
     }
 
-    private static async Task<IReadOnlyList<ForeignKeyModel>> ReadForeignKeysAsync(SqlConnection connection, CancellationToken cancellationToken)
+    private static async Task<IReadOnlyList<ForeignKeyModel>> ReadForeignKeysAsync(SqlConnection connection, int? timeout, CancellationToken cancellationToken)
     {
         const string sql = """
             select fk.name,
@@ -194,25 +194,29 @@ public sealed class SqlServerSchemaReader : IDatabaseSchemaReader
             join sys.schemas ts on ts.schema_id = tt.schema_id
             join sys.columns tc on tc.object_id = tt.object_id and tc.column_id = fkc.referenced_column_id
             where st.is_ms_shipped = 0 and tt.is_ms_shipped = 0
-            order by fk.name, fkc.constraint_column_id;
+            order by ss.name, st.name, fk.name, fkc.constraint_column_id;
             """;
 
-        var rows = new List<FkRow>();
-        await using var command = new SqlCommand(sql, connection);
+        var rows = new List<ForeignKeyColumnRow>();
+        await using var command = CreateCommand(sql, connection, timeout);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
         {
-            rows.Add(new FkRow(reader.GetString(0), new TableRef(reader.GetString(1), reader.GetString(2)), reader.GetString(3), new TableRef(reader.GetString(4), reader.GetString(5)), reader.GetString(6), reader.GetInt32(7)));
+            var source = new TableRef(reader.GetString(1), reader.GetString(2));
+            rows.Add(new ForeignKeyColumnRow(source.SchemaName, reader.GetString(0), source, reader.GetString(3), new TableRef(reader.GetString(4), reader.GetString(5)), reader.GetString(6), reader.GetInt32(7)));
         }
 
-        return rows.GroupBy(row => row.Name).Select(ToForeignKey).ToArray();
+        return ForeignKeyModelBuilder.Build(rows);
     }
 
-    private static ForeignKeyModel ToForeignKey(IGrouping<string, FkRow> group)
+    private static SqlCommand CreateCommand(string sql, SqlConnection connection, int? timeout)
     {
-        var rows = group.OrderBy(row => row.Ordinal).ToArray();
-        return new ForeignKeyModel(group.Key, rows[0].SourceTable, rows.Select(row => row.SourceColumn).ToArray(), rows[0].TargetTable, rows.Select(row => row.TargetColumn).ToArray());
-    }
+        var command = new SqlCommand(sql, connection);
+        if (timeout is { } value)
+        {
+            command.CommandTimeout = value;
+        }
 
-    private sealed record FkRow(string Name, TableRef SourceTable, string SourceColumn, TableRef TargetTable, string TargetColumn, int Ordinal);
+        return command;
+    }
 }

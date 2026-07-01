@@ -7,7 +7,7 @@ public interface IDatabaseSchemaReader
     Task<DatabaseModel> ReadAsync(DatabaseReadOptions options, CancellationToken cancellationToken);
 }
 
-public sealed record DatabaseReadOptions(string Provider, string ConnectionString, bool ReadComments = false);
+public sealed record DatabaseReadOptions(string Provider, string ConnectionString, bool ReadComments = false, int? CommandTimeoutSeconds = null);
 
 public interface ISchemaFilter
 {
