@@ -140,10 +140,22 @@ diagram:
     nullability: false
     primaryKeys: true
     foreignKeys: true
-    comments: false
+    tableComments: false
+    columnComments: false
+
+  comments:
+    maxLength:
 
 comments:
   enabled: true
+  overrides:
+    tables:
+      - schema: dbo
+        name: Users
+        comment: Application users
+        columns:
+          Id: Internal user identifier
+          Email: Login email
 ```
 
 Provider aliases: `mssql` maps to `sqlserver`, and `postgresql` maps to `postgres`.
@@ -156,15 +168,30 @@ Current providers:
 - PostgreSQL: `COMMENT ON TABLE` / `COMMENT ON COLUMN`.
 - MySQL: `TABLE_COMMENT` / `COLUMN_COMMENT` from `information_schema`.
 
-Comments are read when `comments.enabled: true` and rendered only when `diagram.show.comments: true`. Mermaid currently renders column comments. DOT renders table and column comments. Comments are disabled by default to keep diagrams compact.
+`comments.enabled: true` reads database-native comments. YAML `comments.overrides` can replace or add table and column comments and is applied even when database comment reading is disabled.
+
+`diagram.show.tableComments: true` renders table comments where the renderer supports them. `diagram.show.columnComments: true` renders column comments. DOT supports table and column comments. Mermaid ER supports column comments; table comments are not emitted because Mermaid ER has no natural table comment syntax.
+
+`diagram.comments.maxLength` limits rendered diagram comments after inline whitespace normalization. It is optional; by default comments are not truncated.
 
 ```yaml
 comments:
   enabled: true
+  overrides:
+    tables:
+      - schema: dbo
+        name: Users
+        comment: Application users
+        columns:
+          Id: Internal user identifier
+          Email: Login email
 
 diagram:
   show:
-    comments: true
+    tableComments: true
+    columnComments: true
+  comments:
+    maxLength: 80
 ```
 
 ## Diagram And Output Formats

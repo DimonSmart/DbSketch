@@ -24,9 +24,12 @@ public sealed record DiagramRenderOptions(
     DiagramDirection Direction,
     bool Compact,
     DiagramShowOptions Show,
-    MermaidRenderOptions Mermaid);
+    MermaidRenderOptions Mermaid,
+    DiagramCommentRenderOptions Comments);
 
 public sealed record MermaidRenderOptions(bool EmitDirection);
+
+public sealed record DiagramCommentRenderOptions(int? MaxLength);
 
 public sealed record DiagramShowOptions(
     bool SchemaName,
@@ -34,4 +37,5 @@ public sealed record DiagramShowOptions(
     bool Nullability,
     bool PrimaryKeys,
     bool ForeignKeys,
-    bool Comments);
+    bool TableComments,
+    bool ColumnComments);

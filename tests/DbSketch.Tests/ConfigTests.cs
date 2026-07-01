@@ -62,9 +62,19 @@ public sealed class ConfigTests
                 nullability: true
                 primaryKeys: true
                 foreignKeys: false
-                comments: true
+                tableComments: true
+                columnComments: true
+              comments:
+                maxLength: 80
             comments:
               enabled: false
+              overrides:
+                tables:
+                  - schema: dbo
+                    name: Users
+                    comment: Application users
+                    columns:
+                      Id: User identifier
             """);
 
         var config = ConfigLoader.Load(path);
@@ -82,8 +92,15 @@ public sealed class ConfigTests
         Assert.False(config.Diagram.Mermaid.EmitDirection);
         Assert.False(config.Diagram.Show.SchemaName);
         Assert.True(config.Diagram.Show.ColumnTypes);
-        Assert.True(config.Diagram.Show.Comments);
+        Assert.True(config.Diagram.Show.TableComments);
+        Assert.True(config.Diagram.Show.ColumnComments);
+        Assert.Equal(80, config.Diagram.Comments.MaxLength);
         Assert.False(config.Comments.Enabled);
+        var tableOverride = Assert.Single(config.Comments.Overrides.Tables);
+        Assert.Equal("dbo", tableOverride.Schema);
+        Assert.Equal("Users", tableOverride.Name);
+        Assert.Equal("Application users", tableOverride.Comment);
+        Assert.Equal("User identifier", tableOverride.Columns["Id"]);
     }
 
     [Fact]
@@ -222,7 +239,8 @@ public sealed class ConfigTests
                 Renderer = "mermaid",
                 Direction = "TB",
                 Mermaid = new MermaidConfig { EmitDirection = true },
-                Show = new DiagramShowConfig { Comments = true }
+                Show = new DiagramShowConfig { TableComments = true, ColumnComments = true },
+                Comments = new DiagramCommentsConfig { MaxLength = 80 }
             }
         };
         var cli = EmptyCli();
@@ -232,7 +250,95 @@ public sealed class ConfigTests
         Assert.Equal(DiagramFormat.Mermaid, resolved.DiagramRenderer);
         Assert.Equal(DiagramDirection.TB, resolved.Diagram.Direction);
         Assert.True(resolved.Diagram.Mermaid.EmitDirection);
-        Assert.True(resolved.Diagram.Show.Comments);
+        Assert.True(resolved.Diagram.Show.TableComments);
+        Assert.True(resolved.Diagram.Show.ColumnComments);
+        Assert.Equal(80, resolved.Diagram.Comments.MaxLength);
+    }
+
+    [Fact]
+    public void ResolverRejectsNonPositiveCommentMaxLength()
+    {
+        var config = new DbSketchConfig
+        {
+            Provider = "sqlserver",
+            ConnectionString = "Server=config",
+            Diagram = new DiagramConfig { Comments = new DiagramCommentsConfig { MaxLength = 0 } }
+        };
+        var cli = EmptyCli();
+
+        var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, cli));
+
+        Assert.Equal("diagram.comments.maxLength must be greater than zero.", exception.Message);
+    }
+
+    [Fact]
+    public void ResolverRejectsCommentOverrideWithoutSchema()
+    {
+        var config = new DbSketchConfig
+        {
+            Provider = "sqlserver",
+            ConnectionString = "Server=config",
+            Comments = new CommentsConfig
+            {
+                Overrides = new CommentOverridesConfig
+                {
+                    Tables = [new TableCommentOverrideConfig { Name = "Users" }]
+                }
+            }
+        };
+        var cli = EmptyCli();
+
+        var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, cli));
+
+        Assert.Equal("comments.overrides.tables[].schema is required.", exception.Message);
+    }
+
+    [Fact]
+    public void ResolverRejectsCommentOverrideWithoutName()
+    {
+        var config = new DbSketchConfig
+        {
+            Provider = "sqlserver",
+            ConnectionString = "Server=config",
+            Comments = new CommentsConfig
+            {
+                Overrides = new CommentOverridesConfig
+                {
+                    Tables = [new TableCommentOverrideConfig { Schema = "dbo" }]
+                }
+            }
+        };
+        var cli = EmptyCli();
+
+        var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, cli));
+
+        Assert.Equal("comments.overrides.tables[].name is required.", exception.Message);
+    }
+
+    [Fact]
+    public void ResolverRejectsDuplicateCommentOverrides()
+    {
+        var config = new DbSketchConfig
+        {
+            Provider = "sqlserver",
+            ConnectionString = "Server=config",
+            Comments = new CommentsConfig
+            {
+                Overrides = new CommentOverridesConfig
+                {
+                    Tables =
+                    [
+                        new TableCommentOverrideConfig { Schema = "dbo", Name = "Users" },
+                        new TableCommentOverrideConfig { Schema = "DBO", Name = "users" }
+                    ]
+                }
+            }
+        };
+        var cli = EmptyCli();
+
+        var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, cli));
+
+        Assert.Equal("Duplicate comment override for table 'DBO.users'.", exception.Message);
     }
 
     [Fact]

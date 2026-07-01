@@ -51,7 +51,9 @@ public sealed class GraphvizDotRenderer : IDiagramRenderer
         builder.AppendLine("      <TABLE BORDER=\"1\" CELLBORDER=\"1\" CELLSPACING=\"0\">");
         var title = options.Show.SchemaName ? table.FullName : table.Name;
         builder.AppendLine($"        <TR><TD BGCOLOR=\"#EEEEEE\"><B>{encoder.EscapeLabel(title)}</B></TD></TR>");
-        var tableComment = options.Show.Comments ? RenderTextNormalizer.NormalizeInlineComment(table.Comment) : null;
+        var tableComment = options.Show.TableComments
+            ? RenderTextNormalizer.NormalizeInlineComment(table.Comment, options.Comments.MaxLength)
+            : null;
         if (tableComment is not null)
         {
             builder.AppendLine($"        <TR><TD BGCOLOR=\"#F7F7F7\"><FONT POINT-SIZE=\"9\">{encoder.EscapeLabel(tableComment)}</FONT></TD></TR>");
@@ -60,7 +62,9 @@ public sealed class GraphvizDotRenderer : IDiagramRenderer
         foreach (var column in table.Columns)
         {
             var port = encoder.GetColumnPortId(table, column);
-            var columnComment = options.Show.Comments ? RenderTextNormalizer.NormalizeInlineComment(column.Comment) : null;
+            var columnComment = options.Show.ColumnComments
+                ? RenderTextNormalizer.NormalizeInlineComment(column.Comment, options.Comments.MaxLength)
+                : null;
             if (columnComment is null)
             {
                 builder.AppendLine($"        <TR><TD PORT=\"{encoder.EscapeLabel(port)}\">{encoder.EscapeLabel(FormatColumn(column, options))}</TD></TR>");

@@ -4,7 +4,7 @@ using DimonSmart.DbSketch.Core.Schema;
 
 namespace DimonSmart.DbSketch.Cli;
 
-public sealed record ResolvedGenerateOptions(string Provider, string ConnectionString, string OutputPath, DiagramFormat DiagramRenderer, OutputFormat Output, bool Verbose, bool DryRun, SchemaFilterOptions Filter, DiagramRenderOptions Diagram, bool ReadComments);
+public sealed record ResolvedGenerateOptions(string Provider, string ConnectionString, string OutputPath, DiagramFormat DiagramRenderer, OutputFormat Output, bool Verbose, bool DryRun, SchemaFilterOptions Filter, DiagramRenderOptions Diagram, bool ReadComments, CommentOverridesConfig CommentOverrides);
 
 public static class GenerateOptionsResolver
 {
@@ -21,6 +21,7 @@ public static class GenerateOptionsResolver
         var outputFormat = OutputContainerFormatParser.Parse(cli.Format ?? config.Output.Format);
         var direction = DiagramDirectionParser.Parse(config.Diagram.Direction);
         var diagramTitle = string.IsNullOrWhiteSpace(config.Diagram.Title) ? "Database schema" : config.Diagram.Title;
+        ValidateComments(config);
         var markdownOptions = outputFormat == OutputContainerFormat.Markdown
             ? new MarkdownRenderOptions(
                 GetMarkdownFenceLanguage(config.Output.Markdown.FenceLanguage, diagramRenderer),
@@ -41,9 +42,39 @@ public static class GenerateOptionsResolver
                 diagramTitle,
                 direction,
                 config.Diagram.Compact,
-                new DiagramShowOptions(config.Diagram.Show.SchemaName, config.Diagram.Show.ColumnTypes, config.Diagram.Show.Nullability, config.Diagram.Show.PrimaryKeys, config.Diagram.Show.ForeignKeys, config.Diagram.Show.Comments),
-                new MermaidRenderOptions(config.Diagram.Mermaid.EmitDirection)),
-            config.Comments.Enabled);
+                new DiagramShowOptions(config.Diagram.Show.SchemaName, config.Diagram.Show.ColumnTypes, config.Diagram.Show.Nullability, config.Diagram.Show.PrimaryKeys, config.Diagram.Show.ForeignKeys, config.Diagram.Show.TableComments, config.Diagram.Show.ColumnComments),
+                new MermaidRenderOptions(config.Diagram.Mermaid.EmitDirection),
+                new DiagramCommentRenderOptions(config.Diagram.Comments.MaxLength)),
+            config.Comments.Enabled,
+            config.Comments.Overrides);
+    }
+
+    private static void ValidateComments(DbSketchConfig config)
+    {
+        if (config.Diagram.Comments.MaxLength <= 0)
+        {
+            throw new CliException("diagram.comments.maxLength must be greater than zero.");
+        }
+
+        var tableOverrides = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var tableOverride in config.Comments.Overrides.Tables)
+        {
+            if (string.IsNullOrWhiteSpace(tableOverride.Schema))
+            {
+                throw new CliException("comments.overrides.tables[].schema is required.");
+            }
+
+            if (string.IsNullOrWhiteSpace(tableOverride.Name))
+            {
+                throw new CliException("comments.overrides.tables[].name is required.");
+            }
+
+            var key = $"{tableOverride.Schema.Trim()}.{tableOverride.Name.Trim()}";
+            if (!tableOverrides.Add(key))
+            {
+                throw new CliException($"Duplicate comment override for table '{key}'.");
+            }
+        }
     }
 
     private static string GetMarkdownFenceLanguage(string? configuredLanguage, DiagramFormat renderer)

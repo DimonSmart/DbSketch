@@ -131,6 +131,17 @@ public sealed class DotRendererTests
     [Fact]
     public void RendersTableAndColumnCommentsWhenEnabled()
     {
+        var model = CommentsModel();
+
+        var dot = Render(model, showTableComments: true, showColumnComments: true);
+
+        Assert.Contains("Application users", dot);
+        Assert.Contains("User identifier", dot);
+    }
+
+    [Fact]
+    public void RendersOnlyTableCommentsWhenEnabled()
+    {
         var model = new DatabaseModel(
             "sqlserver",
             null,
@@ -147,12 +158,73 @@ public sealed class DotRendererTests
             ],
             [new ForeignKeyModel("FK_Orders_Users", new TableRef("dbo", "Orders"), ["UserId"], new TableRef("dbo", "Users"), ["Id"])]);
 
-        var dot = Render(model, showComments: true);
+        var dot = Render(model, showTableComments: true);
 
         Assert.Contains("Application users", dot);
+        Assert.DoesNotContain("User identifier", dot);
+        Assert.Contains("PORT=\"col_Id\"", dot);
+        Assert.Contains("\"table_dbo_Orders\":\"col_UserId\" -> \"table_dbo_Users\":\"col_Id\"", dot);
+    }
+
+    [Fact]
+    public void RendersOnlyColumnCommentsWhenEnabled()
+    {
+        var model = new DatabaseModel(
+            "sqlserver",
+            null,
+            [
+                new TableModel(
+                    "dbo",
+                    "Users",
+                    [new ColumnModel("Id", "int", false, true, false, "User identifier")],
+                    "Application users"),
+                new TableModel(
+                    "dbo",
+                    "Orders",
+                    [new ColumnModel("UserId", "int", false, false, true)])
+            ],
+            [new ForeignKeyModel("FK_Orders_Users", new TableRef("dbo", "Orders"), ["UserId"], new TableRef("dbo", "Users"), ["Id"])]);
+
+        var dot = Render(model, showColumnComments: true);
+
+        Assert.DoesNotContain("Application users", dot);
         Assert.Contains("User identifier", dot);
         Assert.Contains("PORT=\"col_Id\"", dot);
         Assert.Contains("\"table_dbo_Orders\":\"col_UserId\" -> \"table_dbo_Users\":\"col_Id\"", dot);
+    }
+
+    [Fact]
+    public void TruncatesCommentsWhenMaxLengthIsConfigured()
+    {
+        var model = new DatabaseModel(
+            "sqlserver",
+            null,
+            [
+                new TableModel(
+                    "dbo",
+                    "Users",
+                    [new ColumnModel("Id", "int", false, true, false, "Long column comment")],
+                    "Long table comment")
+            ],
+            []);
+
+        var dot = Render(model, showTableComments: true, showColumnComments: true, maxCommentLength: 10);
+
+        Assert.Contains("Long tabl…", dot);
+        Assert.Contains("Long colu…", dot);
+        Assert.DoesNotContain("Long table comment", dot);
+        Assert.DoesNotContain("Long column comment", dot);
+    }
+
+    [Fact]
+    public void DoesNotTruncateCommentsByDefault()
+    {
+        var model = CommentsModel();
+
+        var dot = Render(model, showTableComments: true, showColumnComments: true);
+
+        Assert.Contains("Application users", dot);
+        Assert.Contains("User identifier", dot);
     }
 
     [Fact]
@@ -170,22 +242,36 @@ public sealed class DotRendererTests
             ],
             []);
 
-        var dot = Render(model, showComments: true);
+        var dot = Render(model, showTableComments: true, showColumnComments: true);
 
         Assert.Contains("Application &quot;users&quot; table", dot);
         Assert.Contains("User &lt;identifier&gt; &amp; key", dot);
         Assert.Contains("PORT=\"col_Id\"", dot);
     }
 
-    private static string Render(DatabaseModel model, DiagramDirection direction = DiagramDirection.LR, bool mermaidEmitDirection = false, bool showComments = false) =>
+    private static string Render(DatabaseModel model, DiagramDirection direction = DiagramDirection.LR, bool mermaidEmitDirection = false, bool showTableComments = false, bool showColumnComments = false, int? maxCommentLength = null) =>
         new GraphvizDotRenderer().Render(
             model,
             new DiagramRenderOptions(
                 "Database schema",
                 direction,
                 true,
-                new DiagramShowOptions(true, false, false, true, true, showComments),
-                new MermaidRenderOptions(mermaidEmitDirection)));
+                new DiagramShowOptions(true, false, false, true, true, showTableComments, showColumnComments),
+                new MermaidRenderOptions(mermaidEmitDirection),
+                new DiagramCommentRenderOptions(maxCommentLength)));
+
+    private static DatabaseModel CommentsModel() =>
+        new(
+            "sqlserver",
+            null,
+            [
+                new TableModel(
+                    "dbo",
+                    "Users",
+                    [new ColumnModel("Id", "int", false, true, false, "User identifier")],
+                    "Application users")
+            ],
+            []);
 
     private static DatabaseModel Model() =>
         new(

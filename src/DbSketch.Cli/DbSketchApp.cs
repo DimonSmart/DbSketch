@@ -58,7 +58,8 @@ public static class DbSketchApp
 
         Console.WriteLine("Reading database schema...");
         var model = await reader.ReadAsync(new DatabaseReadOptions(options.Provider, options.ConnectionString, options.ReadComments), cancellationToken);
-        var filtered = new WildcardSchemaFilter().Apply(model, options.Filter);
+        var commented = CommentOverrideApplier.Apply(model, options.CommentOverrides);
+        var filtered = new WildcardSchemaFilter().Apply(commented, options.Filter);
         if (options.Verbose)
         {
             Console.WriteLine($"Included tables: {string.Join(", ", options.Filter.IncludeTables)}");

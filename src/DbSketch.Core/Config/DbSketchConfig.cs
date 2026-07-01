@@ -38,6 +38,7 @@ public sealed class DiagramConfig
     public bool Compact { get; init; } = true;
     public DiagramShowConfig Show { get; init; } = new();
     public MermaidConfig Mermaid { get; init; } = new();
+    public DiagramCommentsConfig Comments { get; init; } = new();
 }
 
 public sealed class MermaidConfig
@@ -52,10 +53,30 @@ public sealed class DiagramShowConfig
     public bool Nullability { get; init; }
     public bool PrimaryKeys { get; init; } = true;
     public bool ForeignKeys { get; init; } = true;
-    public bool Comments { get; init; }
+    public bool TableComments { get; init; }
+    public bool ColumnComments { get; init; }
+}
+
+public sealed class DiagramCommentsConfig
+{
+    public int? MaxLength { get; init; }
 }
 
 public sealed class CommentsConfig
 {
     public bool Enabled { get; init; }
+    public CommentOverridesConfig Overrides { get; init; } = new();
+}
+
+public sealed class CommentOverridesConfig
+{
+    public List<TableCommentOverrideConfig> Tables { get; init; } = [];
+}
+
+public sealed class TableCommentOverrideConfig
+{
+    public string? Schema { get; init; }
+    public string? Name { get; init; }
+    public string? Comment { get; init; }
+    public Dictionary<string, string?> Columns { get; init; } = new(StringComparer.OrdinalIgnoreCase);
 }

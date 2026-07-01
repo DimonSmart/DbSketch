@@ -69,13 +69,15 @@ public sealed class MermaidErRenderer : IDiagramRenderer
         }
 
         var rendered = string.Join(' ', parts);
-        var comment = options.Show.Comments ? FormatAttributeComment(column.Comment) : null;
+        var comment = options.Show.ColumnComments
+            ? FormatAttributeComment(column.Comment, options.Comments.MaxLength)
+            : null;
         return comment is null ? rendered : $"{rendered} {comment}";
     }
 
-    private static string? FormatAttributeComment(string? value)
+    private static string? FormatAttributeComment(string? value, int? maxLength)
     {
-        var normalized = RenderTextNormalizer.NormalizeInlineComment(value);
+        var normalized = RenderTextNormalizer.NormalizeInlineComment(value, maxLength);
         return normalized is null ? null : $"\"{normalized.Replace("\"", "\\\"", StringComparison.Ordinal)}\"";
     }
 

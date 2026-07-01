@@ -132,7 +132,7 @@ public sealed class MermaidRendererTests
     }
 
     [Fact]
-    public void DoesNotRenderCommentsByDefault()
+    public void DoesNotRenderColumnCommentsByDefault()
     {
         var model = new DatabaseModel(
             "sqlserver",
@@ -155,7 +155,7 @@ public sealed class MermaidRendererTests
             [new TableModel("dbo", "Users", [new ColumnModel("Id", "int", false, true, false, "User identifier")])],
             []);
 
-        var mermaid = Render(model, showColumnTypes: true, showComments: true);
+        var mermaid = Render(model, showColumnTypes: true, showColumnComments: true);
 
         Assert.Contains("int Id PK \"User identifier\"", mermaid);
     }
@@ -169,7 +169,7 @@ public sealed class MermaidRendererTests
             [new TableModel("dbo", "Users", [new ColumnModel("Id", "int", false, true, false, "User \"identifier\"\nLine 2")])],
             []);
 
-        var mermaid = Render(model, showColumnTypes: true, showComments: true);
+        var mermaid = Render(model, showColumnTypes: true, showColumnComments: true);
 
         Assert.Contains("int Id PK \"User \\\"identifier\\\" Line 2\"", mermaid);
     }
@@ -183,9 +183,53 @@ public sealed class MermaidRendererTests
             [new TableModel("dbo", "Users", [new ColumnModel("Id", "int", false, true, false)], "Application users")],
             []);
 
-        var mermaid = Render(model, showComments: true);
+        var mermaid = Render(model, showTableComments: true);
 
         Assert.DoesNotContain("Application users", mermaid);
+    }
+
+    [Fact]
+    public void TableCommentsFlagDoesNotAffectMermaid()
+    {
+        var model = new DatabaseModel(
+            "sqlserver",
+            null,
+            [new TableModel("dbo", "Users", [new ColumnModel("Id", "int", false, true, false)], "Application users")],
+            []);
+
+        var withoutTableComments = Render(model);
+        var withTableComments = Render(model, showTableComments: true);
+
+        Assert.Equal(withoutTableComments, withTableComments);
+    }
+
+    [Fact]
+    public void TruncatesColumnCommentsWhenMaxLengthIsConfigured()
+    {
+        var model = new DatabaseModel(
+            "sqlserver",
+            null,
+            [new TableModel("dbo", "Users", [new ColumnModel("Id", "int", false, true, false, "Long column comment")])],
+            []);
+
+        var mermaid = Render(model, showColumnTypes: true, showColumnComments: true, maxCommentLength: 10);
+
+        Assert.Contains("int Id PK \"Long colu…\"", mermaid);
+        Assert.DoesNotContain("Long column comment", mermaid);
+    }
+
+    [Fact]
+    public void EscapesTruncatedColumnComments()
+    {
+        var model = new DatabaseModel(
+            "sqlserver",
+            null,
+            [new TableModel("dbo", "Users", [new ColumnModel("Id", "int", false, true, false, "User \"identifier\" with long text")])],
+            []);
+
+        var mermaid = Render(model, showColumnTypes: true, showColumnComments: true, maxCommentLength: 18);
+
+        Assert.Contains("int Id PK \"User \\\"identifier\\\"…\"", mermaid);
     }
 
     private static string Render(
@@ -195,15 +239,18 @@ public sealed class MermaidRendererTests
         bool showNullability = false,
         DiagramDirection direction = DiagramDirection.LR,
         bool emitDirection = false,
-        bool showComments = false) =>
+        bool showTableComments = false,
+        bool showColumnComments = false,
+        int? maxCommentLength = null) =>
         new MermaidErRenderer().Render(
             model,
             new DiagramRenderOptions(
                 "Database schema",
                 direction,
                 true,
-                new DiagramShowOptions(showSchemaName, showColumnTypes, showNullability, true, true, showComments),
-                new MermaidRenderOptions(emitDirection)));
+                new DiagramShowOptions(showSchemaName, showColumnTypes, showNullability, true, true, showTableComments, showColumnComments),
+                new MermaidRenderOptions(emitDirection),
+                new DiagramCommentRenderOptions(maxCommentLength)));
 
     private static DatabaseModel Model() =>
         new(

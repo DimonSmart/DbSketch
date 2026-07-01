@@ -24,7 +24,8 @@ diagram:
     nullability: false
     primaryKeys: true
     foreignKeys: true
-    comments: false
+    tableComments: false
+    columnComments: false
 
 comments:
   enabled: false
