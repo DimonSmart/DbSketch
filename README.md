@@ -17,7 +17,7 @@ dbsketch generate --config dbsketch.yml
 
 ```bash
 dotnet new tool-manifest
-dotnet tool install DimonSmart.DbSketch --version 0.1.0
+dotnet tool install DimonSmart.DbSketch
 dotnet tool restore
 dotnet tool run dbsketch -- generate --config dbsketch.yml
 ```
@@ -25,13 +25,13 @@ dotnet tool run dbsketch -- generate --config dbsketch.yml
 ### One-shot run
 
 ```bash
-dotnet tool exec DimonSmart.DbSketch@0.1.0 -- generate --config dbsketch.yml
+dotnet tool exec DimonSmart.DbSketch -- generate --config dbsketch.yml
 ```
 
 With .NET 10, `dnx` can also run the tool:
 
 ```bash
-dnx DimonSmart.DbSketch@0.1.0 -- generate --config dbsketch.yml
+dnx DimonSmart.DbSketch -- generate --config dbsketch.yml
 ```
 
 ### CI example
