@@ -1,0 +1,9 @@
+/.gitattributes text eol=lf
+*.cs text eol=crlf
+*.csproj text eol=crlf
+*.props text eol=crlf
+*.targets text eol=crlf
+*.sln text eol=crlf
+*.editorconfig text eol=crlf
+*.sh text eol=lf
+.husky/* text eol=lf

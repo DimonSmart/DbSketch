@@ -59,6 +59,32 @@ dotnet pack src/DbSketch.Cli/DbSketch.Cli.csproj -c Release
 
 The .NET tool package id is `DimonSmart.DbSketch`; the installed command remains `dbsketch`.
 
+### Git hooks
+
+This repository uses Husky.Net for local Git hooks.
+
+After cloning the repository, run:
+
+```bash
+dotnet restore DbSketch.sln
+```
+
+The restore step installs local .NET tools and configures Git hooks automatically.
+
+The pre-commit hook formats staged .NET files with `dotnet format` and re-stages only files that were already staged before the hook started.
+
+To skip hooks for a single commit:
+
+```bash
+git commit --no-verify
+```
+
+To disable Husky installation in CI or special local environments:
+
+```bash
+HUSKY=0 dotnet restore DbSketch.sln
+```
+
 Direct CLI options can override config values:
 
 ```bash

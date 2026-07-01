@@ -38,6 +38,9 @@ jobs:
       - name: Restore
         run: dotnet restore DbSketch.sln
 
+      - name: Check formatting
+        run: dotnet format DbSketch.sln --verify-no-changes --no-restore
+
       - name: Build
         run: dotnet build DbSketch.sln --configuration Release --no-restore
 
