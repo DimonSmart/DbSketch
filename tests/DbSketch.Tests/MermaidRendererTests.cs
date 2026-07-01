@@ -6,12 +6,34 @@ namespace DimonSmart.DbSketch.Tests;
 public sealed class MermaidRendererTests
 {
     [Fact]
-    public void GeneratesHeader()
+    public void DoesNotEmitDirectionByDefault()
     {
         var mermaid = Render(Model());
 
         Assert.Contains("erDiagram", mermaid);
+        Assert.DoesNotContain("direction LR", mermaid);
+    }
+
+    [Fact]
+    public void EmitsDirectionWhenEnabled()
+    {
+        var mermaid = Render(Model(), emitDirection: true);
+
+        Assert.Contains("erDiagram", mermaid);
         Assert.Contains("  direction LR", mermaid);
+        Assert.Contains("erDiagram\n  direction LR\n", mermaid.ReplaceLineEndings("\n"));
+    }
+
+    [Theory]
+    [InlineData(DiagramDirection.LR, "direction LR")]
+    [InlineData(DiagramDirection.RL, "direction RL")]
+    [InlineData(DiagramDirection.TB, "direction TB")]
+    [InlineData(DiagramDirection.BT, "direction BT")]
+    public void EmitsConfiguredDirectionWhenEnabled(DiagramDirection direction, string expected)
+    {
+        var mermaid = Render(Model(), direction: direction, emitDirection: true);
+
+        Assert.Contains(expected, mermaid);
     }
 
     [Fact]
@@ -109,8 +131,21 @@ public sealed class MermaidRendererTests
         Assert.Contains("unknown _1st_value", mermaid);
     }
 
-    private static string Render(DatabaseModel model, bool showSchemaName = true, bool showColumnTypes = false, bool showNullability = false) =>
-        new MermaidErRenderer().Render(model, new DiagramRenderOptions("Database schema", "LR", true, new DiagramShowOptions(showSchemaName, showColumnTypes, showNullability, true, true)));
+    private static string Render(
+        DatabaseModel model,
+        bool showSchemaName = true,
+        bool showColumnTypes = false,
+        bool showNullability = false,
+        DiagramDirection direction = DiagramDirection.LR,
+        bool emitDirection = false) =>
+        new MermaidErRenderer().Render(
+            model,
+            new DiagramRenderOptions(
+                "Database schema",
+                direction,
+                true,
+                new DiagramShowOptions(showSchemaName, showColumnTypes, showNullability, true, true),
+                new MermaidRenderOptions(emitDirection)));
 
     private static DatabaseModel Model() =>
         new(

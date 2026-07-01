@@ -11,11 +11,22 @@ public interface IDiagramRenderer
 
 public sealed record DiagramRendererCapabilities(bool SupportsColumnToColumnRelationships);
 
+public enum DiagramDirection
+{
+    TB,
+    BT,
+    LR,
+    RL
+}
+
 public sealed record DiagramRenderOptions(
     string Title,
-    string Rankdir,
+    DiagramDirection Direction,
     bool Compact,
-    DiagramShowOptions Show);
+    DiagramShowOptions Show,
+    MermaidRenderOptions Mermaid);
+
+public sealed record MermaidRenderOptions(bool EmitDirection);
 
 public sealed record DiagramShowOptions(
     bool SchemaName,

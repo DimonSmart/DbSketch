@@ -16,6 +16,22 @@ public sealed class DotRendererTests
     }
 
     [Fact]
+    public void DotRendererUsesDiagramDirection()
+    {
+        var dot = Render(Model(), direction: DiagramDirection.TB);
+
+        Assert.Contains("rankdir=TB", dot);
+    }
+
+    [Fact]
+    public void DotRendererIgnoresMermaidEmitDirection()
+    {
+        var dot = Render(Model(), direction: DiagramDirection.LR, mermaidEmitDirection: false);
+
+        Assert.Contains("rankdir=LR", dot);
+    }
+
+    [Fact]
     public void GeneratesOneNodePerTable()
     {
         var dot = Render(Model());
@@ -112,8 +128,15 @@ public sealed class DotRendererTests
         Assert.DoesNotContain("User identifier", dot);
     }
 
-    private static string Render(DatabaseModel model) =>
-        new GraphvizDotRenderer().Render(model, new DiagramRenderOptions("Database schema", "LR", true, new DiagramShowOptions(true, false, false, true, true)));
+    private static string Render(DatabaseModel model, DiagramDirection direction = DiagramDirection.LR, bool mermaidEmitDirection = false) =>
+        new GraphvizDotRenderer().Render(
+            model,
+            new DiagramRenderOptions(
+                "Database schema",
+                direction,
+                true,
+                new DiagramShowOptions(true, false, false, true, true),
+                new MermaidRenderOptions(mermaidEmitDirection)));
 
     private static DatabaseModel Model() =>
         new(

@@ -19,15 +19,23 @@ public sealed class IncludeExcludeConfig
 public sealed class OutputConfig
 {
     public string? Path { get; init; }
-    public string Format { get; init; } = "dot";
+    public string Format { get; init; } = "raw";
+    public string? MarkdownFenceLanguage { get; init; }
 }
 
 public sealed class DiagramConfig
 {
     public string? Title { get; init; }
-    public string Rankdir { get; init; } = "LR";
+    public string Renderer { get; init; } = "dot";
+    public string Direction { get; init; } = "LR";
     public bool Compact { get; init; } = true;
     public DiagramShowConfig Show { get; init; } = new();
+    public MermaidConfig Mermaid { get; init; } = new();
+}
+
+public sealed class MermaidConfig
+{
+    public bool EmitDirection { get; init; }
 }
 
 public sealed class DiagramShowConfig

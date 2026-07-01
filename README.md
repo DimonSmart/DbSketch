@@ -88,7 +88,7 @@ HUSKY=0 dotnet restore DbSketch.sln
 Direct CLI options can override config values:
 
 ```bash
-dbsketch generate --provider sqlserver --connection "Server=.;Database=AppDb;Trusted_Connection=True;TrustServerCertificate=True" --out docs/db/schema.dot
+dbsketch generate --provider sqlserver --connection "Server=.;Database=AppDb;Trusted_Connection=True;TrustServerCertificate=True" --renderer dot --format raw --out docs/db/schema.dot
 ```
 
 ## Config
@@ -107,13 +107,18 @@ exclude:
     - "dbo.Log_*"
 
 output:
-  path: docs/db/schema.dot
-  format: dot # dot, md-dot, md-graphviz, mermaid, md-mermaid
+  path: docs/db/schema.md
+  format: markdown
 
 diagram:
+  renderer: mermaid
   title: "Database schema"
-  rankdir: LR
+  direction: LR
   compact: true
+
+  mermaid:
+    emitDirection: false
+
   show:
     schemaName: true
     columnTypes: false
@@ -137,37 +142,44 @@ Current providers:
 
 The current DOT renderer does not display comments yet. They are collected for upcoming renderers and documentation formats.
 
-## Output Formats
+## Diagram And Output Formats
+
+Supported values for `diagram.renderer` and `--renderer`:
+
+- `dot`: Graphviz DOT renderer.
+- `mermaid`: Mermaid ER renderer.
 
 Supported values for `output.format` and `--format`:
 
-- `dot`: raw Graphviz DOT.
-- `md-dot`: Markdown with a fenced `dot` block.
-- `md-graphviz`: Markdown with a fenced `graphviz` block. Useful for GitLab instances with Kroki enabled.
-- `mermaid`: raw Mermaid `erDiagram`.
-- `md-mermaid`: Markdown with a fenced `mermaid` block.
+- `raw`: write only diagram text.
+- `markdown`: wrap diagram text in a fenced Markdown code block.
 
-For GitLab, prefer `md-mermaid` when you need the most portable output because Mermaid is rendered natively by GitLab. Use `md-graphviz` only when your GitLab instance has Kroki enabled. `md-dot` is preserved for compatibility, but GitLab usually shows `dot` fenced blocks as plain text.
+When `output.format: markdown` and `output.markdownFenceLanguage` is not set, DbSketch uses `mermaid` for the Mermaid renderer and `dot` for the DOT renderer.
 
-Example GitLab Mermaid config:
+`diagram.direction` stores the desired diagram direction.
 
-```yaml
-output:
-  path: docs/db/schema.md
-  format: md-mermaid
-```
+For Mermaid ER diagrams, DbSketch does not emit `direction LR` by default. Some Markdown renderers display `direction` and `LR` as separate entities.
 
-Example GitLab Graphviz/Kroki config:
+Set `diagram.mermaid.emitDirection: true` only when your Mermaid renderer correctly supports `direction` inside `erDiagram`.
+
+Example Mermaid Markdown config:
 
 ```yaml
 output:
   path: docs/db/schema.md
-  format: md-graphviz
+  format: markdown
+
+diagram:
+  renderer: mermaid
+  direction: LR
+
+  mermaid:
+    emitDirection: false
 ```
 
 ```mermaid
 erDiagram
-  direction LR
+
   "dbo.Orders" }|--|| "dbo.Users" : "FK_Orders_Users"
 ```
 

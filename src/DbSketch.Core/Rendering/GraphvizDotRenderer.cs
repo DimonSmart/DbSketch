@@ -14,7 +14,7 @@ public sealed class GraphvizDotRenderer : IDiagramRenderer
 
         builder.AppendLine("digraph DbSketch {");
         builder.AppendLine("  graph [");
-        builder.AppendLine($"    rankdir={encoder.EscapeDotString(options.Rankdir)},");
+        builder.AppendLine($"    rankdir={encoder.EscapeDotString(FormatDirection(options.Direction))},");
         builder.AppendLine("    labelloc=\"t\",");
         builder.AppendLine($"    label=\"{encoder.EscapeDotString(options.Title)}\"");
         builder.AppendLine("  ];");
@@ -41,6 +41,8 @@ public sealed class GraphvizDotRenderer : IDiagramRenderer
         builder.AppendLine("}");
         return builder.ToString();
     }
+
+    private static string FormatDirection(DiagramDirection direction) => direction.ToString();
 
     private static void AppendTable(StringBuilder builder, DotIdEncoder encoder, TableModel table, DiagramRenderOptions options)
     {

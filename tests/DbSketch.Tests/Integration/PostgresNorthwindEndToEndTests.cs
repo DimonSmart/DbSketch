@@ -97,10 +97,11 @@ public sealed class PostgresNorthwindEndToEndTests
             - "northwind.*"
         output:
           path: {{ToYamlSingleQuoted(outputPath)}}
-          format: dot
+          format: raw
         diagram:
+          renderer: dot
           title: "Northwind schema"
-          rankdir: LR
+          direction: LR
           compact: true
           show:
             schemaName: true

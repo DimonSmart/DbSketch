@@ -4,7 +4,7 @@ using DimonSmart.DbSketch.Core.Schema;
 
 namespace DimonSmart.DbSketch.Cli;
 
-public sealed record ResolvedGenerateOptions(string Provider, string ConnectionString, string OutputPath, OutputFormat OutputFormat, bool Verbose, bool DryRun, SchemaFilterOptions Filter, DiagramRenderOptions Diagram, bool ReadDescriptions);
+public sealed record ResolvedGenerateOptions(string Provider, string ConnectionString, string OutputPath, DiagramFormat DiagramRenderer, OutputFormat Output, bool Verbose, bool DryRun, SchemaFilterOptions Filter, DiagramRenderOptions Diagram, bool ReadDescriptions);
 
 public static class GenerateOptionsResolver
 {
@@ -17,22 +17,44 @@ public static class GenerateOptionsResolver
             throw new CliException("Missing connection string.");
         }
 
-        var outputFormat = OutputFormatParser.Parse(cli.Format ?? config.Output.Format ?? "dot");
+        var diagramRenderer = DiagramRendererParser.Parse(cli.Renderer ?? config.Diagram.Renderer);
+        var outputFormat = OutputContainerFormatParser.Parse(cli.Format ?? config.Output.Format);
+        var direction = DiagramDirectionParser.Parse(config.Diagram.Direction);
+        var markdownFenceLanguage = outputFormat == OutputContainerFormat.Markdown
+            ? GetMarkdownFenceLanguage(config.Output.MarkdownFenceLanguage, diagramRenderer)
+            : null;
 
         return new ResolvedGenerateOptions(
             provider,
             connectionString,
             cli.OutputPath ?? config.Output.Path ?? "dbsketch.dot",
-            outputFormat,
+            diagramRenderer,
+            new OutputFormat(outputFormat, markdownFenceLanguage),
             cli.Verbose,
             cli.DryRun,
             new SchemaFilterOptions(config.Include.Tables, config.Exclude.Tables),
             new DiagramRenderOptions(
                 string.IsNullOrWhiteSpace(config.Diagram.Title) ? "Database schema" : config.Diagram.Title,
-                string.IsNullOrWhiteSpace(config.Diagram.Rankdir) ? "LR" : config.Diagram.Rankdir,
+                direction,
                 config.Diagram.Compact,
-                new DiagramShowOptions(config.Diagram.Show.SchemaName, config.Diagram.Show.ColumnTypes, config.Diagram.Show.Nullability, config.Diagram.Show.PrimaryKeys, config.Diagram.Show.ForeignKeys)),
+                new DiagramShowOptions(config.Diagram.Show.SchemaName, config.Diagram.Show.ColumnTypes, config.Diagram.Show.Nullability, config.Diagram.Show.PrimaryKeys, config.Diagram.Show.ForeignKeys),
+                new MermaidRenderOptions(config.Diagram.Mermaid.EmitDirection)),
             config.Descriptions.Enabled);
+    }
+
+    private static string GetMarkdownFenceLanguage(string? configuredLanguage, DiagramFormat renderer)
+    {
+        if (!string.IsNullOrWhiteSpace(configuredLanguage))
+        {
+            return configuredLanguage;
+        }
+
+        return renderer switch
+        {
+            DiagramFormat.Dot => "dot",
+            DiagramFormat.Mermaid => "mermaid",
+            _ => throw new ArgumentOutOfRangeException(nameof(renderer), renderer, null)
+        };
     }
 
     public static string NormalizeProvider(string? provider)

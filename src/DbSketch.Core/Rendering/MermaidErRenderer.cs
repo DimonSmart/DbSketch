@@ -12,7 +12,11 @@ public sealed class MermaidErRenderer : IDiagramRenderer
         var builder = new StringBuilder();
 
         builder.AppendLine("erDiagram");
-        builder.AppendLine($"  direction {options.Rankdir.Trim()}");
+        if (options.Mermaid.EmitDirection)
+        {
+            builder.AppendLine($"  direction {FormatDirection(options.Direction)}");
+        }
+
         builder.AppendLine();
 
         foreach (var table in model.Tables.OrderBy(table => table.FullName, StringComparer.OrdinalIgnoreCase))
@@ -27,6 +31,8 @@ public sealed class MermaidErRenderer : IDiagramRenderer
 
         return builder.ToString();
     }
+
+    private static string FormatDirection(DiagramDirection direction) => direction.ToString();
 
     private static void AppendTable(StringBuilder builder, TableModel table, DiagramRenderOptions options)
     {

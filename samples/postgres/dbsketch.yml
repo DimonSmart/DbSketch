@@ -7,4 +7,8 @@ include:
 
 output:
   path: samples/output/schema.dot
-  format: dot
+  format: raw
+
+diagram:
+  renderer: dot
+  direction: LR

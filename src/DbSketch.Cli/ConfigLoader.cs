@@ -21,7 +21,6 @@ public static class ConfigLoader
             var yaml = ExpandEnvironmentVariables(File.ReadAllText(path));
             var deserializer = new DeserializerBuilder()
                 .WithNamingConvention(CamelCaseNamingConvention.Instance)
-                .IgnoreUnmatchedProperties()
                 .Build();
 
             return deserializer.Deserialize<DbSketchConfig>(yaml) ?? new DbSketchConfig();

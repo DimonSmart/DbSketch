@@ -78,12 +78,12 @@ public static class DbSketchApp
             return;
         }
 
-        var renderer = new DiagramRendererFactory().Create(options.OutputFormat.DiagramFormat);
+        var renderer = new DiagramRendererFactory().Create(options.DiagramRenderer);
         var diagramText = renderer.Render(filtered, options.Diagram);
-        var output = options.OutputFormat.MarkdownWrapper
+        var output = options.Output.Format == OutputContainerFormat.Markdown
             ? MarkdownDiagramWrapper.Wrap(
                 diagramText,
-                options.OutputFormat.MarkdownFenceLanguage ?? throw new InvalidOperationException("Markdown fence language is required for Markdown output formats."),
+                options.Output.MarkdownFenceLanguage ?? GetDefaultFenceLanguage(options.DiagramRenderer),
                 options.Diagram.Title)
             : diagramText;
         var directory = Path.GetDirectoryName(Path.GetFullPath(options.OutputPath));
@@ -103,6 +103,13 @@ public static class DbSketchApp
         "postgres" => new PostgresSchemaReader(),
         "mysql" => new MySqlSchemaReader(),
         _ => throw new CliException($"Unknown provider '{provider}'.")
+    };
+
+    private static string GetDefaultFenceLanguage(DiagramFormat renderer) => renderer switch
+    {
+        DiagramFormat.Dot => "dot",
+        DiagramFormat.Mermaid => "mermaid",
+        _ => throw new ArgumentOutOfRangeException(nameof(renderer), renderer, null)
     };
 
     private static void PrintVersion() => Console.WriteLine($"DbSketch {GetVersion()}");
@@ -136,8 +143,9 @@ public static class DbSketchApp
         Console.WriteLine("Usage:");
         Console.WriteLine("  dbsketch --version");
         Console.WriteLine("  dbsketch generate --config dbsketch.yml");
-        Console.WriteLine("  dbsketch generate --provider sqlserver --connection <string> --out docs/db/schema.dot --format dot");
+        Console.WriteLine("  dbsketch generate --provider sqlserver --connection <string> --renderer dot --out docs/db/schema.dot --format raw");
         Console.WriteLine();
-        Console.WriteLine("Supported formats: dot, md-dot, md-graphviz, mermaid, md-mermaid.");
+        Console.WriteLine("Supported renderers: dot, mermaid.");
+        Console.WriteLine("Supported formats: raw, markdown.");
     }
 }

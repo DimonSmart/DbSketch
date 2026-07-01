@@ -1,6 +1,6 @@
 namespace DimonSmart.DbSketch.Cli;
 
-public sealed record CliOptions(string? ConfigPath, string? Provider, string? ConnectionString, string? OutputPath, string? Format, bool Verbose, bool DryRun);
+public sealed record CliOptions(string? ConfigPath, string? Provider, string? ConnectionString, string? OutputPath, string? Renderer, string? Format, bool Verbose, bool DryRun);
 
 public static class CliParser
 {
@@ -10,6 +10,7 @@ public static class CliParser
         string? provider = null;
         string? connection = null;
         string? output = null;
+        string? renderer = null;
         string? format = null;
         var verbose = false;
         var dryRun = false;
@@ -36,6 +37,9 @@ public static class CliParser
                 case "--format":
                     format = ReadValue(args, ref i, arg);
                     break;
+                case "--renderer":
+                    renderer = ReadValue(args, ref i, arg);
+                    break;
                 case "--verbose":
                     verbose = true;
                     break;
@@ -47,7 +51,7 @@ public static class CliParser
             }
         }
 
-        return new CliOptions(config, provider, connection, output, format, verbose, dryRun);
+        return new CliOptions(config, provider, connection, output, renderer, format, verbose, dryRun);
     }
 
     private static string ReadValue(string[] args, ref int index, string option)

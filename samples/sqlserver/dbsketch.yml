@@ -11,11 +11,12 @@ exclude:
 
 output:
   path: samples/output/schema.dot
-  format: dot
+  format: raw
 
 diagram:
+  renderer: dot
   title: "Database schema"
-  rankdir: LR
+  direction: LR
   compact: true
   show:
     schemaName: true

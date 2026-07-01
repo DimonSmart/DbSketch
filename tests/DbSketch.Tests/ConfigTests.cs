@@ -14,7 +14,7 @@ public sealed class ConfigTests
             connectionString: Server=.;Database=AppDb
             output:
               path: docs/db/schema.dot
-              format: dot
+              format: raw
             """);
 
         var config = ConfigLoader.Load(path);
@@ -38,11 +38,14 @@ public sealed class ConfigTests
                 - "public.audit_*"
             output:
               path: schema.md
-              format: md-dot
+              format: markdown
             diagram:
+              renderer: mermaid
               title: "App schema"
-              rankdir: TB
+              direction: LR
               compact: true
+              mermaid:
+                emitDirection: false
               show:
                 schemaName: false
                 columnTypes: true
@@ -58,8 +61,11 @@ public sealed class ConfigTests
         Assert.Equal("postgres", config.Provider);
         Assert.Equal("public.*", Assert.Single(config.Include.Tables));
         Assert.Equal("public.audit_*", Assert.Single(config.Exclude.Tables));
-        Assert.Equal("md-dot", config.Output.Format);
+        Assert.Equal("markdown", config.Output.Format);
+        Assert.Equal("mermaid", config.Diagram.Renderer);
         Assert.Equal("App schema", config.Diagram.Title);
+        Assert.Equal("LR", config.Diagram.Direction);
+        Assert.False(config.Diagram.Mermaid.EmitDirection);
         Assert.False(config.Diagram.Show.SchemaName);
         Assert.True(config.Diagram.Show.ColumnTypes);
     }
@@ -85,47 +91,165 @@ public sealed class ConfigTests
     }
 
     [Fact]
+    public void RejectsOldRankdirConfigProperty()
+    {
+        var path = WriteTempConfig("""
+            provider: postgres
+            connectionString: Host=localhost
+            diagram:
+              rankdir: LR
+            """);
+
+        var exception = Assert.Throws<CliException>(() => ConfigLoader.Load(path));
+
+        Assert.Contains("rankdir", exception.Message);
+    }
+
+    [Fact]
     public void CliArgsOverrideConfigValues()
     {
         var config = new DbSketchConfig
         {
             Provider = "sqlserver",
             ConnectionString = "Server=config",
-            Output = new OutputConfig { Path = "config.dot", Format = "dot" }
+            Output = new OutputConfig { Path = "config.dot", Format = "raw" },
+            Diagram = new DiagramConfig { Renderer = "dot" }
         };
-        var cli = new CliOptions(null, "postgresql", "Host=cli", "cli.md", "md-dot", true, true);
+        var cli = new CliOptions(null, "postgresql", "Host=cli", "cli.md", "mermaid", "markdown", true, true);
 
         var resolved = GenerateOptionsResolver.Resolve(config, cli);
 
         Assert.Equal("postgres", resolved.Provider);
         Assert.Equal("Host=cli", resolved.ConnectionString);
         Assert.Equal("cli.md", resolved.OutputPath);
-        Assert.Equal(DiagramFormat.Dot, resolved.OutputFormat.DiagramFormat);
-        Assert.True(resolved.OutputFormat.MarkdownWrapper);
-        Assert.Equal("dot", resolved.OutputFormat.MarkdownFenceLanguage);
+        Assert.Equal(DiagramFormat.Mermaid, resolved.DiagramRenderer);
+        Assert.Equal(OutputContainerFormat.Markdown, resolved.Output.Format);
+        Assert.Equal("mermaid", resolved.Output.MarkdownFenceLanguage);
         Assert.True(resolved.Verbose);
         Assert.True(resolved.DryRun);
     }
 
-    [Theory]
-    [InlineData("mermaid", DiagramFormat.Mermaid, false, null)]
-    [InlineData("md-mermaid", DiagramFormat.Mermaid, true, "mermaid")]
-    [InlineData("md-graphviz", DiagramFormat.Dot, true, "graphviz")]
-    public void ResolverAcceptsOutputFormats(string format, DiagramFormat expectedFormat, bool expectedMarkdownWrapper, string? expectedFenceLanguage)
+    [Fact]
+    public void ResolverUsesDiagramRendererFromConfig()
     {
         var config = new DbSketchConfig
         {
             Provider = "sqlserver",
             ConnectionString = "Server=config",
-            Output = new OutputConfig { Path = "config.dot", Format = format }
+            Diagram = new DiagramConfig { Renderer = "mermaid" }
         };
-        var cli = new CliOptions(null, null, null, null, null, false, false);
+        var cli = EmptyCli();
 
         var resolved = GenerateOptionsResolver.Resolve(config, cli);
 
-        Assert.Equal(expectedFormat, resolved.OutputFormat.DiagramFormat);
-        Assert.Equal(expectedMarkdownWrapper, resolved.OutputFormat.MarkdownWrapper);
-        Assert.Equal(expectedFenceLanguage, resolved.OutputFormat.MarkdownFenceLanguage);
+        Assert.Equal(DiagramFormat.Mermaid, resolved.DiagramRenderer);
+    }
+
+    [Fact]
+    public void ResolverUsesCliRendererOverride()
+    {
+        var config = new DbSketchConfig
+        {
+            Provider = "sqlserver",
+            ConnectionString = "Server=config",
+            Diagram = new DiagramConfig { Renderer = "dot" }
+        };
+        var cli = new CliOptions(null, null, null, null, "mermaid", null, false, false);
+
+        var resolved = GenerateOptionsResolver.Resolve(config, cli);
+
+        Assert.Equal(DiagramFormat.Mermaid, resolved.DiagramRenderer);
+    }
+
+    [Fact]
+    public void ResolverUsesDiagramDirectionAndMermaidOptionsFromConfig()
+    {
+        var config = new DbSketchConfig
+        {
+            Provider = "sqlserver",
+            ConnectionString = "Server=config",
+            Diagram = new DiagramConfig
+            {
+                Renderer = "mermaid",
+                Direction = "TB",
+                Mermaid = new MermaidConfig { EmitDirection = true }
+            }
+        };
+        var cli = EmptyCli();
+
+        var resolved = GenerateOptionsResolver.Resolve(config, cli);
+
+        Assert.Equal(DiagramFormat.Mermaid, resolved.DiagramRenderer);
+        Assert.Equal(DiagramDirection.TB, resolved.Diagram.Direction);
+        Assert.True(resolved.Diagram.Mermaid.EmitDirection);
+    }
+
+    [Fact]
+    public void ResolverRejectsUnknownRenderer()
+    {
+        var config = new DbSketchConfig
+        {
+            Provider = "sqlserver",
+            ConnectionString = "Server=config",
+            Diagram = new DiagramConfig { Renderer = "plantuml" }
+        };
+        var cli = EmptyCli();
+
+        var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, cli));
+
+        Assert.Equal("Unknown diagram renderer 'plantuml'. Supported values: dot, mermaid.", exception.Message);
+    }
+
+    [Fact]
+    public void ResolverRejectsUnknownDirection()
+    {
+        var config = new DbSketchConfig
+        {
+            Provider = "sqlserver",
+            ConnectionString = "Server=config",
+            Diagram = new DiagramConfig { Direction = "LEFT" }
+        };
+        var cli = EmptyCli();
+
+        var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, cli));
+
+        Assert.Equal("Unknown diagram direction 'LEFT'. Supported values: TB, BT, LR, RL.", exception.Message);
+    }
+
+    [Fact]
+    public void ResolverUsesMarkdownFenceLanguageFromRendererWhenOutputIsMarkdown()
+    {
+        var config = new DbSketchConfig
+        {
+            Provider = "sqlserver",
+            ConnectionString = "Server=config",
+            Output = new OutputConfig { Format = "markdown" },
+            Diagram = new DiagramConfig { Renderer = "mermaid" }
+        };
+        var cli = EmptyCli();
+
+        var resolved = GenerateOptionsResolver.Resolve(config, cli);
+
+        Assert.Equal(OutputContainerFormat.Markdown, resolved.Output.Format);
+        Assert.Equal("mermaid", resolved.Output.MarkdownFenceLanguage);
+    }
+
+    [Fact]
+    public void ResolverAllowsMarkdownFenceLanguageOverride()
+    {
+        var config = new DbSketchConfig
+        {
+            Provider = "sqlserver",
+            ConnectionString = "Server=config",
+            Output = new OutputConfig { Format = "markdown", MarkdownFenceLanguage = "graphviz" },
+            Diagram = new DiagramConfig { Renderer = "dot" }
+        };
+        var cli = EmptyCli();
+
+        var resolved = GenerateOptionsResolver.Resolve(config, cli);
+
+        Assert.Equal(OutputContainerFormat.Markdown, resolved.Output.Format);
+        Assert.Equal("graphviz", resolved.Output.MarkdownFenceLanguage);
     }
 
     [Fact]
@@ -137,7 +261,7 @@ public sealed class ConfigTests
             ConnectionString = "Server=config",
             Descriptions = new DescriptionsConfig { Enabled = true }
         };
-        var cli = new CliOptions(null, null, null, null, null, false, false);
+        var cli = EmptyCli();
 
         var resolved = GenerateOptionsResolver.Resolve(config, cli);
 
@@ -152,7 +276,7 @@ public sealed class ConfigTests
             Provider = "sqlserver",
             ConnectionString = "Server=config"
         };
-        var cli = new CliOptions(null, null, null, null, null, false, false);
+        var cli = EmptyCli();
 
         var resolved = GenerateOptionsResolver.Resolve(config, cli);
 
@@ -168,7 +292,7 @@ public sealed class ConfigTests
             ConnectionString = "Server=config",
             Descriptions = new DescriptionsConfig { Enabled = false }
         };
-        var cli = new CliOptions(null, null, null, null, null, false, false);
+        var cli = EmptyCli();
 
         var resolved = GenerateOptionsResolver.Resolve(config, cli);
 
@@ -176,7 +300,7 @@ public sealed class ConfigTests
     }
 
     [Fact]
-    public void ResolverRejectsUnknownFormat()
+    public void ResolverRejectsUnknownOutputFormat()
     {
         var config = new DbSketchConfig
         {
@@ -184,12 +308,23 @@ public sealed class ConfigTests
             ConnectionString = "Server=config",
             Output = new OutputConfig { Path = "config.dot", Format = "unknown" }
         };
-        var cli = new CliOptions(null, null, null, null, null, false, false);
+        var cli = EmptyCli();
 
         var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, cli));
 
-        Assert.Equal("Unknown format 'unknown'. Supported values: dot, md-dot, md-graphviz, mermaid, md-mermaid.", exception.Message);
+        Assert.Equal("Unknown output format 'unknown'. Supported values: raw, markdown.", exception.Message);
     }
+
+    [Fact]
+    public void CliParserReadsRendererAndFormat()
+    {
+        var cli = CliParser.ParseGenerate(["--renderer", "mermaid", "--format", "markdown"]);
+
+        Assert.Equal("mermaid", cli.Renderer);
+        Assert.Equal("markdown", cli.Format);
+    }
+
+    private static CliOptions EmptyCli() => new(null, null, null, null, null, null, false, false);
 
     private static string WriteTempConfig(string content)
     {
