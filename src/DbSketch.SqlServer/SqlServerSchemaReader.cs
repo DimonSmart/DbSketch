@@ -16,10 +16,15 @@ public sealed class SqlServerSchemaReader : IDatabaseSchemaReader
         var primaryKeys = await ReadPrimaryKeysAsync(connection, cancellationToken);
         var foreignKeys = await ReadForeignKeysAsync(connection, cancellationToken);
         var foreignKeyColumns = foreignKeys.SelectMany(fk => fk.SourceColumns.Select(column => (fk.SourceTable.FullName, Column: column))).ToHashSet();
-        var columns = await ReadColumnsAsync(connection, primaryKeys, foreignKeyColumns, cancellationToken);
+        var comments = options.ReadComments ? await ReadCommentsAsync(connection, cancellationToken) : DatabaseComments.Empty;
+        var columns = await ReadColumnsAsync(connection, primaryKeys, foreignKeyColumns, comments, cancellationToken);
 
         var models = tables
-            .Select(table => new TableModel(table.SchemaName, table.TableName, columns.TryGetValue(table, out var tableColumns) ? tableColumns : []))
+            .Select(table => new TableModel(
+                table.SchemaName,
+                table.TableName,
+                columns.TryGetValue(table, out var tableColumns) ? tableColumns : [],
+                comments.GetTableComment(table.SchemaName, table.TableName)))
             .ToArray();
 
         return new DatabaseModel(options.Provider, databaseName, models, foreignKeys);
@@ -46,7 +51,7 @@ public sealed class SqlServerSchemaReader : IDatabaseSchemaReader
         return result;
     }
 
-    private static async Task<Dictionary<TableRef, IReadOnlyList<ColumnModel>>> ReadColumnsAsync(SqlConnection connection, HashSet<(string Table, string Column)> primaryKeys, HashSet<(string Table, string Column)> foreignKeyColumns, CancellationToken cancellationToken)
+    private static async Task<Dictionary<TableRef, IReadOnlyList<ColumnModel>>> ReadColumnsAsync(SqlConnection connection, HashSet<(string Table, string Column)> primaryKeys, HashSet<(string Table, string Column)> foreignKeyColumns, DatabaseComments comments, CancellationToken cancellationToken)
     {
         const string sql = """
             select s.name, t.name, c.name,
@@ -84,10 +89,68 @@ public sealed class SqlServerSchemaReader : IDatabaseSchemaReader
                 reader.GetString(3),
                 reader.GetBoolean(4),
                 primaryKeys.Contains((fullName, columnName)),
-                foreignKeyColumns.Contains((fullName, columnName))));
+                foreignKeyColumns.Contains((fullName, columnName)),
+                comments.GetColumnComment(table.SchemaName, table.TableName, columnName)));
         }
 
         return result.ToDictionary(pair => pair.Key, pair => (IReadOnlyList<ColumnModel>)pair.Value);
+    }
+
+    private static async Task<DatabaseComments> ReadCommentsAsync(SqlConnection connection, CancellationToken cancellationToken)
+    {
+        const string tableSql = """
+            select
+                s.name as schema_name,
+                t.name as table_name,
+                convert(nvarchar(max), ep.value) as comment
+            from sys.tables t
+            join sys.schemas s on s.schema_id = t.schema_id
+            join sys.extended_properties ep
+              on ep.class = 1
+             and ep.major_id = t.object_id
+             and ep.minor_id = 0
+             and ep.name = N'MS_Description'
+            where t.is_ms_shipped = 0;
+            """;
+
+        const string columnSql = """
+            select
+                s.name as schema_name,
+                t.name as table_name,
+                c.name as column_name,
+                convert(nvarchar(max), ep.value) as comment
+            from sys.tables t
+            join sys.schemas s on s.schema_id = t.schema_id
+            join sys.columns c on c.object_id = t.object_id
+            join sys.extended_properties ep
+              on ep.class = 1
+             and ep.major_id = t.object_id
+             and ep.minor_id = c.column_id
+             and ep.name = N'MS_Description'
+            where t.is_ms_shipped = 0;
+            """;
+
+        var tableComments = new List<(string SchemaName, string TableName, string? Comment)>();
+        await using (var command = new SqlCommand(tableSql, connection))
+        await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+        {
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                tableComments.Add((reader.GetString(0), reader.GetString(1), reader.IsDBNull(2) ? null : reader.GetString(2)));
+            }
+        }
+
+        var columnComments = new List<(string SchemaName, string TableName, string ColumnName, string? Comment)>();
+        await using (var command = new SqlCommand(columnSql, connection))
+        await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+        {
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                columnComments.Add((reader.GetString(0), reader.GetString(1), reader.GetString(2), reader.IsDBNull(3) ? null : reader.GetString(3)));
+            }
+        }
+
+        return new DatabaseComments(tableComments, columnComments);
     }
 
     private static async Task<HashSet<(string Table, string Column)>> ReadPrimaryKeysAsync(SqlConnection connection, CancellationToken cancellationToken)

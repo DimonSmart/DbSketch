@@ -53,10 +53,11 @@ public static class DbSketchApp
         {
             Console.WriteLine("Connection string: provided");
             Console.WriteLine($"Provider reader: {reader.GetType().Name}");
+            Console.WriteLine($"Descriptions: {(options.ReadDescriptions ? "enabled" : "disabled")}");
         }
 
         Console.WriteLine("Reading database schema...");
-        var model = await reader.ReadAsync(new DatabaseReadOptions(options.Provider, options.ConnectionString), cancellationToken);
+        var model = await reader.ReadAsync(new DatabaseReadOptions(options.Provider, options.ConnectionString, options.ReadDescriptions), cancellationToken);
         var filtered = new WildcardSchemaFilter().Apply(model, options.Filter);
         if (options.Verbose)
         {
@@ -80,7 +81,10 @@ public static class DbSketchApp
         var renderer = new DiagramRendererFactory().Create(options.OutputFormat.DiagramFormat);
         var diagramText = renderer.Render(filtered, options.Diagram);
         var output = options.OutputFormat.MarkdownWrapper
-            ? MarkdownDiagramWrapper.Wrap(diagramText, options.OutputFormat.DiagramFormat, options.Diagram.Title)
+            ? MarkdownDiagramWrapper.Wrap(
+                diagramText,
+                options.OutputFormat.MarkdownFenceLanguage ?? throw new InvalidOperationException("Markdown fence language is required for Markdown output formats."),
+                options.Diagram.Title)
             : diagramText;
         var directory = Path.GetDirectoryName(Path.GetFullPath(options.OutputPath));
         if (!string.IsNullOrWhiteSpace(directory))
@@ -134,6 +138,6 @@ public static class DbSketchApp
         Console.WriteLine("  dbsketch generate --config dbsketch.yml");
         Console.WriteLine("  dbsketch generate --provider sqlserver --connection <string> --out docs/db/schema.dot --format dot");
         Console.WriteLine();
-        Console.WriteLine("Supported formats: dot, md-dot, mermaid, md-mermaid.");
+        Console.WriteLine("Supported formats: dot, md-dot, md-graphviz, mermaid, md-mermaid.");
     }
 }

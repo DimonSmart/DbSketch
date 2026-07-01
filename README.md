@@ -108,7 +108,7 @@ exclude:
 
 output:
   path: docs/db/schema.dot
-  format: dot # dot, md-dot, mermaid, md-mermaid
+  format: dot # dot, md-dot, md-graphviz, mermaid, md-mermaid
 
 diagram:
   title: "Database schema"
@@ -122,10 +122,20 @@ diagram:
     foreignKeys: true
 
 descriptions:
-  enabled: false
+  enabled: true
 ```
 
 Provider aliases: `mssql` maps to `sqlserver`, and `postgresql` maps to `postgres`.
+
+When `descriptions.enabled` is true, DbSketch reads database-native table and column comments into the internal schema model.
+
+Current providers:
+
+- SQL Server: `MS_Description` extended properties.
+- PostgreSQL: `COMMENT ON TABLE` / `COMMENT ON COLUMN`.
+- MySQL: `TABLE_COMMENT` / `COLUMN_COMMENT` from `information_schema`.
+
+The current DOT renderer does not display comments yet. They are collected for upcoming renderers and documentation formats.
 
 ## Output Formats
 
@@ -133,15 +143,26 @@ Supported values for `output.format` and `--format`:
 
 - `dot`: raw Graphviz DOT.
 - `md-dot`: Markdown with a fenced `dot` block.
+- `md-graphviz`: Markdown with a fenced `graphviz` block. Useful for GitLab instances with Kroki enabled.
 - `mermaid`: raw Mermaid `erDiagram`.
 - `md-mermaid`: Markdown with a fenced `mermaid` block.
 
-Example Mermaid Markdown config:
+For GitLab, prefer `md-mermaid` when you need the most portable output because Mermaid is rendered natively by GitLab. Use `md-graphviz` only when your GitLab instance has Kroki enabled. `md-dot` is preserved for compatibility, but GitLab usually shows `dot` fenced blocks as plain text.
+
+Example GitLab Mermaid config:
 
 ```yaml
 output:
   path: docs/db/schema.md
   format: md-mermaid
+```
+
+Example GitLab Graphviz/Kroki config:
+
+```yaml
+output:
+  path: docs/db/schema.md
+  format: md-graphviz
 ```
 
 ```mermaid
@@ -157,7 +178,9 @@ DbSketch has explicit manual integration tests that use Testcontainers and requi
 Run them explicitly:
 
 ```bash
+dotnet test DbSketch.sln --explicit only
 dotnet test --filter-method "DimonSmart.DbSketch.Tests.Integration.PostgresNorthwindEndToEndTests.Generate_WithPostgresNorthwind_WritesDotSchema" --explicit only
+dotnet test --filter-method "DimonSmart.DbSketch.Tests.Integration.PostgresCommentsTests.ReadAsync_WhenReadCommentsIsTrue_ReadsTableAndColumnComments" --explicit only
 ```
 
 ## Example DOT
@@ -178,4 +201,4 @@ digraph DbSketch {
 
 ## Not Supported Yet
 
-DbSketch does not render SVG/PNG, run Graphviz or Mermaid CLI, generate DBML or PlantUML, infer relationships by naming convention, read database comments, generate HTML docs, diff schemas, or provide a GUI.
+DbSketch does not render comments in DOT yet, render SVG/PNG, run Graphviz or Mermaid CLI, generate DBML or PlantUML, infer relationships by naming convention, generate HTML docs, diff schemas, or provide a GUI.

@@ -15,9 +15,18 @@ public sealed class PostgresSchemaReader : IDatabaseSchemaReader
         var primaryKeys = await ReadPrimaryKeysAsync(connection, cancellationToken);
         var foreignKeys = await ReadForeignKeysAsync(connection, cancellationToken);
         var foreignKeyColumns = foreignKeys.SelectMany(fk => fk.SourceColumns.Select(column => (fk.SourceTable.FullName, Column: column))).ToHashSet();
-        var columns = await ReadColumnsAsync(connection, primaryKeys, foreignKeyColumns, cancellationToken);
+        var comments = options.ReadComments ? await ReadCommentsAsync(connection, cancellationToken) : DatabaseComments.Empty;
+        var columns = await ReadColumnsAsync(connection, primaryKeys, foreignKeyColumns, comments, cancellationToken);
 
-        return new DatabaseModel(options.Provider, connection.Database, tables.Select(table => new TableModel(table.SchemaName, table.TableName, columns.TryGetValue(table, out var c) ? c : [])).ToArray(), foreignKeys);
+        return new DatabaseModel(
+            options.Provider,
+            connection.Database,
+            tables.Select(table => new TableModel(
+                table.SchemaName,
+                table.TableName,
+                columns.TryGetValue(table, out var c) ? c : [],
+                comments.GetTableComment(table.SchemaName, table.TableName))).ToArray(),
+            foreignKeys);
     }
 
     private static async Task<IReadOnlyList<TableRef>> ReadTablesAsync(NpgsqlConnection connection, CancellationToken cancellationToken)
@@ -40,7 +49,7 @@ public sealed class PostgresSchemaReader : IDatabaseSchemaReader
         return result;
     }
 
-    private static async Task<Dictionary<TableRef, IReadOnlyList<ColumnModel>>> ReadColumnsAsync(NpgsqlConnection connection, HashSet<(string Table, string Column)> primaryKeys, HashSet<(string Table, string Column)> foreignKeyColumns, CancellationToken cancellationToken)
+    private static async Task<Dictionary<TableRef, IReadOnlyList<ColumnModel>>> ReadColumnsAsync(NpgsqlConnection connection, HashSet<(string Table, string Column)> primaryKeys, HashSet<(string Table, string Column)> foreignKeyColumns, DatabaseComments comments, CancellationToken cancellationToken)
     {
         const string sql = """
             select table_schema, table_name, column_name,
@@ -63,10 +72,67 @@ public sealed class PostgresSchemaReader : IDatabaseSchemaReader
                 result[table] = columns;
             }
 
-            columns.Add(new ColumnModel(column, reader.GetString(3), reader.GetBoolean(4), primaryKeys.Contains((table.FullName, column)), foreignKeyColumns.Contains((table.FullName, column))));
+            columns.Add(new ColumnModel(
+                column,
+                reader.GetString(3),
+                reader.GetBoolean(4),
+                primaryKeys.Contains((table.FullName, column)),
+                foreignKeyColumns.Contains((table.FullName, column)),
+                comments.GetColumnComment(table.SchemaName, table.TableName, column)));
         }
 
         return result.ToDictionary(pair => pair.Key, pair => (IReadOnlyList<ColumnModel>)pair.Value);
+    }
+
+    private static async Task<DatabaseComments> ReadCommentsAsync(NpgsqlConnection connection, CancellationToken cancellationToken)
+    {
+        const string tableSql = """
+            select
+                ns.nspname as schema_name,
+                cls.relname as table_name,
+                obj_description(cls.oid, 'pg_class') as comment
+            from pg_class cls
+            join pg_namespace ns on ns.oid = cls.relnamespace
+            where cls.relkind in ('r', 'p')
+              and ns.nspname not in ('pg_catalog', 'information_schema');
+            """;
+
+        const string columnSql = """
+            select
+                ns.nspname as schema_name,
+                cls.relname as table_name,
+                att.attname as column_name,
+                col_description(cls.oid, att.attnum) as comment
+            from pg_class cls
+            join pg_namespace ns on ns.oid = cls.relnamespace
+            join pg_attribute att on att.attrelid = cls.oid
+            where cls.relkind in ('r', 'p')
+              and att.attnum > 0
+              and not att.attisdropped
+              and ns.nspname not in ('pg_catalog', 'information_schema');
+            """;
+
+        var tableComments = new List<(string SchemaName, string TableName, string? Comment)>();
+        await using (var command = new NpgsqlCommand(tableSql, connection))
+        await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+        {
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                tableComments.Add((reader.GetString(0), reader.GetString(1), reader.IsDBNull(2) ? null : reader.GetString(2)));
+            }
+        }
+
+        var columnComments = new List<(string SchemaName, string TableName, string ColumnName, string? Comment)>();
+        await using (var command = new NpgsqlCommand(columnSql, connection))
+        await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+        {
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                columnComments.Add((reader.GetString(0), reader.GetString(1), reader.GetString(2), reader.IsDBNull(3) ? null : reader.GetString(3)));
+            }
+        }
+
+        return new DatabaseComments(tableComments, columnComments);
     }
 
     private static async Task<HashSet<(string Table, string Column)>> ReadPrimaryKeysAsync(NpgsqlConnection connection, CancellationToken cancellationToken)

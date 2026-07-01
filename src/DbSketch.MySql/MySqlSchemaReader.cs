@@ -15,9 +15,18 @@ public sealed class MySqlSchemaReader : IDatabaseSchemaReader
         var primaryKeys = await ReadPrimaryKeysAsync(connection, cancellationToken);
         var foreignKeys = await ReadForeignKeysAsync(connection, cancellationToken);
         var foreignKeyColumns = foreignKeys.SelectMany(fk => fk.SourceColumns.Select(column => (fk.SourceTable.FullName, Column: column))).ToHashSet();
-        var columns = await ReadColumnsAsync(connection, primaryKeys, foreignKeyColumns, cancellationToken);
+        var comments = options.ReadComments ? await ReadCommentsAsync(connection, cancellationToken) : DatabaseComments.Empty;
+        var columns = await ReadColumnsAsync(connection, primaryKeys, foreignKeyColumns, comments, cancellationToken);
 
-        return new DatabaseModel(options.Provider, connection.Database, tables.Select(table => new TableModel(table.SchemaName, table.TableName, columns.TryGetValue(table, out var c) ? c : [])).ToArray(), foreignKeys);
+        return new DatabaseModel(
+            options.Provider,
+            connection.Database,
+            tables.Select(table => new TableModel(
+                table.SchemaName,
+                table.TableName,
+                columns.TryGetValue(table, out var c) ? c : [],
+                comments.GetTableComment(table.SchemaName, table.TableName))).ToArray(),
+            foreignKeys);
     }
 
     private static async Task<IReadOnlyList<TableRef>> ReadTablesAsync(MySqlConnection connection, CancellationToken cancellationToken)
@@ -40,7 +49,7 @@ public sealed class MySqlSchemaReader : IDatabaseSchemaReader
         return result;
     }
 
-    private static async Task<Dictionary<TableRef, IReadOnlyList<ColumnModel>>> ReadColumnsAsync(MySqlConnection connection, HashSet<(string Table, string Column)> primaryKeys, HashSet<(string Table, string Column)> foreignKeyColumns, CancellationToken cancellationToken)
+    private static async Task<Dictionary<TableRef, IReadOnlyList<ColumnModel>>> ReadColumnsAsync(MySqlConnection connection, HashSet<(string Table, string Column)> primaryKeys, HashSet<(string Table, string Column)> foreignKeyColumns, DatabaseComments comments, CancellationToken cancellationToken)
     {
         const string sql = """
             select table_schema, table_name, column_name, column_type, is_nullable = 'YES'
@@ -61,10 +70,61 @@ public sealed class MySqlSchemaReader : IDatabaseSchemaReader
                 result[table] = columns;
             }
 
-            columns.Add(new ColumnModel(column, reader.GetString(3), reader.GetBoolean(4), primaryKeys.Contains((table.FullName, column)), foreignKeyColumns.Contains((table.FullName, column))));
+            columns.Add(new ColumnModel(
+                column,
+                reader.GetString(3),
+                reader.GetBoolean(4),
+                primaryKeys.Contains((table.FullName, column)),
+                foreignKeyColumns.Contains((table.FullName, column)),
+                comments.GetColumnComment(table.SchemaName, table.TableName, column)));
         }
 
         return result.ToDictionary(pair => pair.Key, pair => (IReadOnlyList<ColumnModel>)pair.Value);
+    }
+
+    private static async Task<DatabaseComments> ReadCommentsAsync(MySqlConnection connection, CancellationToken cancellationToken)
+    {
+        const string tableSql = """
+            select
+                table_schema,
+                table_name,
+                table_comment
+            from information_schema.tables
+            where table_type = 'BASE TABLE'
+              and table_schema not in ('information_schema', 'mysql', 'performance_schema', 'sys');
+            """;
+
+        const string columnSql = """
+            select
+                table_schema,
+                table_name,
+                column_name,
+                column_comment
+            from information_schema.columns
+            where table_schema not in ('information_schema', 'mysql', 'performance_schema', 'sys');
+            """;
+
+        var tableComments = new List<(string SchemaName, string TableName, string? Comment)>();
+        await using (var command = new MySqlCommand(tableSql, connection))
+        await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+        {
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                tableComments.Add((reader.GetString(0), reader.GetString(1), reader.IsDBNull(2) ? null : reader.GetString(2)));
+            }
+        }
+
+        var columnComments = new List<(string SchemaName, string TableName, string ColumnName, string? Comment)>();
+        await using (var command = new MySqlCommand(columnSql, connection))
+        await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+        {
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                columnComments.Add((reader.GetString(0), reader.GetString(1), reader.GetString(2), reader.IsDBNull(3) ? null : reader.GetString(3)));
+            }
+        }
+
+        return new DatabaseComments(tableComments, columnComments);
     }
 
     private static async Task<HashSet<(string Table, string Column)>> ReadPrimaryKeysAsync(MySqlConnection connection, CancellationToken cancellationToken)

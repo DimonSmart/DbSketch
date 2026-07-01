@@ -9,7 +9,8 @@ public sealed record DatabaseModel(
 public sealed record TableModel(
     string SchemaName,
     string Name,
-    IReadOnlyList<ColumnModel> Columns)
+    IReadOnlyList<ColumnModel> Columns,
+    string? Comment = null)
 {
     public string FullName => $"{SchemaName}.{Name}";
 }
@@ -19,7 +20,8 @@ public sealed record ColumnModel(
     string StoreType,
     bool IsNullable,
     bool IsPrimaryKey,
-    bool IsForeignKey);
+    bool IsForeignKey,
+    string? Comment = null);
 
 public sealed record ForeignKeyModel(
     string Name,

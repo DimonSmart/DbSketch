@@ -4,7 +4,7 @@ using DimonSmart.DbSketch.Core.Schema;
 
 namespace DimonSmart.DbSketch.Cli;
 
-public sealed record ResolvedGenerateOptions(string Provider, string ConnectionString, string OutputPath, OutputFormat OutputFormat, bool Verbose, bool DryRun, SchemaFilterOptions Filter, DiagramRenderOptions Diagram);
+public sealed record ResolvedGenerateOptions(string Provider, string ConnectionString, string OutputPath, OutputFormat OutputFormat, bool Verbose, bool DryRun, SchemaFilterOptions Filter, DiagramRenderOptions Diagram, bool ReadDescriptions);
 
 public static class GenerateOptionsResolver
 {
@@ -31,7 +31,8 @@ public static class GenerateOptionsResolver
                 string.IsNullOrWhiteSpace(config.Diagram.Title) ? "Database schema" : config.Diagram.Title,
                 string.IsNullOrWhiteSpace(config.Diagram.Rankdir) ? "LR" : config.Diagram.Rankdir,
                 config.Diagram.Compact,
-                new DiagramShowOptions(config.Diagram.Show.SchemaName, config.Diagram.Show.ColumnTypes, config.Diagram.Show.Nullability, config.Diagram.Show.PrimaryKeys, config.Diagram.Show.ForeignKeys)));
+                new DiagramShowOptions(config.Diagram.Show.SchemaName, config.Diagram.Show.ColumnTypes, config.Diagram.Show.Nullability, config.Diagram.Show.PrimaryKeys, config.Diagram.Show.ForeignKeys)),
+            config.Descriptions.Enabled);
     }
 
     public static string NormalizeProvider(string? provider)

@@ -91,6 +91,27 @@ public sealed class DotRendererTests
         Assert.Contains("PORT=\"col_A_B_2\"", dot);
     }
 
+    [Fact]
+    public void IgnoresCommentsForNow()
+    {
+        var model = new DatabaseModel(
+            "sqlserver",
+            null,
+            [
+                new TableModel(
+                    "dbo",
+                    "Users",
+                    [new ColumnModel("Id", "int", false, true, false, "User identifier")],
+                    "Application users")
+            ],
+            []);
+
+        var dot = Render(model);
+
+        Assert.DoesNotContain("Application users", dot);
+        Assert.DoesNotContain("User identifier", dot);
+    }
+
     private static string Render(DatabaseModel model) =>
         new GraphvizDotRenderer().Render(model, new DiagramRenderOptions("Database schema", "LR", true, new DiagramShowOptions(true, false, false, true, true)));
 

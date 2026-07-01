@@ -102,14 +102,16 @@ public sealed class ConfigTests
         Assert.Equal("cli.md", resolved.OutputPath);
         Assert.Equal(DiagramFormat.Dot, resolved.OutputFormat.DiagramFormat);
         Assert.True(resolved.OutputFormat.MarkdownWrapper);
+        Assert.Equal("dot", resolved.OutputFormat.MarkdownFenceLanguage);
         Assert.True(resolved.Verbose);
         Assert.True(resolved.DryRun);
     }
 
     [Theory]
-    [InlineData("mermaid", DiagramFormat.Mermaid, false)]
-    [InlineData("md-mermaid", DiagramFormat.Mermaid, true)]
-    public void ResolverAcceptsMermaidFormats(string format, DiagramFormat expectedFormat, bool expectedMarkdownWrapper)
+    [InlineData("mermaid", DiagramFormat.Mermaid, false, null)]
+    [InlineData("md-mermaid", DiagramFormat.Mermaid, true, "mermaid")]
+    [InlineData("md-graphviz", DiagramFormat.Dot, true, "graphviz")]
+    public void ResolverAcceptsOutputFormats(string format, DiagramFormat expectedFormat, bool expectedMarkdownWrapper, string? expectedFenceLanguage)
     {
         var config = new DbSketchConfig
         {
@@ -123,6 +125,54 @@ public sealed class ConfigTests
 
         Assert.Equal(expectedFormat, resolved.OutputFormat.DiagramFormat);
         Assert.Equal(expectedMarkdownWrapper, resolved.OutputFormat.MarkdownWrapper);
+        Assert.Equal(expectedFenceLanguage, resolved.OutputFormat.MarkdownFenceLanguage);
+    }
+
+    [Fact]
+    public void ResolverEnablesReadDescriptionsWhenConfigEnablesDescriptions()
+    {
+        var config = new DbSketchConfig
+        {
+            Provider = "sqlserver",
+            ConnectionString = "Server=config",
+            Descriptions = new DescriptionsConfig { Enabled = true }
+        };
+        var cli = new CliOptions(null, null, null, null, null, false, false);
+
+        var resolved = GenerateOptionsResolver.Resolve(config, cli);
+
+        Assert.True(resolved.ReadDescriptions);
+    }
+
+    [Fact]
+    public void ResolverDisablesReadDescriptionsWhenDescriptionsBlockIsAbsent()
+    {
+        var config = new DbSketchConfig
+        {
+            Provider = "sqlserver",
+            ConnectionString = "Server=config"
+        };
+        var cli = new CliOptions(null, null, null, null, null, false, false);
+
+        var resolved = GenerateOptionsResolver.Resolve(config, cli);
+
+        Assert.False(resolved.ReadDescriptions);
+    }
+
+    [Fact]
+    public void ResolverDisablesReadDescriptionsWhenConfigDisablesDescriptions()
+    {
+        var config = new DbSketchConfig
+        {
+            Provider = "sqlserver",
+            ConnectionString = "Server=config",
+            Descriptions = new DescriptionsConfig { Enabled = false }
+        };
+        var cli = new CliOptions(null, null, null, null, null, false, false);
+
+        var resolved = GenerateOptionsResolver.Resolve(config, cli);
+
+        Assert.False(resolved.ReadDescriptions);
     }
 
     [Fact]
@@ -138,7 +188,7 @@ public sealed class ConfigTests
 
         var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, cli));
 
-        Assert.Equal("Unknown format 'unknown'. Supported values: dot, md-dot, mermaid, md-mermaid.", exception.Message);
+        Assert.Equal("Unknown format 'unknown'. Supported values: dot, md-dot, md-graphviz, mermaid, md-mermaid.", exception.Message);
     }
 
     private static string WriteTempConfig(string content)
