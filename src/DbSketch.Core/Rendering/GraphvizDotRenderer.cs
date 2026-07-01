@@ -51,10 +51,23 @@ public sealed class GraphvizDotRenderer : IDiagramRenderer
         builder.AppendLine("      <TABLE BORDER=\"1\" CELLBORDER=\"1\" CELLSPACING=\"0\">");
         var title = options.Show.SchemaName ? table.FullName : table.Name;
         builder.AppendLine($"        <TR><TD BGCOLOR=\"#EEEEEE\"><B>{encoder.EscapeLabel(title)}</B></TD></TR>");
+        var tableComment = options.Show.Comments ? RenderTextNormalizer.NormalizeInlineComment(table.Comment) : null;
+        if (tableComment is not null)
+        {
+            builder.AppendLine($"        <TR><TD BGCOLOR=\"#F7F7F7\"><FONT POINT-SIZE=\"9\">{encoder.EscapeLabel(tableComment)}</FONT></TD></TR>");
+        }
+
         foreach (var column in table.Columns)
         {
             var port = encoder.GetColumnPortId(table, column);
-            builder.AppendLine($"        <TR><TD PORT=\"{encoder.EscapeLabel(port)}\">{encoder.EscapeLabel(FormatColumn(column, options))}</TD></TR>");
+            var columnComment = options.Show.Comments ? RenderTextNormalizer.NormalizeInlineComment(column.Comment) : null;
+            if (columnComment is null)
+            {
+                builder.AppendLine($"        <TR><TD PORT=\"{encoder.EscapeLabel(port)}\">{encoder.EscapeLabel(FormatColumn(column, options))}</TD></TR>");
+                continue;
+            }
+
+            builder.AppendLine($"        <TR><TD PORT=\"{encoder.EscapeLabel(port)}\">{encoder.EscapeLabel(FormatColumn(column, options))}<BR/><FONT POINT-SIZE=\"9\">{encoder.EscapeLabel(columnComment)}</FONT></TD></TR>");
         }
 
         builder.AppendLine("      </TABLE>");

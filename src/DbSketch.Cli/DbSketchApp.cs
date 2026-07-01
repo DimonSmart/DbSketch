@@ -53,11 +53,11 @@ public static class DbSketchApp
         {
             Console.WriteLine("Connection string: provided");
             Console.WriteLine($"Provider reader: {reader.GetType().Name}");
-            Console.WriteLine($"Descriptions: {(options.ReadDescriptions ? "enabled" : "disabled")}");
+            Console.WriteLine($"Comments: {(options.ReadComments ? "enabled" : "disabled")}");
         }
 
         Console.WriteLine("Reading database schema...");
-        var model = await reader.ReadAsync(new DatabaseReadOptions(options.Provider, options.ConnectionString, options.ReadDescriptions), cancellationToken);
+        var model = await reader.ReadAsync(new DatabaseReadOptions(options.Provider, options.ConnectionString, options.ReadComments), cancellationToken);
         var filtered = new WildcardSchemaFilter().Apply(model, options.Filter);
         if (options.Verbose)
         {

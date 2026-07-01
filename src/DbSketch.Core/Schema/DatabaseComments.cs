@@ -35,7 +35,7 @@ public sealed class DatabaseComments
             return null;
         }
 
-        return value.Trim();
+        return value.ReplaceLineEndings("\n").Trim();
     }
 
     private static string TableKey(string schemaName, string tableName) => $"{schemaName}.{tableName}";

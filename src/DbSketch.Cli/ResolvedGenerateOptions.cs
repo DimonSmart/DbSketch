@@ -4,7 +4,7 @@ using DimonSmart.DbSketch.Core.Schema;
 
 namespace DimonSmart.DbSketch.Cli;
 
-public sealed record ResolvedGenerateOptions(string Provider, string ConnectionString, string OutputPath, DiagramFormat DiagramRenderer, OutputFormat Output, bool Verbose, bool DryRun, SchemaFilterOptions Filter, DiagramRenderOptions Diagram, bool ReadDescriptions);
+public sealed record ResolvedGenerateOptions(string Provider, string ConnectionString, string OutputPath, DiagramFormat DiagramRenderer, OutputFormat Output, bool Verbose, bool DryRun, SchemaFilterOptions Filter, DiagramRenderOptions Diagram, bool ReadComments);
 
 public static class GenerateOptionsResolver
 {
@@ -37,9 +37,9 @@ public static class GenerateOptionsResolver
                 string.IsNullOrWhiteSpace(config.Diagram.Title) ? "Database schema" : config.Diagram.Title,
                 direction,
                 config.Diagram.Compact,
-                new DiagramShowOptions(config.Diagram.Show.SchemaName, config.Diagram.Show.ColumnTypes, config.Diagram.Show.Nullability, config.Diagram.Show.PrimaryKeys, config.Diagram.Show.ForeignKeys),
+                new DiagramShowOptions(config.Diagram.Show.SchemaName, config.Diagram.Show.ColumnTypes, config.Diagram.Show.Nullability, config.Diagram.Show.PrimaryKeys, config.Diagram.Show.ForeignKeys, config.Diagram.Show.Comments),
                 new MermaidRenderOptions(config.Diagram.Mermaid.EmitDirection)),
-            config.Descriptions.Enabled);
+            config.Comments.Enabled);
     }
 
     private static string GetMarkdownFenceLanguage(string? configuredLanguage, DiagramFormat renderer)

@@ -52,7 +52,8 @@ public sealed class ConfigTests
                 nullability: true
                 primaryKeys: true
                 foreignKeys: false
-            descriptions:
+                comments: true
+            comments:
               enabled: false
             """);
 
@@ -68,6 +69,8 @@ public sealed class ConfigTests
         Assert.False(config.Diagram.Mermaid.EmitDirection);
         Assert.False(config.Diagram.Show.SchemaName);
         Assert.True(config.Diagram.Show.ColumnTypes);
+        Assert.True(config.Diagram.Show.Comments);
+        Assert.False(config.Comments.Enabled);
     }
 
     [Fact]
@@ -103,6 +106,22 @@ public sealed class ConfigTests
         var exception = Assert.Throws<CliException>(() => ConfigLoader.Load(path));
 
         Assert.Contains("rankdir", exception.Message);
+    }
+
+    [Fact]
+    public void RejectsOldCommentsConfigAlias()
+    {
+        var oldKey = string.Concat("de", "scription", "s");
+        var path = WriteTempConfig($$"""
+            provider: postgres
+            connectionString: Host=localhost
+            {{oldKey}}:
+              enabled: true
+            """);
+
+        var exception = Assert.Throws<CliException>(() => ConfigLoader.Load(path));
+
+        Assert.Contains(oldKey, exception.Message);
     }
 
     [Fact]
@@ -172,7 +191,8 @@ public sealed class ConfigTests
             {
                 Renderer = "mermaid",
                 Direction = "TB",
-                Mermaid = new MermaidConfig { EmitDirection = true }
+                Mermaid = new MermaidConfig { EmitDirection = true },
+                Show = new DiagramShowConfig { Comments = true }
             }
         };
         var cli = EmptyCli();
@@ -182,6 +202,7 @@ public sealed class ConfigTests
         Assert.Equal(DiagramFormat.Mermaid, resolved.DiagramRenderer);
         Assert.Equal(DiagramDirection.TB, resolved.Diagram.Direction);
         Assert.True(resolved.Diagram.Mermaid.EmitDirection);
+        Assert.True(resolved.Diagram.Show.Comments);
     }
 
     [Fact]
@@ -253,23 +274,23 @@ public sealed class ConfigTests
     }
 
     [Fact]
-    public void ResolverEnablesReadDescriptionsWhenConfigEnablesDescriptions()
+    public void ResolverEnablesReadCommentsWhenConfigEnablesComments()
     {
         var config = new DbSketchConfig
         {
             Provider = "sqlserver",
             ConnectionString = "Server=config",
-            Descriptions = new DescriptionsConfig { Enabled = true }
+            Comments = new CommentsConfig { Enabled = true }
         };
         var cli = EmptyCli();
 
         var resolved = GenerateOptionsResolver.Resolve(config, cli);
 
-        Assert.True(resolved.ReadDescriptions);
+        Assert.True(resolved.ReadComments);
     }
 
     [Fact]
-    public void ResolverDisablesReadDescriptionsWhenDescriptionsBlockIsAbsent()
+    public void ResolverDisablesReadCommentsWhenCommentsBlockIsAbsent()
     {
         var config = new DbSketchConfig
         {
@@ -280,23 +301,23 @@ public sealed class ConfigTests
 
         var resolved = GenerateOptionsResolver.Resolve(config, cli);
 
-        Assert.False(resolved.ReadDescriptions);
+        Assert.False(resolved.ReadComments);
     }
 
     [Fact]
-    public void ResolverDisablesReadDescriptionsWhenConfigDisablesDescriptions()
+    public void ResolverDisablesReadCommentsWhenConfigDisablesComments()
     {
         var config = new DbSketchConfig
         {
             Provider = "sqlserver",
             ConnectionString = "Server=config",
-            Descriptions = new DescriptionsConfig { Enabled = false }
+            Comments = new CommentsConfig { Enabled = false }
         };
         var cli = EmptyCli();
 
         var resolved = GenerateOptionsResolver.Resolve(config, cli);
 
-        Assert.False(resolved.ReadDescriptions);
+        Assert.False(resolved.ReadComments);
     }
 
     [Fact]

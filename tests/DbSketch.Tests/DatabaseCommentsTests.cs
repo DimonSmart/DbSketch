@@ -46,4 +46,12 @@ public sealed class DatabaseCommentsTests
         Assert.Null(comments.GetTableComment("dbo", "Users"));
         Assert.Null(comments.GetColumnComment("dbo", "Users", "Id"));
     }
+
+    [Fact]
+    public void NormalizeComment_TrimsMultilineComment()
+    {
+        var comments = new DatabaseComments([("dbo", "Users", "\r\nUser table\n")], []);
+
+        Assert.Equal("User table", comments.GetTableComment("dbo", "Users"));
+    }
 }

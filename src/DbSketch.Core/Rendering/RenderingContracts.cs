@@ -33,4 +33,5 @@ public sealed record DiagramShowOptions(
     bool ColumnTypes,
     bool Nullability,
     bool PrimaryKeys,
-    bool ForeignKeys);
+    bool ForeignKeys,
+    bool Comments);

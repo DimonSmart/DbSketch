@@ -68,7 +68,15 @@ public sealed class MermaidErRenderer : IDiagramRenderer
             parts.Add(column.IsNullable ? "NULL" : "NOT_NULL");
         }
 
-        return string.Join(' ', parts);
+        var rendered = string.Join(' ', parts);
+        var comment = options.Show.Comments ? FormatAttributeComment(column.Comment) : null;
+        return comment is null ? rendered : $"{rendered} {comment}";
+    }
+
+    private static string? FormatAttributeComment(string? value)
+    {
+        var normalized = RenderTextNormalizer.NormalizeInlineComment(value);
+        return normalized is null ? null : $"\"{normalized.Replace("\"", "\\\"", StringComparison.Ordinal)}\"";
     }
 
     private static void AppendForeignKey(StringBuilder builder, IReadOnlyList<TableModel> tables, ForeignKeyModel foreignKey, DiagramRenderOptions options)

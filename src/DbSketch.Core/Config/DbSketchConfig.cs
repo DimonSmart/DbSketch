@@ -8,7 +8,7 @@ public sealed class DbSketchConfig
     public IncludeExcludeConfig Exclude { get; init; } = new();
     public OutputConfig Output { get; init; } = new();
     public DiagramConfig Diagram { get; init; } = new();
-    public DescriptionsConfig Descriptions { get; init; } = new();
+    public CommentsConfig Comments { get; init; } = new();
 }
 
 public sealed class IncludeExcludeConfig
@@ -45,9 +45,10 @@ public sealed class DiagramShowConfig
     public bool Nullability { get; init; }
     public bool PrimaryKeys { get; init; } = true;
     public bool ForeignKeys { get; init; } = true;
+    public bool Comments { get; init; }
 }
 
-public sealed class DescriptionsConfig
+public sealed class CommentsConfig
 {
     public bool Enabled { get; init; }
 }

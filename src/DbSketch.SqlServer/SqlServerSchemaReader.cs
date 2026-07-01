@@ -6,6 +6,8 @@ namespace DimonSmart.DbSketch.SqlServer;
 
 public sealed class SqlServerSchemaReader : IDatabaseSchemaReader
 {
+    private const string CommentPropertyName = "MS_Description";
+
     public async Task<DatabaseModel> ReadAsync(DatabaseReadOptions options, CancellationToken cancellationToken)
     {
         await using var connection = new SqlConnection(options.ConnectionString);
@@ -98,7 +100,7 @@ public sealed class SqlServerSchemaReader : IDatabaseSchemaReader
 
     private static async Task<DatabaseComments> ReadCommentsAsync(SqlConnection connection, CancellationToken cancellationToken)
     {
-        const string tableSql = """
+        var tableSql = $"""
             select
                 s.name as schema_name,
                 t.name as table_name,
@@ -106,14 +108,14 @@ public sealed class SqlServerSchemaReader : IDatabaseSchemaReader
             from sys.tables t
             join sys.schemas s on s.schema_id = t.schema_id
             join sys.extended_properties ep
-              on ep.class = 1
+             on ep.class = 1
              and ep.major_id = t.object_id
              and ep.minor_id = 0
-             and ep.name = N'MS_Description'
+             and ep.name = N'{CommentPropertyName}'
             where t.is_ms_shipped = 0;
             """;
 
-        const string columnSql = """
+        var columnSql = $"""
             select
                 s.name as schema_name,
                 t.name as table_name,
@@ -123,10 +125,10 @@ public sealed class SqlServerSchemaReader : IDatabaseSchemaReader
             join sys.schemas s on s.schema_id = t.schema_id
             join sys.columns c on c.object_id = t.object_id
             join sys.extended_properties ep
-              on ep.class = 1
+             on ep.class = 1
              and ep.major_id = t.object_id
              and ep.minor_id = c.column_id
-             and ep.name = N'MS_Description'
+             and ep.name = N'{CommentPropertyName}'
             where t.is_ms_shipped = 0;
             """;
 

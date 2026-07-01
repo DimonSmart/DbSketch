@@ -125,14 +125,15 @@ diagram:
     nullability: false
     primaryKeys: true
     foreignKeys: true
+    comments: false
 
-descriptions:
+comments:
   enabled: true
 ```
 
 Provider aliases: `mssql` maps to `sqlserver`, and `postgresql` maps to `postgres`.
 
-When `descriptions.enabled` is true, DbSketch reads database-native table and column comments into the internal schema model.
+When `comments.enabled` is true, DbSketch reads database-native table and column comments into the internal schema model.
 
 Current providers:
 
@@ -140,7 +141,16 @@ Current providers:
 - PostgreSQL: `COMMENT ON TABLE` / `COMMENT ON COLUMN`.
 - MySQL: `TABLE_COMMENT` / `COLUMN_COMMENT` from `information_schema`.
 
-The current DOT renderer does not display comments yet. They are collected for upcoming renderers and documentation formats.
+Comments are read when `comments.enabled: true` and rendered only when `diagram.show.comments: true`. Mermaid currently renders column comments. DOT renders table and column comments. Comments are disabled by default to keep diagrams compact.
+
+```yaml
+comments:
+  enabled: true
+
+diagram:
+  show:
+    comments: true
+```
 
 ## Diagram And Output Formats
 
@@ -213,4 +223,4 @@ digraph DbSketch {
 
 ## Not Supported Yet
 
-DbSketch does not render comments in DOT yet, render SVG/PNG, run Graphviz or Mermaid CLI, generate DBML or PlantUML, infer relationships by naming convention, generate HTML docs, diff schemas, or provide a GUI.
+DbSketch does not render SVG/PNG, run Graphviz or Mermaid CLI, generate DBML or PlantUML, infer relationships by naming convention, generate HTML docs, diff schemas, or provide a GUI.

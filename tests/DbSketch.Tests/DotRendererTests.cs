@@ -108,7 +108,7 @@ public sealed class DotRendererTests
     }
 
     [Fact]
-    public void IgnoresCommentsForNow()
+    public void DoesNotRenderCommentsByDefault()
     {
         var model = new DatabaseModel(
             "sqlserver",
@@ -128,14 +128,63 @@ public sealed class DotRendererTests
         Assert.DoesNotContain("User identifier", dot);
     }
 
-    private static string Render(DatabaseModel model, DiagramDirection direction = DiagramDirection.LR, bool mermaidEmitDirection = false) =>
+    [Fact]
+    public void RendersTableAndColumnCommentsWhenEnabled()
+    {
+        var model = new DatabaseModel(
+            "sqlserver",
+            null,
+            [
+                new TableModel(
+                    "dbo",
+                    "Users",
+                    [new ColumnModel("Id", "int", false, true, false, "User identifier")],
+                    "Application users"),
+                new TableModel(
+                    "dbo",
+                    "Orders",
+                    [new ColumnModel("UserId", "int", false, false, true)])
+            ],
+            [new ForeignKeyModel("FK_Orders_Users", new TableRef("dbo", "Orders"), ["UserId"], new TableRef("dbo", "Users"), ["Id"])]);
+
+        var dot = Render(model, showComments: true);
+
+        Assert.Contains("Application users", dot);
+        Assert.Contains("User identifier", dot);
+        Assert.Contains("PORT=\"col_Id\"", dot);
+        Assert.Contains("\"table_dbo_Orders\":\"col_UserId\" -> \"table_dbo_Users\":\"col_Id\"", dot);
+    }
+
+    [Fact]
+    public void EscapesComments()
+    {
+        var model = new DatabaseModel(
+            "sqlserver",
+            null,
+            [
+                new TableModel(
+                    "dbo",
+                    "Users",
+                    [new ColumnModel("Id", "int", false, true, false, "User <identifier> & key")],
+                    "Application \"users\" table")
+            ],
+            []);
+
+        var dot = Render(model, showComments: true);
+
+        Assert.Contains("Application &quot;users&quot; table", dot);
+        Assert.Contains("User &lt;identifier&gt; &amp; key", dot);
+        Assert.Contains("PORT=\"col_Id\"", dot);
+    }
+
+    private static string Render(DatabaseModel model, DiagramDirection direction = DiagramDirection.LR, bool mermaidEmitDirection = false, bool showComments = false) =>
         new GraphvizDotRenderer().Render(
             model,
             new DiagramRenderOptions(
                 "Database schema",
                 direction,
                 true,
-                new DiagramShowOptions(true, false, false, true, true),
+                new DiagramShowOptions(true, false, false, true, true, showComments),
                 new MermaidRenderOptions(mermaidEmitDirection)));
 
     private static DatabaseModel Model() =>

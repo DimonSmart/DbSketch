@@ -131,20 +131,78 @@ public sealed class MermaidRendererTests
         Assert.Contains("unknown _1st_value", mermaid);
     }
 
+    [Fact]
+    public void DoesNotRenderCommentsByDefault()
+    {
+        var model = new DatabaseModel(
+            "sqlserver",
+            null,
+            [new TableModel("dbo", "Users", [new ColumnModel("Id", "int", false, true, false, "User identifier")], "Application users")],
+            []);
+
+        var mermaid = Render(model, showColumnTypes: true);
+
+        Assert.DoesNotContain("User identifier", mermaid);
+        Assert.DoesNotContain("Application users", mermaid);
+    }
+
+    [Fact]
+    public void RendersColumnCommentsWhenEnabled()
+    {
+        var model = new DatabaseModel(
+            "sqlserver",
+            null,
+            [new TableModel("dbo", "Users", [new ColumnModel("Id", "int", false, true, false, "User identifier")])],
+            []);
+
+        var mermaid = Render(model, showColumnTypes: true, showComments: true);
+
+        Assert.Contains("int Id PK \"User identifier\"", mermaid);
+    }
+
+    [Fact]
+    public void EscapesColumnComments()
+    {
+        var model = new DatabaseModel(
+            "sqlserver",
+            null,
+            [new TableModel("dbo", "Users", [new ColumnModel("Id", "int", false, true, false, "User \"identifier\"\nLine 2")])],
+            []);
+
+        var mermaid = Render(model, showColumnTypes: true, showComments: true);
+
+        Assert.Contains("int Id PK \"User \\\"identifier\\\" Line 2\"", mermaid);
+    }
+
+    [Fact]
+    public void DoesNotRenderTableComments()
+    {
+        var model = new DatabaseModel(
+            "sqlserver",
+            null,
+            [new TableModel("dbo", "Users", [new ColumnModel("Id", "int", false, true, false)], "Application users")],
+            []);
+
+        var mermaid = Render(model, showComments: true);
+
+        Assert.DoesNotContain("Application users", mermaid);
+    }
+
     private static string Render(
         DatabaseModel model,
         bool showSchemaName = true,
         bool showColumnTypes = false,
         bool showNullability = false,
         DiagramDirection direction = DiagramDirection.LR,
-        bool emitDirection = false) =>
+        bool emitDirection = false,
+        bool showComments = false) =>
         new MermaidErRenderer().Render(
             model,
             new DiagramRenderOptions(
                 "Database schema",
                 direction,
                 true,
-                new DiagramShowOptions(showSchemaName, showColumnTypes, showNullability, true, true),
+                new DiagramShowOptions(showSchemaName, showColumnTypes, showNullability, true, true, showComments),
                 new MermaidRenderOptions(emitDirection)));
 
     private static DatabaseModel Model() =>
