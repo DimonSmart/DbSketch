@@ -1,8 +1,8 @@
 # DbSketch
 
-DbSketch is a small C# CLI tool that reads a live database schema and writes a compact Graphviz DOT diagram.
+DbSketch is a small C# CLI tool that reads a live database schema and writes a compact database structure diagram.
 
-The MVP supports SQL Server, PostgreSQL, and MySQL. It reads schemas/namespaces, tables, columns, primary key markers, and real foreign key relationships, then applies include/exclude table filters before rendering DOT.
+The MVP supports SQL Server, PostgreSQL, and MySQL. It reads schemas/namespaces, tables, columns, primary key markers, and real foreign key relationships, then applies include/exclude table filters before rendering DOT or Mermaid.
 
 ## Install
 
@@ -82,7 +82,7 @@ exclude:
 
 output:
   path: docs/db/schema.dot
-  format: dot
+  format: dot # dot, md-dot, mermaid, md-mermaid
 
 diagram:
   title: "Database schema"
@@ -101,9 +101,28 @@ descriptions:
 
 Provider aliases: `mssql` maps to `sqlserver`, and `postgresql` maps to `postgres`.
 
-## Markdown DOT
+## Output Formats
 
-Use `format: md-dot` or `--format md-dot` to write Markdown with a fenced `dot` block instead of a raw `.dot` file.
+Supported values for `output.format` and `--format`:
+
+- `dot`: raw Graphviz DOT.
+- `md-dot`: Markdown with a fenced `dot` block.
+- `mermaid`: raw Mermaid `erDiagram`.
+- `md-mermaid`: Markdown with a fenced `mermaid` block.
+
+Example Mermaid Markdown config:
+
+```yaml
+output:
+  path: docs/db/schema.md
+  format: md-mermaid
+```
+
+```mermaid
+erDiagram
+  direction LR
+  "dbo.Orders" }|--|| "dbo.Users" : "FK_Orders_Users"
+```
 
 ## Manual Integration Tests
 
@@ -133,4 +152,4 @@ digraph DbSketch {
 
 ## Not Supported Yet
 
-DbSketch does not render SVG/PNG, run Graphviz, generate Mermaid/DBML, infer relationships by naming convention, read database comments, generate HTML docs, diff schemas, or provide a GUI.
+DbSketch does not render SVG/PNG, run Graphviz or Mermaid CLI, generate DBML or PlantUML, infer relationships by naming convention, read database comments, generate HTML docs, diff schemas, or provide a GUI.

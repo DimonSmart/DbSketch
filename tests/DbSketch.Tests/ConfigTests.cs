@@ -1,5 +1,6 @@
 using DimonSmart.DbSketch.Cli;
 using DimonSmart.DbSketch.Core.Config;
+using DimonSmart.DbSketch.Core.Rendering;
 
 namespace DimonSmart.DbSketch.Tests;
 
@@ -99,9 +100,45 @@ public sealed class ConfigTests
         Assert.Equal("postgres", resolved.Provider);
         Assert.Equal("Host=cli", resolved.ConnectionString);
         Assert.Equal("cli.md", resolved.OutputPath);
-        Assert.Equal("md-dot", resolved.Format);
+        Assert.Equal(DiagramFormat.Dot, resolved.OutputFormat.DiagramFormat);
+        Assert.True(resolved.OutputFormat.MarkdownWrapper);
         Assert.True(resolved.Verbose);
         Assert.True(resolved.DryRun);
+    }
+
+    [Theory]
+    [InlineData("mermaid", DiagramFormat.Mermaid, false)]
+    [InlineData("md-mermaid", DiagramFormat.Mermaid, true)]
+    public void ResolverAcceptsMermaidFormats(string format, DiagramFormat expectedFormat, bool expectedMarkdownWrapper)
+    {
+        var config = new DbSketchConfig
+        {
+            Provider = "sqlserver",
+            ConnectionString = "Server=config",
+            Output = new OutputConfig { Path = "config.dot", Format = format }
+        };
+        var cli = new CliOptions(null, null, null, null, null, false, false);
+
+        var resolved = GenerateOptionsResolver.Resolve(config, cli);
+
+        Assert.Equal(expectedFormat, resolved.OutputFormat.DiagramFormat);
+        Assert.Equal(expectedMarkdownWrapper, resolved.OutputFormat.MarkdownWrapper);
+    }
+
+    [Fact]
+    public void ResolverRejectsUnknownFormat()
+    {
+        var config = new DbSketchConfig
+        {
+            Provider = "sqlserver",
+            ConnectionString = "Server=config",
+            Output = new OutputConfig { Path = "config.dot", Format = "unknown" }
+        };
+        var cli = new CliOptions(null, null, null, null, null, false, false);
+
+        var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, cli));
+
+        Assert.Equal("Unknown format 'unknown'. Supported values: dot, md-dot, mermaid, md-mermaid.", exception.Message);
     }
 
     private static string WriteTempConfig(string content)

@@ -4,7 +4,7 @@ using DimonSmart.DbSketch.Core.Schema;
 
 namespace DimonSmart.DbSketch.Cli;
 
-public sealed record ResolvedGenerateOptions(string Provider, string ConnectionString, string OutputPath, string Format, bool Verbose, bool DryRun, SchemaFilterOptions Filter, DiagramRenderOptions Diagram);
+public sealed record ResolvedGenerateOptions(string Provider, string ConnectionString, string OutputPath, OutputFormat OutputFormat, bool Verbose, bool DryRun, SchemaFilterOptions Filter, DiagramRenderOptions Diagram);
 
 public static class GenerateOptionsResolver
 {
@@ -17,17 +17,13 @@ public static class GenerateOptionsResolver
             throw new CliException("Missing connection string.");
         }
 
-        var format = (cli.Format ?? config.Output.Format ?? "dot").Trim().ToLowerInvariant();
-        if (format is not ("dot" or "md-dot"))
-        {
-            throw new CliException($"Unknown format '{format}'. Supported values: dot, md-dot.");
-        }
+        var outputFormat = OutputFormatParser.Parse(cli.Format ?? config.Output.Format ?? "dot");
 
         return new ResolvedGenerateOptions(
             provider,
             connectionString,
             cli.OutputPath ?? config.Output.Path ?? "dbsketch.dot",
-            format,
+            outputFormat,
             cli.Verbose,
             cli.DryRun,
             new SchemaFilterOptions(config.Include.Tables, config.Exclude.Tables),

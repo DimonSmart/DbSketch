@@ -4,8 +4,12 @@ namespace DimonSmart.DbSketch.Core.Rendering;
 
 public interface IDiagramRenderer
 {
+    DiagramRendererCapabilities Capabilities { get; }
+
     string Render(DatabaseModel model, DiagramRenderOptions options);
 }
+
+public sealed record DiagramRendererCapabilities(bool SupportsColumnToColumnRelationships);
 
 public sealed record DiagramRenderOptions(
     string Title,

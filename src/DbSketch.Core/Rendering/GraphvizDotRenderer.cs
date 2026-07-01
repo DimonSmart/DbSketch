@@ -5,6 +5,8 @@ namespace DimonSmart.DbSketch.Core.Rendering;
 
 public sealed class GraphvizDotRenderer : IDiagramRenderer
 {
+    public DiagramRendererCapabilities Capabilities { get; } = new(SupportsColumnToColumnRelationships: true);
+
     public string Render(DatabaseModel model, DiagramRenderOptions options)
     {
         var encoder = new DotIdEncoder();
