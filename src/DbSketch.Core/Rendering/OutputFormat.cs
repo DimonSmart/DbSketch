@@ -12,4 +12,6 @@ public enum OutputContainerFormat
     Markdown
 }
 
-public sealed record OutputFormat(OutputContainerFormat Format, string? MarkdownFenceLanguage);
+public sealed record OutputFormat(OutputContainerFormat Format, MarkdownRenderOptions? Markdown);
+
+public sealed record MarkdownRenderOptions(string FenceLanguage, string? Header, string? Footer);

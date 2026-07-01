@@ -20,7 +20,14 @@ public sealed class OutputConfig
 {
     public string? Path { get; init; }
     public string Format { get; init; } = "raw";
-    public string? MarkdownFenceLanguage { get; init; }
+    public MarkdownOutputConfig Markdown { get; init; } = new();
+}
+
+public sealed class MarkdownOutputConfig
+{
+    public string? Header { get; init; }
+    public string? Footer { get; init; }
+    public string? FenceLanguage { get; init; }
 }
 
 public sealed class DiagramConfig

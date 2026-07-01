@@ -81,10 +81,7 @@ public static class DbSketchApp
         var renderer = new DiagramRendererFactory().Create(options.DiagramRenderer);
         var diagramText = renderer.Render(filtered, options.Diagram);
         var output = options.Output.Format == OutputContainerFormat.Markdown
-            ? MarkdownDiagramWrapper.Wrap(
-                diagramText,
-                options.Output.MarkdownFenceLanguage ?? GetDefaultFenceLanguage(options.DiagramRenderer),
-                options.Diagram.Title)
+            ? MarkdownDiagramWrapper.Wrap(diagramText, options.Output.Markdown ?? throw new InvalidOperationException("Markdown output options are required."))
             : diagramText;
         var directory = Path.GetDirectoryName(Path.GetFullPath(options.OutputPath));
         if (!string.IsNullOrWhiteSpace(directory))
@@ -103,13 +100,6 @@ public static class DbSketchApp
         "postgres" => new PostgresSchemaReader(),
         "mysql" => new MySqlSchemaReader(),
         _ => throw new CliException($"Unknown provider '{provider}'.")
-    };
-
-    private static string GetDefaultFenceLanguage(DiagramFormat renderer) => renderer switch
-    {
-        DiagramFormat.Dot => "dot",
-        DiagramFormat.Mermaid => "mermaid",
-        _ => throw new ArgumentOutOfRangeException(nameof(renderer), renderer, null)
     };
 
     private static void PrintVersion() => Console.WriteLine($"DbSketch {GetVersion()}");
