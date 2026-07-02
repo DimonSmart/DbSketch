@@ -16,9 +16,9 @@ digraph DbSketch {
   "table_northwind_categories" [
     label=<
       <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0">
-        <TR><TD COLSPAN="3" BGCOLOR="#EEEEEE" ALIGN="LEFT"><B>northwind.categories</B></TD></TR>
-        <TR><TD PORT="col_category_id" ALIGN="LEFT">category_id</TD><TD WIDTH="24" ALIGN="CENTER"><FONT POINT-SIZE="9">PK</FONT></TD><TD WIDTH="24"></TD></TR>
-        <TR><TD PORT="col_category_name" ALIGN="LEFT">category_name</TD><TD WIDTH="24"></TD><TD WIDTH="24"></TD></TR>
+        <TR><TD COLSPAN="4" BGCOLOR="#EEEEEE" ALIGN="LEFT"><TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0"><TR><TD ALIGN="LEFT">northwind.categories</TD><TD ALIGN="LEFT">Product categories used for catalog grouping.</TD></TR></TABLE></TD></TR>
+        <TR><TD PORT="col_category_id" ALIGN="LEFT">category_id</TD><TD ALIGN="CENTER">int4</TD><TD ALIGN="CENTER">Category identifier referenced by products.</TD><TD ALIGN="CENTER">PK</TD></TR>
+        <TR><TD PORT="col_category_name" ALIGN="LEFT">category_name</TD><TD ALIGN="CENTER">text</TD><TD ALIGN="CENTER">Display name for the category.</TD><TD ALIGN="CENTER"></TD></TR>
       </TABLE>
     >
   ];
@@ -26,10 +26,10 @@ digraph DbSketch {
   "table_northwind_customers" [
     label=<
       <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0">
-        <TR><TD COLSPAN="3" BGCOLOR="#EEEEEE" ALIGN="LEFT"><B>northwind.customers</B></TD></TR>
-        <TR><TD PORT="col_customer_id" ALIGN="LEFT">customer_id</TD><TD WIDTH="24" ALIGN="CENTER"><FONT POINT-SIZE="9">PK</FONT></TD><TD WIDTH="24"></TD></TR>
-        <TR><TD PORT="col_company_name" ALIGN="LEFT">company_name</TD><TD WIDTH="24"></TD><TD WIDTH="24"></TD></TR>
-        <TR><TD PORT="col_contact_name" ALIGN="LEFT">contact_name</TD><TD WIDTH="24"></TD><TD WIDTH="24"></TD></TR>
+        <TR><TD COLSPAN="4" BGCOLOR="#EEEEEE" ALIGN="LEFT"><TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0"><TR><TD ALIGN="LEFT">northwind.customers</TD><TD ALIGN="LEFT">Companies and contacts that place orders.</TD></TR></TABLE></TD></TR>
+        <TR><TD PORT="col_customer_id" ALIGN="LEFT">customer_id</TD><TD ALIGN="CENTER">text</TD><TD ALIGN="CENTER">Stable customer code used on orders.</TD><TD ALIGN="CENTER">PK</TD></TR>
+        <TR><TD PORT="col_company_name" ALIGN="LEFT">company_name</TD><TD ALIGN="CENTER">text</TD><TD ALIGN="CENTER">Legal or trading company name.</TD><TD ALIGN="CENTER"></TD></TR>
+        <TR><TD PORT="col_contact_name" ALIGN="LEFT">contact_name</TD><TD ALIGN="CENTER">text</TD><TD ALIGN="CENTER">Primary contact person for the customer.</TD><TD ALIGN="CENTER"></TD></TR>
       </TABLE>
     >
   ];
@@ -37,11 +37,11 @@ digraph DbSketch {
   "table_northwind_employees" [
     label=<
       <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0">
-        <TR><TD COLSPAN="3" BGCOLOR="#EEEEEE" ALIGN="LEFT"><B>northwind.employees</B></TD></TR>
-        <TR><TD PORT="col_employee_id" ALIGN="LEFT">employee_id</TD><TD WIDTH="24" ALIGN="CENTER"><FONT POINT-SIZE="9">PK</FONT></TD><TD WIDTH="24"></TD></TR>
-        <TR><TD PORT="col_last_name" ALIGN="LEFT">last_name</TD><TD WIDTH="24"></TD><TD WIDTH="24"></TD></TR>
-        <TR><TD PORT="col_first_name" ALIGN="LEFT">first_name</TD><TD WIDTH="24"></TD><TD WIDTH="24"></TD></TR>
-        <TR><TD PORT="col_reports_to" ALIGN="LEFT">reports_to</TD><TD WIDTH="24"></TD><TD PORT="col_reports_to_fk" WIDTH="24" ALIGN="CENTER"><FONT POINT-SIZE="9">FK</FONT></TD></TR>
+        <TR><TD COLSPAN="4" BGCOLOR="#EEEEEE" ALIGN="LEFT"><TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0"><TR><TD ALIGN="LEFT">northwind.employees</TD><TD ALIGN="LEFT">Sales employees and their reporting hierarchy.</TD></TR></TABLE></TD></TR>
+        <TR><TD PORT="col_employee_id" ALIGN="LEFT">employee_id</TD><TD ALIGN="CENTER">int4</TD><TD ALIGN="CENTER">Internal employee identifier.</TD><TD ALIGN="CENTER">PK</TD></TR>
+        <TR><TD PORT="col_last_name" ALIGN="LEFT">last_name</TD><TD ALIGN="CENTER">text</TD><TD ALIGN="CENTER">Employee family name.</TD><TD ALIGN="CENTER"></TD></TR>
+        <TR><TD PORT="col_first_name" ALIGN="LEFT">first_name</TD><TD ALIGN="CENTER">text</TD><TD ALIGN="CENTER">Employee given name.</TD><TD ALIGN="CENTER"></TD></TR>
+        <TR><TD PORT="col_reports_to" ALIGN="LEFT">reports_to</TD><TD ALIGN="CENTER">int4</TD><TD ALIGN="CENTER">Manager employee id for hierarchy links.</TD><TD PORT="col_reports_to_fk" ALIGN="CENTER">FK</TD></TR>
       </TABLE>
     >
   ];
@@ -49,11 +49,11 @@ digraph DbSketch {
   "table_northwind_orders" [
     label=<
       <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0">
-        <TR><TD COLSPAN="3" BGCOLOR="#EEEEEE" ALIGN="LEFT"><B>northwind.orders</B></TD></TR>
-        <TR><TD PORT="col_order_id" ALIGN="LEFT">order_id</TD><TD WIDTH="24" ALIGN="CENTER"><FONT POINT-SIZE="9">PK</FONT></TD><TD WIDTH="24"></TD></TR>
-        <TR><TD PORT="col_customer_id" ALIGN="LEFT">customer_id</TD><TD WIDTH="24"></TD><TD PORT="col_customer_id_fk" WIDTH="24" ALIGN="CENTER"><FONT POINT-SIZE="9">FK</FONT></TD></TR>
-        <TR><TD PORT="col_employee_id" ALIGN="LEFT">employee_id</TD><TD WIDTH="24"></TD><TD PORT="col_employee_id_fk" WIDTH="24" ALIGN="CENTER"><FONT POINT-SIZE="9">FK</FONT></TD></TR>
-        <TR><TD PORT="col_order_date" ALIGN="LEFT">order_date</TD><TD WIDTH="24"></TD><TD WIDTH="24"></TD></TR>
+        <TR><TD COLSPAN="4" BGCOLOR="#EEEEEE" ALIGN="LEFT"><TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0"><TR><TD ALIGN="LEFT">northwind.orders</TD><TD ALIGN="LEFT">Customer purchase orders handled by employees.</TD></TR></TABLE></TD></TR>
+        <TR><TD PORT="col_order_id" ALIGN="LEFT">order_id</TD><TD ALIGN="CENTER">int4</TD><TD ALIGN="CENTER">Order header identifier.</TD><TD ALIGN="CENTER">PK</TD></TR>
+        <TR><TD PORT="col_customer_id" ALIGN="LEFT">customer_id</TD><TD ALIGN="CENTER">text</TD><TD ALIGN="CENTER">Customer that placed the order.</TD><TD PORT="col_customer_id_fk" ALIGN="CENTER">FK</TD></TR>
+        <TR><TD PORT="col_employee_id" ALIGN="LEFT">employee_id</TD><TD ALIGN="CENTER">int4</TD><TD ALIGN="CENTER">Employee responsible for the order.</TD><TD PORT="col_employee_id_fk" ALIGN="CENTER">FK</TD></TR>
+        <TR><TD PORT="col_order_date" ALIGN="LEFT">order_date</TD><TD ALIGN="CENTER">timestamp</TD><TD ALIGN="CENTER">Date and time when the order was created.</TD><TD ALIGN="CENTER"></TD></TR>
       </TABLE>
     >
   ];
@@ -61,12 +61,12 @@ digraph DbSketch {
   "table_northwind_order_details" [
     label=<
       <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0">
-        <TR><TD COLSPAN="3" BGCOLOR="#EEEEEE" ALIGN="LEFT"><B>northwind.order_details</B></TD></TR>
-        <TR><TD PORT="col_order_id" ALIGN="LEFT">order_id</TD><TD WIDTH="24" ALIGN="CENTER"><FONT POINT-SIZE="9">PK</FONT></TD><TD PORT="col_order_id_fk" WIDTH="24" ALIGN="CENTER"><FONT POINT-SIZE="9">FK</FONT></TD></TR>
-        <TR><TD PORT="col_product_id" ALIGN="LEFT">product_id</TD><TD WIDTH="24" ALIGN="CENTER"><FONT POINT-SIZE="9">PK</FONT></TD><TD PORT="col_product_id_fk" WIDTH="24" ALIGN="CENTER"><FONT POINT-SIZE="9">FK</FONT></TD></TR>
-        <TR><TD PORT="col_unit_price" ALIGN="LEFT">unit_price</TD><TD WIDTH="24"></TD><TD WIDTH="24"></TD></TR>
-        <TR><TD PORT="col_quantity" ALIGN="LEFT">quantity</TD><TD WIDTH="24"></TD><TD WIDTH="24"></TD></TR>
-        <TR><TD PORT="col_discount" ALIGN="LEFT">discount</TD><TD WIDTH="24"></TD><TD WIDTH="24"></TD></TR>
+        <TR><TD COLSPAN="4" BGCOLOR="#EEEEEE" ALIGN="LEFT"><TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0"><TR><TD ALIGN="LEFT">northwind.order_details</TD><TD ALIGN="LEFT">Line items that connect orders to purchased products.</TD></TR></TABLE></TD></TR>
+        <TR><TD PORT="col_order_id" ALIGN="LEFT">order_id</TD><TD ALIGN="CENTER">int4</TD><TD ALIGN="CENTER">Order that owns this line item.</TD><TD PORT="col_order_id_fk" ALIGN="CENTER">PK FK</TD></TR>
+        <TR><TD PORT="col_product_id" ALIGN="LEFT">product_id</TD><TD ALIGN="CENTER">int4</TD><TD ALIGN="CENTER">Product sold on this line item.</TD><TD PORT="col_product_id_fk" ALIGN="CENTER">PK FK</TD></TR>
+        <TR><TD PORT="col_unit_price" ALIGN="LEFT">unit_price</TD><TD ALIGN="CENTER">numeric</TD><TD ALIGN="CENTER">Unit price captured at order time.</TD><TD ALIGN="CENTER"></TD></TR>
+        <TR><TD PORT="col_quantity" ALIGN="LEFT">quantity</TD><TD ALIGN="CENTER">int2</TD><TD ALIGN="CENTER">Number of product units ordered.</TD><TD ALIGN="CENTER"></TD></TR>
+        <TR><TD PORT="col_discount" ALIGN="LEFT">discount</TD><TD ALIGN="CENTER">numeric</TD><TD ALIGN="CENTER">Discount fraction applied to the line.</TD><TD ALIGN="CENTER"></TD></TR>
       </TABLE>
     >
   ];
@@ -74,11 +74,11 @@ digraph DbSketch {
   "table_northwind_products" [
     label=<
       <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0">
-        <TR><TD COLSPAN="3" BGCOLOR="#EEEEEE" ALIGN="LEFT"><B>northwind.products</B></TD></TR>
-        <TR><TD PORT="col_product_id" ALIGN="LEFT">product_id</TD><TD WIDTH="24" ALIGN="CENTER"><FONT POINT-SIZE="9">PK</FONT></TD><TD WIDTH="24"></TD></TR>
-        <TR><TD PORT="col_product_name" ALIGN="LEFT">product_name</TD><TD WIDTH="24"></TD><TD WIDTH="24"></TD></TR>
-        <TR><TD PORT="col_category_id" ALIGN="LEFT">category_id</TD><TD WIDTH="24"></TD><TD PORT="col_category_id_fk" WIDTH="24" ALIGN="CENTER"><FONT POINT-SIZE="9">FK</FONT></TD></TR>
-        <TR><TD PORT="col_unit_price" ALIGN="LEFT">unit_price</TD><TD WIDTH="24"></TD><TD WIDTH="24"></TD></TR>
+        <TR><TD COLSPAN="4" BGCOLOR="#EEEEEE" ALIGN="LEFT"><TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0"><TR><TD ALIGN="LEFT">northwind.products</TD><TD ALIGN="LEFT">Sellable catalog items grouped by category.</TD></TR></TABLE></TD></TR>
+        <TR><TD PORT="col_product_id" ALIGN="LEFT">product_id</TD><TD ALIGN="CENTER">int4</TD><TD ALIGN="CENTER">Product identifier used in order lines.</TD><TD ALIGN="CENTER">PK</TD></TR>
+        <TR><TD PORT="col_product_name" ALIGN="LEFT">product_name</TD><TD ALIGN="CENTER">text</TD><TD ALIGN="CENTER">Customer-facing product name.</TD><TD ALIGN="CENTER"></TD></TR>
+        <TR><TD PORT="col_category_id" ALIGN="LEFT">category_id</TD><TD ALIGN="CENTER">int4</TD><TD ALIGN="CENTER">Category that classifies the product.</TD><TD PORT="col_category_id_fk" ALIGN="CENTER">FK</TD></TR>
+        <TR><TD PORT="col_unit_price" ALIGN="LEFT">unit_price</TD><TD ALIGN="CENTER">numeric</TD><TD ALIGN="CENTER">Current catalog price per unit.</TD><TD ALIGN="CENTER"></TD></TR>
       </TABLE>
     >
   ];

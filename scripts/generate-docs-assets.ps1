@@ -22,6 +22,26 @@ function Require-Command {
     }
 }
 
+function Resolve-GraphvizDot {
+    $command = Get-Command "dot" -ErrorAction SilentlyContinue
+    if ($command) {
+        return $command.Source
+    }
+
+    $knownPaths = @(
+        "C:\Program Files\Graphviz\bin\dot.exe",
+        "C:\Program Files (x86)\Graphviz\bin\dot.exe"
+    )
+
+    foreach ($path in $knownPaths) {
+        if (Test-Path $path) {
+            return $path
+        }
+    }
+
+    throw "Required tool 'dot' was not found. Install Graphviz and make sure 'dot' is on PATH, or rerun with -SkipPng."
+}
+
 function Invoke-Checked {
     param(
         [Parameter(Mandatory = $true)]
@@ -44,7 +64,7 @@ $assetsDirectory = Join-Path $repoRoot "docs/assets"
 Require-Command "dotnet" "Install the .NET SDK and make sure 'dotnet' is on PATH."
 Require-Command "docker" "Install Docker Desktop or Docker Engine and make sure 'docker' is on PATH."
 if (-not $SkipPng) {
-    Require-Command "dot" "Install Graphviz and make sure the 'dot' CLI is on PATH, or rerun with -SkipPng."
+    $dotPath = Resolve-GraphvizDot
 }
 
 & docker info *> $null
@@ -110,8 +130,14 @@ try {
     Invoke-Checked "dotnet" @("run", "--project", "src/DbSketch.Cli/DbSketch.Cli.csproj", "--", "generate", "--config", "docs/examples/northwind.dbsketch.yml")
 
     if (-not $SkipPng) {
+        Write-Host "Rendering docs/assets/northwind-schema-compact.png with Graphviz..."
+        Invoke-Checked $dotPath @("-Tpng", "docs/examples/northwind.compact.dot", "-o", "docs/assets/northwind-schema-compact.png")
+
+        Write-Host "Rendering docs/assets/northwind-schema-full.png with Graphviz..."
+        Invoke-Checked $dotPath @("-Tpng", "docs/examples/northwind.full.dot", "-o", "docs/assets/northwind-schema-full.png")
+
         Write-Host "Rendering docs/assets/northwind-schema.png with Graphviz..."
-        Invoke-Checked "dot" @("-Tpng", "docs/examples/northwind.readme.dot", "-o", "docs/assets/northwind-schema.png")
+        Invoke-Checked $dotPath @("-Tpng", "docs/examples/northwind.compact.dot", "-o", "docs/assets/northwind-schema.png")
     }
 
     Write-Host "Docs assets generated."

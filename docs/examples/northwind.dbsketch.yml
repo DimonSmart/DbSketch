@@ -1,6 +1,9 @@
 provider: postgres
 connectionString: "${DBSKETCH_DOCS_CONNECTION}"
 
+comments:
+  enabled: true
+
 defaults:
   diagram:
     direction: LR
@@ -13,6 +16,41 @@ defaults:
       foreignKeys: true
 
 diagrams:
+  - name: northwind-compact-dot
+    title: Northwind schema - compact
+    include:
+      tables:
+        - "northwind.*"
+    diagram:
+      renderer: dot
+      columnLayout: "{name}"
+      tableHeaderLayout: "{fullName}"
+      show:
+        primaryKeys: false
+        foreignKeys: false
+        foreignKeyLabels: false
+    output:
+      path: docs/examples/northwind.compact.dot
+      format: raw
+
+  - name: northwind-full-dot
+    title: Northwind schema - full
+    include:
+      tables:
+        - "northwind.*"
+    diagram:
+      renderer: dot
+      columnLayout: "{name} | {type} | {comment} | {keys}"
+      tableHeaderLayout: "{fullName} | {comment}"
+      show:
+        columnTypes: true
+        tableComments: true
+        columnComments: true
+        foreignKeyLabels: true
+    output:
+      path: docs/examples/northwind.full.dot
+      format: raw
+
   - name: northwind-dot
     title: Northwind schema
     include:
@@ -20,6 +58,12 @@ diagrams:
         - "northwind.*"
     diagram:
       renderer: dot
+      columnLayout: "{name} | {type} | {comment} | {keys}"
+      tableHeaderLayout: "{fullName} | {comment}"
+      show:
+        columnTypes: true
+        tableComments: true
+        columnComments: true
     output:
       path: docs/examples/northwind.dot
       format: raw
@@ -31,9 +75,12 @@ diagrams:
         - "northwind.*"
     diagram:
       renderer: dot
+      columnLayout: "{name}"
+      tableHeaderLayout: "{fullName}"
       show:
+        primaryKeys: false
+        foreignKeys: false
         foreignKeyLabels: false
-        selfReferencingForeignKeys: false
     output:
       path: docs/examples/northwind.readme.dot
       format: raw
@@ -45,6 +92,8 @@ diagrams:
         - "northwind.*"
     diagram:
       renderer: mermaid
+      show:
+        tableComments: false
       mermaid:
         emitDirection: false
     output:
@@ -58,6 +107,12 @@ diagrams:
         - "northwind.*"
     diagram:
       renderer: dot
+      columnLayout: "{name} | {type} | {comment} | {keys}"
+      tableHeaderLayout: "{fullName} | {comment}"
+      show:
+        columnTypes: true
+        tableComments: true
+        columnComments: true
     output:
       path: docs/examples/northwind.generated.md
       format: markdown

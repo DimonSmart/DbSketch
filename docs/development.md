@@ -92,7 +92,7 @@ Regenerate docs assets:
 scripts/generate-docs-assets.ps1
 ```
 
-The script requires `dotnet`, Docker, and Graphviz `dot`. It starts a temporary PostgreSQL container, applies the fixture, runs DbSketch from source, writes DOT and Mermaid examples, and renders `docs/assets/northwind-schema.png`.
+The script requires `dotnet`, Docker, and Graphviz `dot`. It starts a temporary PostgreSQL container, applies the fixture, runs DbSketch from source, writes DOT and Mermaid examples, and renders `docs/assets/northwind-schema-compact.png`, `docs/assets/northwind-schema-full.png`, and the compatibility `docs/assets/northwind-schema.png`.
 
 Skip PNG generation when Graphviz output is not needed:
 

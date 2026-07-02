@@ -1,13 +1,8 @@
-# Northwind DbSketch generated output
-
-This file is generated from the Northwind PostgreSQL test fixture.
-
-```dot
 digraph DbSketch {
   graph [
     rankdir=LR,
     labelloc="t",
-    label="Northwind schema"
+    label="Northwind schema - full"
   ];
 
   node [
@@ -107,4 +102,3 @@ digraph DbSketch {
     label="fk_products_categories"
   ];
 }
-```

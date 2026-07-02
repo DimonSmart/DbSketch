@@ -4,7 +4,13 @@ DbSketch turns a live database into a version-controlled schema diagram.
 
 It reads tables, columns, primary keys, foreign keys, and comments directly from SQL Server, PostgreSQL, or MySQL, then writes documentation you can commit, review, and refresh from CI.
 
-![DbSketch generated Northwind database schema](https://raw.githubusercontent.com/DimonSmart/DbSketch/main/docs/assets/northwind-schema.png)
+Compact layout, using `tableHeaderLayout: "{fullName}"` and `columnLayout: "{name}"`:
+
+![Compact DbSketch generated Northwind database schema](https://raw.githubusercontent.com/DimonSmart/DbSketch/main/docs/assets/northwind-schema-compact.png)
+
+Full layout, using `tableHeaderLayout: "{fullName} | {comment}"` and `columnLayout: "{name} | {type} | {comment} | {keys}"`:
+
+![Full DbSketch generated Northwind database schema](https://raw.githubusercontent.com/DimonSmart/DbSketch/main/docs/assets/northwind-schema-full.png)
 
 ## Why DbSketch?
 

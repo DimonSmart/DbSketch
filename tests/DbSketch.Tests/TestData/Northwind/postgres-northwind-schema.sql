@@ -6,6 +6,11 @@ create table northwind.customers (
     contact_name text null
 );
 
+comment on table northwind.customers is 'Companies and contacts that place orders.';
+comment on column northwind.customers.customer_id is 'Stable customer code used on orders.';
+comment on column northwind.customers.company_name is 'Legal or trading company name.';
+comment on column northwind.customers.contact_name is 'Primary contact person for the customer.';
+
 create table northwind.employees (
     employee_id integer primary key,
     last_name text not null,
@@ -16,10 +21,20 @@ create table northwind.employees (
         references northwind.employees(employee_id)
 );
 
+comment on table northwind.employees is 'Sales employees and their reporting hierarchy.';
+comment on column northwind.employees.employee_id is 'Internal employee identifier.';
+comment on column northwind.employees.last_name is 'Employee family name.';
+comment on column northwind.employees.first_name is 'Employee given name.';
+comment on column northwind.employees.reports_to is 'Manager employee id for hierarchy links.';
+
 create table northwind.categories (
     category_id integer primary key,
     category_name text not null
 );
+
+comment on table northwind.categories is 'Product categories used for catalog grouping.';
+comment on column northwind.categories.category_id is 'Category identifier referenced by products.';
+comment on column northwind.categories.category_name is 'Display name for the category.';
 
 create table northwind.products (
     product_id integer primary key,
@@ -30,6 +45,12 @@ create table northwind.products (
         foreign key (category_id)
         references northwind.categories(category_id)
 );
+
+comment on table northwind.products is 'Sellable catalog items grouped by category.';
+comment on column northwind.products.product_id is 'Product identifier used in order lines.';
+comment on column northwind.products.product_name is 'Customer-facing product name.';
+comment on column northwind.products.category_id is 'Category that classifies the product.';
+comment on column northwind.products.unit_price is 'Current catalog price per unit.';
 
 create table northwind.orders (
     order_id integer primary key,
@@ -43,6 +64,12 @@ create table northwind.orders (
         foreign key (employee_id)
         references northwind.employees(employee_id)
 );
+
+comment on table northwind.orders is 'Customer purchase orders handled by employees.';
+comment on column northwind.orders.order_id is 'Order header identifier.';
+comment on column northwind.orders.customer_id is 'Customer that placed the order.';
+comment on column northwind.orders.employee_id is 'Employee responsible for the order.';
+comment on column northwind.orders.order_date is 'Date and time when the order was created.';
 
 create table northwind.order_details (
     order_id integer not null,
@@ -59,3 +86,10 @@ create table northwind.order_details (
         foreign key (product_id)
         references northwind.products(product_id)
 );
+
+comment on table northwind.order_details is 'Line items that connect orders to purchased products.';
+comment on column northwind.order_details.order_id is 'Order that owns this line item.';
+comment on column northwind.order_details.product_id is 'Product sold on this line item.';
+comment on column northwind.order_details.unit_price is 'Unit price captured at order time.';
+comment on column northwind.order_details.quantity is 'Number of product units ordered.';
+comment on column northwind.order_details.discount is 'Discount fraction applied to the line.';

@@ -2,7 +2,7 @@ digraph DbSketch {
   graph [
     rankdir=LR,
     labelloc="t",
-    label="Northwind schema"
+    label="Northwind schema - compact"
   ];
 
   node [
