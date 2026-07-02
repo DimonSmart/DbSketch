@@ -84,15 +84,19 @@ public sealed class DbSketchGenerator(
 
     private static void EmitCapabilityWarnings(IDiagramRenderer renderer, ResolvedDiagramTarget diagram, ProgressReporter progress)
     {
-        if (renderer.Capabilities.SupportsColumnToColumnRelationships)
+        if (!renderer.Capabilities.SupportsColumnToColumnRelationships)
         {
-            return;
+            progress.Warning("Mermaid ER renders relationships between entities, not between specific column ports. Use DOT for column-to-column edges.");
+            if (diagram.Diagram.Show.TableComments)
+            {
+                progress.Warning("Mermaid ER does not support table comments. Table comments will not be emitted.");
+            }
         }
 
-        progress.Warning("Mermaid ER renders relationships between entities, not between specific column ports. Use DOT for column-to-column edges.");
-        if (diagram.Diagram.Show.TableComments)
+        if (!renderer.Capabilities.SupportsCustomTableLayouts &&
+            (diagram.Diagram.Layout.ColumnLayout is not null || diagram.Diagram.Layout.TableHeaderLayout is not null))
         {
-            progress.Warning("Mermaid ER does not support table comments. Table comments will not be emitted.");
+            progress.Warning("Mermaid ER does not support custom columnLayout/tableHeaderLayout. Layout settings will be ignored. Use DOT for custom table cell layouts.");
         }
     }
 }

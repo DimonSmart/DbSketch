@@ -108,6 +108,20 @@ public sealed class GeneratorTests
     }
 
     [Fact]
+    public async Task MermaidEmitsCustomLayoutWarning()
+    {
+        var console = new FakeConsole();
+        var generator = CreateGenerator(console);
+
+        await generator.GenerateAsync(
+            Options(Diagram("auth", "auth.dot", renderer: DiagramFormat.Mermaid, columnLayout: "{name} | {keys}", tableHeaderLayout: "{fullName}"), dryRun: true),
+            CancellationToken.None);
+
+        Assert.Contains("custom columnLayout/tableHeaderLayout", console.ErrorText);
+        Assert.Contains("Layout settings will be ignored", console.ErrorText);
+    }
+
+    [Fact]
     public async Task ForeignKeysRemainOnlyBetweenTablesInDiagram()
     {
         var fullPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.dot");
@@ -133,7 +147,9 @@ public sealed class GeneratorTests
         string outputPath,
         DiagramFormat renderer = DiagramFormat.Dot,
         IReadOnlyList<string>? include = null,
-        bool showTableComments = false) =>
+        bool showTableComments = false,
+        string? columnLayout = null,
+        string? tableHeaderLayout = null) =>
         new(
             name,
             outputPath,
@@ -144,6 +160,7 @@ public sealed class GeneratorTests
                 "Database schema",
                 DiagramDirection.LR,
                 true,
+                new DiagramLayoutOptions(columnLayout, tableHeaderLayout),
                 new DiagramShowOptions(true, false, false, true, true, true, true, showTableComments, false),
                 new MermaidRenderOptions(false),
                 new DiagramCommentRenderOptions(null)));

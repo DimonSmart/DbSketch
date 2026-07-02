@@ -5,7 +5,9 @@ namespace DimonSmart.DbSketch.Core.Rendering;
 
 public sealed class GraphvizDotRenderer : IDiagramRenderer
 {
-    public DiagramRendererCapabilities Capabilities { get; } = new(SupportsColumnToColumnRelationships: true);
+    public DiagramRendererCapabilities Capabilities { get; } = new(
+        SupportsColumnToColumnRelationships: true,
+        SupportsCustomTableLayouts: true);
 
     public string Render(DatabaseModel model, DiagramRenderOptions options)
     {
@@ -46,24 +48,33 @@ public sealed class GraphvizDotRenderer : IDiagramRenderer
 
     private static void AppendTable(StringBuilder builder, DotIdEncoder encoder, TableModel table, DiagramRenderOptions options)
     {
+        var columnTemplate = ParseColumnLayout(options.Layout.ColumnLayout);
+        var headerTemplate = ParseTableHeaderLayout(options.Layout.TableHeaderLayout);
+        var bodyColumnCount = GetBodyColumnCount(options, columnTemplate);
+
         builder.AppendLine($"  \"{encoder.EscapeDotString(encoder.GetTableNodeId(table))}\" [");
         builder.AppendLine("    label=<");
         builder.AppendLine("      <TABLE BORDER=\"1\" CELLBORDER=\"1\" CELLSPACING=\"0\">");
-        var title = options.Show.SchemaName ? table.FullName : table.Name;
-        var markerColumnCount = GetMarkerColumnCount(options);
-        var titleColumnSpan = FormatColumnSpan(markerColumnCount + 1);
-        builder.AppendLine($"        <TR><TD{titleColumnSpan} BGCOLOR=\"#EEEEEE\" ALIGN=\"LEFT\"><B>{encoder.EscapeLabel(title)}</B></TD></TR>");
-        var tableComment = options.Show.TableComments
-            ? RenderTextNormalizer.NormalizeInlineComment(table.Comment, options.Comments.MaxLength)
-            : null;
-        if (tableComment is not null)
+
+        if (headerTemplate is null)
         {
-            builder.AppendLine($"        <TR><TD{titleColumnSpan} BGCOLOR=\"#F7F7F7\" ALIGN=\"LEFT\"><FONT POINT-SIZE=\"9\">{encoder.EscapeLabel(tableComment)}</FONT></TD></TR>");
+            AppendLegacyHeader(builder, encoder, table, options, bodyColumnCount);
+        }
+        else
+        {
+            AppendLayoutHeader(builder, encoder, table, options, headerTemplate, bodyColumnCount);
         }
 
         foreach (var column in table.Columns)
         {
-            AppendColumn(builder, encoder, table, column, options, markerColumnCount);
+            if (columnTemplate is null)
+            {
+                AppendLegacyColumn(builder, encoder, table, column, options, GetMarkerColumnCount(options));
+            }
+            else
+            {
+                AppendLayoutColumn(builder, encoder, table, column, options, columnTemplate);
+            }
         }
 
         builder.AppendLine("      </TABLE>");
@@ -75,10 +86,41 @@ public sealed class GraphvizDotRenderer : IDiagramRenderer
     private static int GetMarkerColumnCount(DiagramRenderOptions options) =>
         options.Show.PrimaryKeys || options.Show.ForeignKeys ? 2 : 0;
 
+    private static int GetBodyColumnCount(DiagramRenderOptions options, LayoutTemplate? columnTemplate) =>
+        columnTemplate?.Cells.Count ?? GetMarkerColumnCount(options) + 1;
+
     private static string FormatColumnSpan(int columnCount) =>
         columnCount <= 1 ? "" : $" COLSPAN=\"{columnCount}\"";
 
-    private static void AppendColumn(StringBuilder builder, DotIdEncoder encoder, TableModel table, ColumnModel column, DiagramRenderOptions options, int markerColumnCount)
+    private static void AppendLegacyHeader(StringBuilder builder, DotIdEncoder encoder, TableModel table, DiagramRenderOptions options, int bodyColumnCount)
+    {
+        var title = options.Show.SchemaName ? table.FullName : table.Name;
+        var titleColumnSpan = FormatColumnSpan(bodyColumnCount);
+        builder.AppendLine($"        <TR><TD{titleColumnSpan} BGCOLOR=\"#EEEEEE\" ALIGN=\"LEFT\"><B>{encoder.EscapeLabel(title)}</B></TD></TR>");
+        var tableComment = options.Show.TableComments
+            ? RenderTextNormalizer.NormalizeInlineComment(table.Comment, options.Comments.MaxLength)
+            : null;
+        if (tableComment is not null)
+        {
+            builder.AppendLine($"        <TR><TD{titleColumnSpan} BGCOLOR=\"#F7F7F7\" ALIGN=\"LEFT\"><FONT POINT-SIZE=\"9\">{encoder.EscapeLabel(tableComment)}</FONT></TD></TR>");
+        }
+    }
+
+    private static void AppendLayoutHeader(StringBuilder builder, DotIdEncoder encoder, TableModel table, DiagramRenderOptions options, LayoutTemplate template, int bodyColumnCount)
+    {
+        var columnSpan = FormatColumnSpan(bodyColumnCount);
+        var cells = TableHeaderLayoutFormatter.Format(table, template, options.Comments);
+        builder.Append($"        <TR><TD{columnSpan} BGCOLOR=\"#EEEEEE\" ALIGN=\"LEFT\">");
+        builder.Append("<TABLE BORDER=\"0\" CELLBORDER=\"0\" CELLSPACING=\"0\"><TR>");
+        foreach (var cell in cells)
+        {
+            builder.Append($"<TD ALIGN=\"LEFT\">{encoder.EscapeLabel(cell.Text)}</TD>");
+        }
+
+        builder.AppendLine("</TR></TABLE></TD></TR>");
+    }
+
+    private static void AppendLegacyColumn(StringBuilder builder, DotIdEncoder encoder, TableModel table, ColumnModel column, DiagramRenderOptions options, int markerColumnCount)
     {
         var port = encoder.GetColumnPortId(table, column);
         var columnComment = options.Show.ColumnComments
@@ -97,6 +139,28 @@ public sealed class GraphvizDotRenderer : IDiagramRenderer
         {
             AppendMarkerCell(builder, encoder, null, options.Show.PrimaryKeys && column.IsPrimaryKey ? "PK" : null);
             AppendMarkerCell(builder, encoder, column.IsForeignKey ? GetForeignKeyPortId(port) : null, options.Show.ForeignKeys && column.IsForeignKey ? "FK" : null);
+        }
+
+        builder.AppendLine("</TR>");
+    }
+
+    private static void AppendLayoutColumn(StringBuilder builder, DotIdEncoder encoder, TableModel table, ColumnModel column, DiagramRenderOptions options, LayoutTemplate template)
+    {
+        var portPlan = GetLayoutPortPlan(template);
+        var mainPort = encoder.GetColumnPortId(table, column);
+        var fkPort = column.IsForeignKey && portPlan.FkPortCellIndex is not null
+            ? GetForeignKeyPortId(mainPort)
+            : null;
+        var cells = ColumnLayoutFormatter.Format(column, template, options.Comments);
+
+        builder.Append("        <TR>");
+        for (var i = 0; i < cells.Count; i++)
+        {
+            var portAttribute = i == portPlan.MainPortCellIndex
+                ? $" PORT=\"{encoder.EscapeLabel(mainPort)}\""
+                : fkPort is not null && i == portPlan.FkPortCellIndex ? $" PORT=\"{encoder.EscapeLabel(fkPort)}\"" : "";
+            var align = cells[i].ContainsNameToken ? "LEFT" : "CENTER";
+            builder.Append($"<TD{portAttribute} ALIGN=\"{align}\">{encoder.EscapeLabel(cells[i].Text)}</TD>");
         }
 
         builder.AppendLine("</TR>");
@@ -160,7 +224,7 @@ public sealed class GraphvizDotRenderer : IDiagramRenderer
                 }
 
                 var label = i == 0 && options.Show.ForeignKeyLabels ? foreignKey.Name : null;
-                AppendColumnEdge(builder, encoder, source, sourceColumn, target, targetColumn, label, options.Direction);
+                AppendColumnEdge(builder, encoder, source, sourceColumn, target, targetColumn, label, options);
             }
 
             return;
@@ -178,15 +242,69 @@ public sealed class GraphvizDotRenderer : IDiagramRenderer
         string.Equals(foreignKey.SourceTable.SchemaName, foreignKey.TargetTable.SchemaName, StringComparison.OrdinalIgnoreCase) &&
         string.Equals(foreignKey.SourceTable.TableName, foreignKey.TargetTable.TableName, StringComparison.OrdinalIgnoreCase);
 
-    private static void AppendColumnEdge(StringBuilder builder, DotIdEncoder encoder, TableModel source, ColumnModel sourceColumn, TableModel target, ColumnModel targetColumn, string? label, DiagramDirection direction)
+    private static void AppendColumnEdge(StringBuilder builder, DotIdEncoder encoder, TableModel source, ColumnModel sourceColumn, TableModel target, ColumnModel targetColumn, string? label, DiagramRenderOptions options)
     {
-        var sourcePort = sourceColumn.IsForeignKey
-            ? GetForeignKeyPortId(encoder.GetColumnPortId(source, sourceColumn))
-            : encoder.GetColumnPortId(source, sourceColumn);
-        builder.Append($"  \"{encoder.EscapeDotString(encoder.GetTableNodeId(source))}\":\"{encoder.EscapeDotString(sourcePort)}\":{GetSourceCompass(direction)}");
-        builder.Append($" -> \"{encoder.EscapeDotString(encoder.GetTableNodeId(target))}\":\"{encoder.EscapeDotString(encoder.GetColumnPortId(target, targetColumn))}\":{GetTargetCompass(direction)}");
+        var sourcePort = GetSourceColumnEdgePort(encoder, source, sourceColumn, options);
+        builder.Append($"  \"{encoder.EscapeDotString(encoder.GetTableNodeId(source))}\":\"{encoder.EscapeDotString(sourcePort)}\":{GetSourceCompass(options.Direction)}");
+        builder.Append($" -> \"{encoder.EscapeDotString(encoder.GetTableNodeId(target))}\":\"{encoder.EscapeDotString(encoder.GetColumnPortId(target, targetColumn))}\":{GetTargetCompass(options.Direction)}");
         AppendEdgeAttributes(builder, encoder, label);
     }
+
+    private static string GetSourceColumnEdgePort(DotIdEncoder encoder, TableModel table, ColumnModel column, DiagramRenderOptions options)
+    {
+        var mainPort = encoder.GetColumnPortId(table, column);
+        if (!column.IsForeignKey)
+        {
+            return mainPort;
+        }
+
+        var template = ParseColumnLayout(options.Layout.ColumnLayout);
+        if (template is null)
+        {
+            return GetForeignKeyPortId(mainPort);
+        }
+
+        return GetLayoutPortPlan(template).FkPortCellIndex is null
+            ? mainPort
+            : GetForeignKeyPortId(mainPort);
+    }
+
+    private static LayoutPortPlan GetLayoutPortPlan(LayoutTemplate template)
+    {
+        var nameCellIndex = 0;
+        for (var i = 0; i < template.Cells.Count; i++)
+        {
+            if (template.Cells[i].Tokens.Contains("name"))
+            {
+                nameCellIndex = i;
+                break;
+            }
+        }
+
+        int? fkCellIndex = null;
+        for (var i = 0; i < template.Cells.Count; i++)
+        {
+            if (i != nameCellIndex && (template.Cells[i].Tokens.Contains("fk") || template.Cells[i].Tokens.Contains("keys")))
+            {
+                fkCellIndex = i;
+                break;
+            }
+        }
+
+        return new LayoutPortPlan(nameCellIndex, fkCellIndex);
+    }
+
+    private static LayoutTemplate? ParseColumnLayout(string? layout) =>
+        layout is null
+            ? null
+            : LayoutTemplateParser.Parse(layout, ColumnLayoutFormatter.SupportedTokens, "diagram.columnLayout");
+
+    private static LayoutTemplate? ParseTableHeaderLayout(string? layout) =>
+        layout is null
+            ? null
+            : LayoutTemplateParser.Parse(layout, TableHeaderLayoutFormatter.SupportedTokens, "diagram.tableHeaderLayout");
+
+    private sealed record LayoutPortPlan(int MainPortCellIndex, int? FkPortCellIndex);
 
     private static void AppendTableEdge(StringBuilder builder, DotIdEncoder encoder, TableModel source, TableModel target, string? label, DiagramDirection direction)
     {

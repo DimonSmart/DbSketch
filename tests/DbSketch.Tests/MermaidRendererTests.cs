@@ -271,6 +271,26 @@ public sealed class MermaidRendererTests
         Assert.Contains("int Id PK \"User \\\"identifier\\\"…\"", mermaid);
     }
 
+    [Fact]
+    public void IgnoresColumnLayout()
+    {
+        var withoutLayout = Render(Model(), showColumnTypes: true);
+        var withLayout = Render(Model(), showColumnTypes: true, columnLayout: "{name}: {type} | {pk} | {fk}");
+
+        Assert.Equal(withoutLayout, withLayout);
+        Assert.DoesNotContain("Id: int", withLayout);
+    }
+
+    [Fact]
+    public void IgnoresTableHeaderLayout()
+    {
+        var withoutLayout = Render(Model());
+        var withLayout = Render(Model(), tableHeaderLayout: "{schema} | {table}");
+
+        Assert.Equal(withoutLayout, withLayout);
+        Assert.DoesNotContain("dbo | Users", withLayout);
+    }
+
     private static string Render(
         DatabaseModel model,
         bool showSchemaName = true,
@@ -282,13 +302,16 @@ public sealed class MermaidRendererTests
         bool showSelfReferencingForeignKeys = true,
         bool showTableComments = false,
         bool showColumnComments = false,
-        int? maxCommentLength = null) =>
+        int? maxCommentLength = null,
+        string? columnLayout = null,
+        string? tableHeaderLayout = null) =>
         new MermaidErRenderer().Render(
             model,
             new DiagramRenderOptions(
                 "Database schema",
                 direction,
                 true,
+                new DiagramLayoutOptions(columnLayout, tableHeaderLayout),
                 new DiagramShowOptions(showSchemaName, showColumnTypes, showNullability, true, true, showForeignKeyLabels, showSelfReferencingForeignKeys, showTableComments, showColumnComments),
                 new MermaidRenderOptions(emitDirection),
                 new DiagramCommentRenderOptions(maxCommentLength)));

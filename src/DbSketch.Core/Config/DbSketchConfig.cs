@@ -69,6 +69,8 @@ public sealed class DiagramConfig
     public string Renderer { get; init; } = "dot";
     public string Direction { get; init; } = "LR";
     public bool Compact { get; init; } = true;
+    public string? ColumnLayout { get; init; }
+    public string? TableHeaderLayout { get; init; }
     public DiagramShowConfig Show { get; init; } = new();
     public MermaidConfig Mermaid { get; init; } = new();
     public DiagramCommentsConfig Comments { get; init; } = new();
@@ -79,6 +81,8 @@ public sealed class DiagramOverrideConfig
     public string? Renderer { get; init; }
     public string? Direction { get; init; }
     public bool? Compact { get; init; }
+    public string? ColumnLayout { get; init; }
+    public string? TableHeaderLayout { get; init; }
     public DiagramShowOverrideConfig? Show { get; init; }
     public MermaidOverrideConfig? Mermaid { get; init; }
     public DiagramCommentsOverrideConfig? Comments { get; init; }

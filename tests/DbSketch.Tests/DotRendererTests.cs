@@ -305,6 +305,187 @@ public sealed class DotRendererTests
         Assert.Contains("PORT=\"col_Id\"", dot);
     }
 
+    [Fact]
+    public void LayoutRendersOnlyPrimaryKeyMarkerWhenConfigured()
+    {
+        var model = new DatabaseModel(
+            "sqlserver",
+            null,
+            [new TableModel("dbo", "Users", [new ColumnModel("Id", "int", false, true, true)])],
+            []);
+
+        var dot = Render(model, columnLayout: "{name} | {pk}");
+
+        Assert.Contains("<TD PORT=\"col_Id\" ALIGN=\"LEFT\">Id</TD><TD ALIGN=\"CENTER\">PK</TD>", dot);
+        Assert.DoesNotContain(">FK</TD>", dot);
+        Assert.DoesNotContain("col_Id_fk", dot);
+    }
+
+    [Fact]
+    public void LayoutRendersPrimaryKeyAndForeignKeyInSeparateCells()
+    {
+        var model = new DatabaseModel(
+            "sqlserver",
+            null,
+            [new TableModel("dbo", "UserRoles", [new ColumnModel("UserId", "int", false, true, true)])],
+            []);
+
+        var dot = Render(model, columnLayout: "{name} | {pk} | {fk}");
+
+        Assert.Contains("<TD PORT=\"col_UserId\" ALIGN=\"LEFT\">UserId</TD><TD ALIGN=\"CENTER\">PK</TD><TD PORT=\"col_UserId_fk\" ALIGN=\"CENTER\">FK</TD>", dot);
+    }
+
+    [Fact]
+    public void LayoutRendersPrimaryKeyAndForeignKeyInOneCell()
+    {
+        var model = new DatabaseModel(
+            "sqlserver",
+            null,
+            [new TableModel("dbo", "UserRoles", [new ColumnModel("UserId", "int", false, true, true)])],
+            []);
+
+        var dot = Render(model, columnLayout: "{name} | {keys}");
+
+        Assert.Contains("<TD PORT=\"col_UserId\" ALIGN=\"LEFT\">UserId</TD><TD PORT=\"col_UserId_fk\" ALIGN=\"CENTER\">PK FK</TD>", dot);
+    }
+
+    [Fact]
+    public void LayoutRendersColumnNameAndTypeInSeparateCells()
+    {
+        var dot = Render(Model(), columnLayout: "{name} | {type}");
+
+        Assert.Contains("<TD PORT=\"col_Name\" ALIGN=\"LEFT\">Name</TD><TD ALIGN=\"CENTER\">nvarchar(100)</TD>", dot);
+    }
+
+    [Fact]
+    public void LayoutRendersColumnNameAndTypeInOneCell()
+    {
+        var dot = Render(Model(), columnLayout: "{name}: {type}");
+
+        Assert.Contains("<TD PORT=\"col_Name\" ALIGN=\"LEFT\">Name: nvarchar(100)</TD>", dot);
+    }
+
+    [Fact]
+    public void LayoutRendersColumnNameAndTypeWithCustomSeparator()
+    {
+        var dot = Render(Model(), columnLayout: "{name} :: {type}");
+
+        Assert.Contains("<TD PORT=\"col_Name\" ALIGN=\"LEFT\">Name :: nvarchar(100)</TD>", dot);
+    }
+
+    [Fact]
+    public void LayoutRendersColumnCommentAndCleansEmptyCommentSeparator()
+    {
+        var model = new DatabaseModel(
+            "sqlserver",
+            null,
+            [
+                new TableModel(
+                    "dbo",
+                    "Users",
+                    [
+                        new ColumnModel("Id", "int", false, true, false, "User identifier"),
+                        new ColumnModel("Name", "nvarchar(100)", true, false, false)
+                    ])
+            ],
+            []);
+
+        var dot = Render(model, columnLayout: "{name}: {type} - {comment} | {keys}");
+
+        Assert.Contains("Id: int - User identifier", dot);
+        Assert.Contains("<TD PORT=\"col_Name\" ALIGN=\"LEFT\">Name: nvarchar(100)</TD>", dot);
+    }
+
+    [Fact]
+    public void LayoutTruncatesColumnComment()
+    {
+        var model = new DatabaseModel(
+            "sqlserver",
+            null,
+            [new TableModel("dbo", "Users", [new ColumnModel("Id", "int", false, true, false, "Long column comment")])],
+            []);
+
+        var dot = Render(model, columnLayout: "{name} - {comment}", maxCommentLength: 10);
+
+        Assert.Contains("Id - Long colu…", dot);
+        Assert.DoesNotContain("Long column comment", dot);
+    }
+
+    [Fact]
+    public void LayoutEscapesHtmlSensitiveCharactersInColumnCells()
+    {
+        var model = new DatabaseModel(
+            "sqlserver",
+            null,
+            [new TableModel("dbo", "Users", [new ColumnModel("A&B", "nvarchar<100>", true, false, false, "Use \"quotes\"")])],
+            []);
+
+        var dot = Render(model, columnLayout: "{name}: {type} | {comment}");
+
+        Assert.Contains("A&amp;B: nvarchar&lt;100&gt;", dot);
+        Assert.Contains("Use &quot;quotes&quot;", dot);
+    }
+
+    [Fact]
+    public void LayoutForeignKeyEdgeUsesFkCellPortWhenSeparateCellExists()
+    {
+        var dot = Render(Model(), columnLayout: "{name}: {type} | {fk}");
+
+        Assert.Contains("<TD PORT=\"col_UserId\" ALIGN=\"LEFT\">UserId: int</TD><TD PORT=\"col_UserId_fk\" ALIGN=\"CENTER\">FK</TD>", dot);
+        Assert.Contains("\"table_dbo_Orders\":\"col_UserId_fk\":e -> \"table_dbo_Users\":\"col_Id\":w", dot);
+    }
+
+    [Fact]
+    public void LayoutForeignKeyEdgeFallsBackToMainPortWhenNoFkCellExists()
+    {
+        var dot = Render(Model(), columnLayout: "{name}: {type}");
+
+        Assert.DoesNotContain("col_UserId_fk", dot);
+        Assert.Contains("\"table_dbo_Orders\":\"col_UserId\":e -> \"table_dbo_Users\":\"col_Id\":w", dot);
+    }
+
+    [Fact]
+    public void HeaderLayoutRendersFullName()
+    {
+        var dot = Render(Model(), tableHeaderLayout: "{fullName}");
+
+        Assert.Contains("<TABLE BORDER=\"0\" CELLBORDER=\"0\" CELLSPACING=\"0\"><TR><TD ALIGN=\"LEFT\">dbo.Users</TD></TR></TABLE>", dot);
+    }
+
+    [Fact]
+    public void HeaderLayoutRendersSchemaAndTableInSeparateCells()
+    {
+        var dot = Render(Model(), tableHeaderLayout: "{schema} | {table}");
+
+        Assert.Contains("<TD ALIGN=\"LEFT\">dbo</TD><TD ALIGN=\"LEFT\">Users</TD>", dot);
+    }
+
+    [Fact]
+    public void HeaderLayoutRendersAndTruncatesTableComment()
+    {
+        var model = CommentsModel();
+
+        var dot = Render(model, tableHeaderLayout: "{fullName} | {comment}", maxCommentLength: 10);
+
+        Assert.Contains("<TD ALIGN=\"LEFT\">dbo.Users</TD><TD ALIGN=\"LEFT\">Applicati…</TD>", dot);
+        Assert.DoesNotContain("Application users", dot);
+    }
+
+    [Fact]
+    public void HeaderLayoutEscapesHtmlSensitiveCharacters()
+    {
+        var model = new DatabaseModel(
+            "sqlserver",
+            null,
+            [new TableModel("dbo", "A&B", [new ColumnModel("Id", "int", false, true, false)], "Use <tags> & \"quotes\"")],
+            []);
+
+        var dot = Render(model, tableHeaderLayout: "{fullName} | {comment}");
+
+        Assert.Contains("dbo.A&amp;B", dot);
+        Assert.Contains("Use &lt;tags&gt; &amp; &quot;quotes&quot;", dot);
+    }
+
     private static string Render(
         DatabaseModel model,
         DiagramDirection direction = DiagramDirection.LR,
@@ -313,13 +494,16 @@ public sealed class DotRendererTests
         bool showSelfReferencingForeignKeys = true,
         bool showTableComments = false,
         bool showColumnComments = false,
-        int? maxCommentLength = null) =>
+        int? maxCommentLength = null,
+        string? columnLayout = null,
+        string? tableHeaderLayout = null) =>
         new GraphvizDotRenderer().Render(
             model,
             new DiagramRenderOptions(
                 "Database schema",
                 direction,
                 true,
+                new DiagramLayoutOptions(columnLayout, tableHeaderLayout),
                 new DiagramShowOptions(true, false, false, true, true, showForeignKeyLabels, showSelfReferencingForeignKeys, showTableComments, showColumnComments),
                 new MermaidRenderOptions(mermaidEmitDirection),
                 new DiagramCommentRenderOptions(maxCommentLength)));

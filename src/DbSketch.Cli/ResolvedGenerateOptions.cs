@@ -86,6 +86,10 @@ public static class GenerateOptionsResolver
 
         var commentMaxLength = target.Diagram?.Comments?.MaxLength ?? defaults.Diagram.Comments.MaxLength;
         ValidateCommentMaxLength(commentMaxLength, $"diagrams['{target.Name}'].diagram.comments.maxLength");
+        var columnLayout = target.Diagram?.ColumnLayout ?? defaults.Diagram.ColumnLayout;
+        var tableHeaderLayout = target.Diagram?.TableHeaderLayout ?? defaults.Diagram.TableHeaderLayout;
+        ValidateLayout(columnLayout, ColumnLayoutFormatter.SupportedTokens, GetLayoutConfigPath(target, target.Diagram?.ColumnLayout, "columnLayout"));
+        ValidateLayout(tableHeaderLayout, TableHeaderLayoutFormatter.SupportedTokens, GetLayoutConfigPath(target, target.Diagram?.TableHeaderLayout, "tableHeaderLayout"));
 
         var markdownOptions = outputFormat == OutputContainerFormat.Markdown
             ? new MarkdownRenderOptions(
@@ -104,9 +108,32 @@ public static class GenerateOptionsResolver
                 title,
                 direction,
                 target.Diagram?.Compact ?? defaults.Diagram.Compact,
+                new DiagramLayoutOptions(columnLayout, tableHeaderLayout),
                 ResolveShowOptions(defaults.Diagram.Show, target.Diagram?.Show),
                 new MermaidRenderOptions(target.Diagram?.Mermaid?.EmitDirection ?? defaults.Diagram.Mermaid.EmitDirection),
                 new DiagramCommentRenderOptions(commentMaxLength)));
+    }
+
+    private static string GetLayoutConfigPath(DiagramTargetConfig target, string? overrideValue, string propertyName) =>
+        overrideValue is null
+            ? $"defaults.diagram.{propertyName}"
+            : $"diagrams['{target.Name}'].diagram.{propertyName}";
+
+    private static void ValidateLayout(string? layout, IReadOnlySet<string> supportedTokens, string configPath)
+    {
+        if (layout is null)
+        {
+            return;
+        }
+
+        try
+        {
+            LayoutTemplateParser.Parse(layout, supportedTokens, configPath);
+        }
+        catch (LayoutTemplateException exception)
+        {
+            throw new CliException(exception.Message);
+        }
     }
 
     private static DiagramShowOptions ResolveShowOptions(DiagramShowConfig defaults, DiagramShowOverrideConfig? overrides) =>

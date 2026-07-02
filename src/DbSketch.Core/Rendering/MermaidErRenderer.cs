@@ -5,7 +5,9 @@ namespace DimonSmart.DbSketch.Core.Rendering;
 
 public sealed class MermaidErRenderer : IDiagramRenderer
 {
-    public DiagramRendererCapabilities Capabilities { get; } = new(SupportsColumnToColumnRelationships: false);
+    public DiagramRendererCapabilities Capabilities { get; } = new(
+        SupportsColumnToColumnRelationships: false,
+        SupportsCustomTableLayouts: false);
 
     public string Render(DatabaseModel model, DiagramRenderOptions options)
     {

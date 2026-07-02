@@ -149,3 +149,79 @@ Supported diagram renderers:
 
 - `dot`: Graphviz DOT.
 - `mermaid`: Mermaid ER.
+
+## Column Layout
+
+DOT renderer can use `columnLayout` to control how each column row is split into table cells. The `|` character separates cells; use `\|` for a literal pipe and `\\` for a literal backslash.
+
+```yaml
+defaults:
+  diagram:
+    renderer: dot
+    columnLayout: "{name}: {type} | {pk} | {fk}"
+```
+
+Supported column tokens:
+
+- `{name}`: column name.
+- `{type}`: database/store type.
+- `{nullability}`: `NULL` or `NOT NULL`.
+- `{pk}`: `PK` for primary key columns, otherwise empty.
+- `{fk}`: `FK` for foreign key columns, otherwise empty.
+- `{keys}`: `PK`, `FK`, `PK FK`, or empty.
+- `{comment}`: column comment, normalized and truncated by `defaults.diagram.comments.maxLength` when configured.
+
+Examples:
+
+```yaml
+columnLayout: "{name} | {pk}"
+columnLayout: "{name} | {pk} | {fk}"
+columnLayout: "{name} | {keys}"
+columnLayout: "{name} | {type} | {keys}"
+columnLayout: "{name}: {type} | {keys}"
+columnLayout: "{name} :: {type} | {keys}"
+```
+
+If `columnLayout` is not set, DbSketch keeps the legacy `show.columnTypes`, `show.nullability`, `show.primaryKeys`, `show.foreignKeys`, and `show.columnComments` behavior. If `columnLayout` is set, the layout string fully controls rendered column text and cells. Foreign key relationships are still rendered independently from the text layout.
+
+## Table Header Layout
+
+DOT renderer can use `tableHeaderLayout` to control the table header cells.
+
+```yaml
+defaults:
+  diagram:
+    tableHeaderLayout: "{schema}.{table} | {comment}"
+```
+
+Supported table header tokens:
+
+- `{schema}`: schema name.
+- `{table}`: table name.
+- `{name}`: alias for `{table}`.
+- `{fullName}`: `schema.table`.
+- `{comment}`: table comment, normalized and truncated by `defaults.diagram.comments.maxLength` when configured.
+
+Examples:
+
+```yaml
+tableHeaderLayout: "{fullName}"
+tableHeaderLayout: "{schema} | {table}"
+tableHeaderLayout: "{table}"
+tableHeaderLayout: "{fullName} - {comment}"
+tableHeaderLayout: "{fullName} | {comment}"
+```
+
+Diagram targets can override default layout settings:
+
+```yaml
+diagrams:
+  - name: detailed
+    output:
+      path: docs/db/detailed.dot
+    diagram:
+      columnLayout: "{name}: {type} {nullability} | {keys}"
+      tableHeaderLayout: "{schema} | {table} | {comment}"
+```
+
+Custom layout is supported by DOT renderer. Mermaid ER ignores custom layout settings and keeps Mermaid-compatible syntax.

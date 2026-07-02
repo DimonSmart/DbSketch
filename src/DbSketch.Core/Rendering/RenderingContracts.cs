@@ -9,7 +9,9 @@ public interface IDiagramRenderer
     string Render(DatabaseModel model, DiagramRenderOptions options);
 }
 
-public sealed record DiagramRendererCapabilities(bool SupportsColumnToColumnRelationships);
+public sealed record DiagramRendererCapabilities(
+    bool SupportsColumnToColumnRelationships,
+    bool SupportsCustomTableLayouts);
 
 public enum DiagramDirection
 {
@@ -23,9 +25,14 @@ public sealed record DiagramRenderOptions(
     string Title,
     DiagramDirection Direction,
     bool Compact,
+    DiagramLayoutOptions Layout,
     DiagramShowOptions Show,
     MermaidRenderOptions Mermaid,
     DiagramCommentRenderOptions Comments);
+
+public sealed record DiagramLayoutOptions(
+    string? ColumnLayout,
+    string? TableHeaderLayout);
 
 public sealed record MermaidRenderOptions(bool EmitDirection);
 

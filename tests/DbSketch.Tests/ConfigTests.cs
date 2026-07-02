@@ -457,6 +457,138 @@ public sealed class ConfigTests
         Assert.Equal("database.commandTimeoutSeconds must be greater than zero.", exception.Message);
     }
 
+    [Fact]
+    public void ReadsLayoutYamlConfig()
+    {
+        var path = WriteTempConfig("""
+            provider: postgres
+            connectionString: Host=localhost
+            defaults:
+              diagram:
+                columnLayout: "{name}: {type} | {pk} | {fk}"
+                tableHeaderLayout: "{schema}.{table} | {comment}"
+            diagrams:
+              - name: auth
+                diagram:
+                  columnLayout: "{name} | {keys}"
+                  tableHeaderLayout: "{schema} | {table}"
+                output:
+                  path: docs/db/auth.dot
+            """);
+
+        var config = ConfigLoader.Load(path);
+
+        Assert.Equal("{name}: {type} | {pk} | {fk}", config.Defaults.Diagram.ColumnLayout);
+        Assert.Equal("{schema}.{table} | {comment}", config.Defaults.Diagram.TableHeaderLayout);
+        Assert.Equal("{name} | {keys}", config.Diagrams[0].Diagram?.ColumnLayout);
+        Assert.Equal("{schema} | {table}", config.Diagrams[0].Diagram?.TableHeaderLayout);
+    }
+
+    [Fact]
+    public void DiagramLayoutInheritsDefaultsWhenOverrideIsNotSet()
+    {
+        var config = ValidConfig() with
+        {
+            Defaults = new DefaultsConfig
+            {
+                Diagram = new DiagramConfig
+                {
+                    ColumnLayout = "{name}: {type}",
+                    TableHeaderLayout = "{fullName}"
+                }
+            }
+        };
+
+        var diagram = Assert.Single(GenerateOptionsResolver.Resolve(config, EmptyCli()).Diagrams);
+
+        Assert.Equal("{name}: {type}", diagram.Diagram.Layout.ColumnLayout);
+        Assert.Equal("{fullName}", diagram.Diagram.Layout.TableHeaderLayout);
+    }
+
+    [Fact]
+    public void DiagramLayoutOverridesDefaults()
+    {
+        var config = ValidConfig() with
+        {
+            Defaults = new DefaultsConfig
+            {
+                Diagram = new DiagramConfig
+                {
+                    ColumnLayout = "{name}: {type}",
+                    TableHeaderLayout = "{fullName}"
+                }
+            },
+            Diagrams =
+            [
+                Diagram(
+                    "auth",
+                    "auth.dot",
+                    diagram: new DiagramOverrideConfig
+                    {
+                        ColumnLayout = "{name} | {keys}",
+                        TableHeaderLayout = "{schema} | {table}"
+                    })
+            ]
+        };
+
+        var diagram = Assert.Single(GenerateOptionsResolver.Resolve(config, EmptyCli()).Diagrams);
+
+        Assert.Equal("{name} | {keys}", diagram.Diagram.Layout.ColumnLayout);
+        Assert.Equal("{schema} | {table}", diagram.Diagram.Layout.TableHeaderLayout);
+    }
+
+    [Fact]
+    public void ResolverRejectsUnknownColumnLayoutToken()
+    {
+        var config = ValidConfig() with
+        {
+            Defaults = new DefaultsConfig { Diagram = new DiagramConfig { ColumnLayout = "{name} | {foo}" } }
+        };
+
+        var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, EmptyCli()));
+
+        Assert.Equal("defaults.diagram.columnLayout contains unknown token '{foo}'. Supported tokens: {name}, {type}, {nullability}, {pk}, {fk}, {keys}, {comment}.", exception.Message);
+    }
+
+    [Fact]
+    public void ResolverRejectsUnknownTableHeaderLayoutToken()
+    {
+        var config = ValidConfig() with
+        {
+            Diagrams = [Diagram("auth", "auth.dot", diagram: new DiagramOverrideConfig { TableHeaderLayout = "{fullName} | {foo}" })]
+        };
+
+        var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, EmptyCli()));
+
+        Assert.Equal("diagrams['auth'].diagram.tableHeaderLayout contains unknown token '{foo}'. Supported tokens: {schema}, {table}, {name}, {fullName}, {comment}.", exception.Message);
+    }
+
+    [Fact]
+    public void ResolverRejectsEmptyColumnLayout()
+    {
+        var config = ValidConfig() with
+        {
+            Defaults = new DefaultsConfig { Diagram = new DiagramConfig { ColumnLayout = "  " } }
+        };
+
+        var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, EmptyCli()));
+
+        Assert.Equal("defaults.diagram.columnLayout must not be empty.", exception.Message);
+    }
+
+    [Fact]
+    public void ResolverRejectsEmptyTableHeaderLayout()
+    {
+        var config = ValidConfig() with
+        {
+            Diagrams = [Diagram("auth", "auth.dot", diagram: new DiagramOverrideConfig { TableHeaderLayout = "" })]
+        };
+
+        var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, EmptyCli()));
+
+        Assert.Equal("diagrams['auth'].diagram.tableHeaderLayout must not be empty.", exception.Message);
+    }
+
     private static DbSketchConfig ValidConfig() =>
         new()
         {
