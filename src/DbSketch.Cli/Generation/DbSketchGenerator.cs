@@ -13,7 +13,7 @@ public sealed class DbSketchGenerator(
     ISchemaFilter schemaFilter,
     ICommandLineConsole console)
 {
-    public async Task<GenerateResult> GenerateAsync(ResolvedGenerateOptions options, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<GenerateResult>> GenerateAsync(ResolvedGenerateOptions options, CancellationToken cancellationToken)
     {
         var progress = new ProgressReporter(console, options.Quiet, options.NoProgress, options.Verbose);
 
@@ -30,50 +30,59 @@ public sealed class DbSketchGenerator(
             new DatabaseReadOptions(options.Provider, options.ConnectionString, options.ReadComments, options.CommandTimeoutSeconds),
             cancellationToken);
         var commented = CommentOverrideApplier.Apply(model, options.CommentOverrides);
-        var filtered = schemaFilter.Apply(commented, options.Filter);
-        progress.Verbose($"Included tables: {string.Join(", ", options.Filter.IncludeTables)}");
-        progress.Verbose($"Excluded tables: {string.Join(", ", options.Filter.ExcludeTables)}");
-        progress.Info($"Tables: {filtered.Tables.Count}");
-        progress.Info($"Foreign keys: {filtered.ForeignKeys.Count}");
-        if (filtered.Tables.Count == 0)
+        progress.Info($"Diagrams: {options.Diagrams.Count}");
+
+        var results = new List<GenerateResult>(options.Diagrams.Count);
+        foreach (var diagram in options.Diagrams)
         {
-            progress.Warning("no tables found after filtering.");
+            var filtered = schemaFilter.Apply(commented, diagram.Filter);
+            progress.Verbose($"Included tables: {string.Join(", ", diagram.Filter.IncludeTables)}");
+            progress.Verbose($"Excluded tables: {string.Join(", ", diagram.Filter.ExcludeTables)}");
+            progress.Info("");
+            progress.Info($"Diagram: {diagram.Name}");
+            progress.Info($"Tables: {filtered.Tables.Count}");
+            progress.Info($"Foreign keys: {filtered.ForeignKeys.Count}");
+            if (filtered.Tables.Count == 0)
+            {
+                progress.Warning($"diagram '{diagram.Name}' has no tables after filtering.");
+            }
+
+            var renderer = rendererFactory.Create(diagram.DiagramRenderer);
+            EmitCapabilityWarnings(renderer, diagram, progress);
+
+            if (options.DryRun)
+            {
+                progress.Info("Dry run: output was not written.");
+                results.Add(new GenerateResult(diagram.OutputPath, WroteOutput: false));
+                continue;
+            }
+
+            var diagramText = renderer.Render(filtered, diagram.Diagram);
+            var output = diagram.Output.Format == OutputContainerFormat.Markdown
+                ? MarkdownDiagramWrapper.Wrap(diagramText, diagram.Output.Markdown ?? throw new InvalidOperationException("Markdown output options are required."))
+                : diagramText;
+
+            var fullPath = Path.GetFullPath(diagram.OutputPath);
+            var directory = Path.GetDirectoryName(fullPath);
+            if (!string.IsNullOrWhiteSpace(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            progress.Info($"Writing: {diagram.OutputPath}");
+            await File.WriteAllTextAsync(diagram.OutputPath, output, cancellationToken);
+            results.Add(new GenerateResult(diagram.OutputPath, WroteOutput: true));
         }
 
-        var renderer = rendererFactory.Create(options.DiagramRenderer);
-        EmitCapabilityWarnings(renderer, options, progress);
-
-        if (options.DryRun)
+        if (!options.DryRun)
         {
-            progress.Info("Dry run: output was not written.");
-            return new GenerateResult(options.OutputPath, WroteOutput: false);
+            progress.Info("Done.");
         }
 
-        var diagramText = renderer.Render(filtered, options.Diagram);
-        var output = options.Output.Format == OutputContainerFormat.Markdown
-            ? MarkdownDiagramWrapper.Wrap(diagramText, options.Output.Markdown ?? throw new InvalidOperationException("Markdown output options are required."))
-            : diagramText;
-
-        if (options.OutputPath == "-")
-        {
-            await console.Out.WriteAsync(output.AsMemory(), cancellationToken);
-            return new GenerateResult(options.OutputPath, WroteOutput: true);
-        }
-
-        var fullPath = Path.GetFullPath(options.OutputPath);
-        var directory = Path.GetDirectoryName(fullPath);
-        if (!string.IsNullOrWhiteSpace(directory))
-        {
-            Directory.CreateDirectory(directory);
-        }
-
-        progress.Info($"Writing: {options.OutputPath}");
-        await File.WriteAllTextAsync(options.OutputPath, output, cancellationToken);
-        progress.Info("Done.");
-        return new GenerateResult(options.OutputPath, WroteOutput: true);
+        return results;
     }
 
-    private static void EmitCapabilityWarnings(IDiagramRenderer renderer, ResolvedGenerateOptions options, ProgressReporter progress)
+    private static void EmitCapabilityWarnings(IDiagramRenderer renderer, ResolvedDiagramTarget diagram, ProgressReporter progress)
     {
         if (renderer.Capabilities.SupportsColumnToColumnRelationships)
         {
@@ -81,7 +90,7 @@ public sealed class DbSketchGenerator(
         }
 
         progress.Warning("Mermaid ER renders relationships between entities, not between specific column ports. Use DOT for column-to-column edges.");
-        if (options.Diagram.Show.TableComments)
+        if (diagram.Diagram.Show.TableComments)
         {
             progress.Warning("Mermaid ER does not support table comments. Table comments will not be emitted.");
         }

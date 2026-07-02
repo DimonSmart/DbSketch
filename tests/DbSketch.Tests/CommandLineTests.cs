@@ -44,27 +44,26 @@ public sealed class CommandLineTests
     }
 
     [Fact]
-    public async Task ParsesEqualsSyntax()
+    public async Task ParsesDiagramOption()
     {
         CliOptions? captured = null;
 
-        var exitCode = await InvokeAsync(["generate", "--provider=postgres", "--connection=Host=localhost"], new StringWriter(), new StringWriter(), (options, _) =>
+        var exitCode = await InvokeAsync(["generate", "--config=dbsketch.yml", "--diagram=auth"], new StringWriter(), new StringWriter(), (options, _) =>
         {
             captured = options;
             return Task.FromResult(0);
         });
 
         Assert.Equal(0, exitCode);
-        Assert.Equal("postgres", captured?.Provider);
-        Assert.Equal("Host=localhost", captured?.ConnectionString);
+        Assert.Equal("auth", captured?.DiagramName);
     }
 
     [Fact]
-    public async Task ParsesQuietNoProgressAndStdoutOutput()
+    public async Task ParsesQuietNoProgressVerboseAndDryRun()
     {
         CliOptions? captured = null;
 
-        var exitCode = await InvokeAsync(["generate", "--quiet", "--no-progress", "--out", "-"], new StringWriter(), new StringWriter(), (options, _) =>
+        var exitCode = await InvokeAsync(["generate", "--config", "dbsketch.yml", "--quiet", "--no-progress", "--dry-run"], new StringWriter(), new StringWriter(), (options, _) =>
         {
             captured = options;
             return Task.FromResult(0);
@@ -73,13 +72,26 @@ public sealed class CommandLineTests
         Assert.Equal(0, exitCode);
         Assert.True(captured?.Quiet);
         Assert.True(captured?.NoProgress);
-        Assert.Equal("-", captured?.OutputPath);
+        Assert.True(captured?.DryRun);
     }
 
     [Fact]
     public async Task RejectsQuietAndVerboseTogether()
     {
         var exitCode = await InvokeAsync(["generate", "--quiet", "--verbose"], new StringWriter(), new StringWriter(), (_, _) => Task.FromResult(0));
+
+        Assert.NotEqual(0, exitCode);
+    }
+
+    [Theory]
+    [InlineData("--provider")]
+    [InlineData("--connection")]
+    [InlineData("--out")]
+    [InlineData("--renderer")]
+    [InlineData("--format")]
+    public async Task RejectsRemovedGenerateOptions(string option)
+    {
+        var exitCode = await InvokeAsync(["generate", option, "value"], new StringWriter(), new StringWriter(), (_, _) => Task.FromResult(0));
 
         Assert.NotEqual(0, exitCode);
     }

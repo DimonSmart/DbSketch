@@ -2,11 +2,7 @@ namespace DimonSmart.DbSketch.Cli;
 
 public sealed record CliOptions(
     string? ConfigPath,
-    string? Provider,
-    string? ConnectionString,
-    string? OutputPath,
-    string? Renderer,
-    string? Format,
+    string? DiagramName,
     bool Verbose,
     bool Quiet,
     bool NoProgress,

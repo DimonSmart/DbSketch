@@ -1,10 +1,14 @@
 provider: mysql
 connectionString: ${DBSKETCH_MYSQL_CONNECTION}
 
-output:
-  path: samples/output/schema.dot
-  format: raw
+defaults:
+  output:
+    format: raw
+  diagram:
+    renderer: dot
+    direction: LR
 
-diagram:
-  renderer: dot
-  direction: LR
+diagrams:
+  - name: full
+    output:
+      path: samples/output/mysql-full.dot

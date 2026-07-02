@@ -1,31 +1,33 @@
 provider: sqlserver
 connectionString: ${DBSKETCH_SQLSERVER_CONNECTION}
 
-include:
-  tables:
-    - "dbo.*"
-
-exclude:
-  tables:
-    - "dbo.__EFMigrationsHistory"
-
-output:
-  path: samples/output/schema.dot
-  format: raw
-
-diagram:
-  renderer: dot
-  title: "Database schema"
-  direction: LR
-  compact: true
-  show:
-    schemaName: true
-    columnTypes: false
-    nullability: false
-    primaryKeys: true
-    foreignKeys: true
-    tableComments: false
-    columnComments: false
+defaults:
+  output:
+    format: raw
+  diagram:
+    renderer: dot
+    direction: LR
+    compact: true
+    show:
+      schemaName: true
+      columnTypes: false
+      nullability: false
+      primaryKeys: true
+      foreignKeys: true
+      tableComments: false
+      columnComments: false
 
 comments:
   enabled: false
+
+diagrams:
+  - name: dbo
+    title: Database schema
+    include:
+      tables:
+        - "dbo.*"
+    exclude:
+      tables:
+        - "dbo.__EFMigrationsHistory"
+    output:
+      path: samples/output/sqlserver-dbo.dot

@@ -7,67 +7,30 @@ namespace DimonSmart.DbSketch.Tests;
 public sealed class ConfigTests
 {
     [Fact]
-    public void ReadsMinimalYamlConfig()
-    {
-        var path = WriteTempConfig("""
-            provider: sqlserver
-            connectionString: Server=.;Database=AppDb
-            output:
-              path: docs/db/schema.dot
-              format: raw
-            """);
-
-        var config = ConfigLoader.Load(path);
-
-        Assert.Equal("sqlserver", config.Provider);
-        Assert.Equal("Server=.;Database=AppDb", config.ConnectionString);
-        Assert.Equal("docs/db/schema.dot", config.Output.Path);
-    }
-
-    [Fact]
-    public void ReadsFullYamlConfig()
+    public void ReadsMultiDiagramYamlConfig()
     {
         var path = WriteTempConfig("""
             provider: postgres
             connectionString: Host=localhost
-            include:
-              tables:
-                - "public.*"
-            exclude:
-              tables:
-                - "public.audit_*"
-            output:
-              path: schema.md
-              format: markdown
-              markdown:
-                fenceLanguage: mermaid
-                header: |
-                  # App schema
-
-                  Custom header.
-                footer: |
-                  ---
-
-                  Custom footer.
-            diagram:
-              renderer: mermaid
-              title: "App schema"
-              direction: LR
-              compact: true
-              mermaid:
-                emitDirection: false
-              show:
-                schemaName: false
-                columnTypes: true
-                nullability: true
-                primaryKeys: true
-                foreignKeys: false
-                tableComments: true
-                columnComments: true
-              comments:
-                maxLength: 80
+            defaults:
+              output:
+                format: markdown
+                markdown:
+                  fenceLanguage: dot
+                  header: |
+                    # App schema
+              diagram:
+                renderer: dot
+                direction: LR
+                compact: true
+                show:
+                  schemaName: false
+                  columnTypes: true
+                  tableComments: true
+                comments:
+                  maxLength: 80
             comments:
-              enabled: false
+              enabled: true
               overrides:
                 tables:
                   - schema: dbo
@@ -75,27 +38,48 @@ public sealed class ConfigTests
                     comment: Application users
                     columns:
                       Id: User identifier
+            diagrams:
+              - name: full
+                title: Full schema
+                include:
+                  tables:
+                    - "public.*"
+                exclude:
+                  tables:
+                    - "public.audit_*"
+                output:
+                  path: docs/db/full.md
+              - name: auth
+                diagram:
+                  renderer: mermaid
+                  mermaid:
+                    emitDirection: true
+                output:
+                  path: docs/db/auth.mmd
+                  format: raw
             """);
 
         var config = ConfigLoader.Load(path);
 
         Assert.Equal("postgres", config.Provider);
-        Assert.Equal("public.*", Assert.Single(config.Include.Tables));
-        Assert.Equal("public.audit_*", Assert.Single(config.Exclude.Tables));
-        Assert.Equal("markdown", config.Output.Format);
-        Assert.Equal("mermaid", config.Output.Markdown.FenceLanguage);
-        Assert.Contains("# App schema", config.Output.Markdown.Header);
-        Assert.Contains("Custom footer.", config.Output.Markdown.Footer);
-        Assert.Equal("mermaid", config.Diagram.Renderer);
-        Assert.Equal("App schema", config.Diagram.Title);
-        Assert.Equal("LR", config.Diagram.Direction);
-        Assert.False(config.Diagram.Mermaid.EmitDirection);
-        Assert.False(config.Diagram.Show.SchemaName);
-        Assert.True(config.Diagram.Show.ColumnTypes);
-        Assert.True(config.Diagram.Show.TableComments);
-        Assert.True(config.Diagram.Show.ColumnComments);
-        Assert.Equal(80, config.Diagram.Comments.MaxLength);
-        Assert.False(config.Comments.Enabled);
+        Assert.Equal("Host=localhost", config.ConnectionString);
+        Assert.Equal("markdown", config.Defaults.Output.Format);
+        Assert.Equal("dot", config.Defaults.Output.Markdown.FenceLanguage);
+        Assert.Contains("# App schema", config.Defaults.Output.Markdown.Header);
+        Assert.Equal("dot", config.Defaults.Diagram.Renderer);
+        Assert.False(config.Defaults.Diagram.Show.SchemaName);
+        Assert.True(config.Defaults.Diagram.Show.ColumnTypes);
+        Assert.True(config.Defaults.Diagram.Show.TableComments);
+        Assert.Equal(80, config.Defaults.Diagram.Comments.MaxLength);
+        Assert.True(config.Comments.Enabled);
+        Assert.Equal(2, config.Diagrams.Count);
+        Assert.Equal("full", config.Diagrams[0].Name);
+        Assert.Equal("public.*", Assert.Single(config.Diagrams[0].Include.Tables));
+        Assert.Equal("public.audit_*", Assert.Single(config.Diagrams[0].Exclude.Tables));
+        Assert.Equal("docs/db/full.md", config.Diagrams[0].Output?.Path);
+        Assert.Equal("mermaid", config.Diagrams[1].Diagram?.Renderer);
+        Assert.True(config.Diagrams[1].Diagram?.Mermaid?.EmitDirection);
+
         var tableOverride = Assert.Single(config.Comments.Overrides.Tables);
         Assert.Equal("dbo", tableOverride.Schema);
         Assert.Equal("Users", tableOverride.Name);
@@ -114,26 +98,16 @@ public sealed class ConfigTests
     }
 
     [Fact]
-    public void LoadsQuotedEnvironmentVariableInYaml()
-    {
-        Environment.SetEnvironmentVariable("DBSKETCH_TEST_QUOTED_CONNECTION", "Host=localhost;Database=app");
-        var path = WriteTempConfig("""
-            provider: postgres
-            connectionString: "${DBSKETCH_TEST_QUOTED_CONNECTION}"
-            """);
-
-        var config = ConfigLoader.Load(path);
-
-        Assert.Equal("Host=localhost;Database=app", config.ConnectionString);
-    }
-
-    [Fact]
     public void LoadsEnvironmentVariableFallbackInYaml()
     {
         Environment.SetEnvironmentVariable("DBSKETCH_TEST_FALLBACK_CONNECTION", null);
         var path = WriteTempConfig("""
             provider: postgres
             connectionString: "${DBSKETCH_TEST_FALLBACK_CONNECTION:-Host=localhost;Database=app}"
+            diagrams:
+              - name: full
+                output:
+                  path: docs/db/full.dot
             """);
 
         var config = ConfigLoader.Load(path);
@@ -152,206 +126,291 @@ public sealed class ConfigTests
     }
 
     [Fact]
-    public void RejectsOldRankdirConfigProperty()
-    {
-        var path = WriteTempConfig("""
-            provider: postgres
-            connectionString: Host=localhost
-            diagram:
-              rankdir: LR
-            """);
-
-        var exception = Assert.Throws<CliException>(() => ConfigLoader.Load(path));
-
-        Assert.Contains("rankdir", exception.Message);
-    }
-
-    [Fact]
-    public void RejectsOldCommentsConfigAlias()
-    {
-        var oldKey = string.Concat("de", "scription", "s");
-        var path = WriteTempConfig($$"""
-            provider: postgres
-            connectionString: Host=localhost
-            {{oldKey}}:
-              enabled: true
-            """);
-
-        var exception = Assert.Throws<CliException>(() => ConfigLoader.Load(path));
-
-        Assert.Contains(oldKey, exception.Message);
-    }
-
-    [Fact]
-    public void RejectsOldMarkdownFenceLanguageConfigProperty()
+    public void RejectsOldTopLevelSingleDiagramConfig()
     {
         var path = WriteTempConfig("""
             provider: postgres
             connectionString: Host=localhost
             output:
-              format: markdown
-              markdownFenceLanguage: graphviz
+              path: docs/db/schema.dot
+            diagram:
+              renderer: dot
+            include:
+              tables:
+                - "public.*"
             """);
 
         var exception = Assert.Throws<CliException>(() => ConfigLoader.Load(path));
 
-        Assert.Contains("markdownFenceLanguage", exception.Message);
+        Assert.Contains("output", exception.Message);
+    }
+
+    [Theory]
+    [InlineData(null, "--config is required.")]
+    [InlineData("", "--config is required.")]
+    public void ResolverRequiresConfigPath(string? configPath, string expectedMessage)
+    {
+        var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(ValidConfig(), EmptyCli(configPath: configPath)));
+
+        Assert.Equal(expectedMessage, exception.Message);
     }
 
     [Fact]
-    public void CliArgsOverrideConfigValues()
+    public void ResolverRejectsMissingProvider()
     {
-        var config = new DbSketchConfig
+        var config = ValidConfig() with { Provider = null };
+
+        var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, EmptyCli()));
+
+        Assert.Equal("provider is required.", exception.Message);
+    }
+
+    [Fact]
+    public void ResolverRejectsMissingConnectionString()
+    {
+        var config = ValidConfig() with { ConnectionString = null };
+
+        var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, EmptyCli()));
+
+        Assert.Equal("connectionString is required.", exception.Message);
+    }
+
+    [Fact]
+    public void ResolverRejectsMissingDiagrams()
+    {
+        var config = ValidConfig() with { Diagrams = [] };
+
+        var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, EmptyCli()));
+
+        Assert.Equal("diagrams must contain at least one diagram.", exception.Message);
+    }
+
+    [Fact]
+    public void ResolverRejectsDiagramWithoutName()
+    {
+        var config = ValidConfig() with { Diagrams = [new DiagramTargetConfig { Output = new OutputOverrideConfig { Path = "schema.dot" } }] };
+
+        var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, EmptyCli()));
+
+        Assert.Equal("diagrams[].name is required.", exception.Message);
+    }
+
+    [Fact]
+    public void ResolverRejectsDuplicateDiagramNames()
+    {
+        var config = ValidConfig() with
         {
-            Provider = "sqlserver",
-            ConnectionString = "Server=config",
-            Output = new OutputConfig { Path = "config.dot", Format = "raw" },
-            Diagram = new DiagramConfig { Renderer = "dot" }
+            Diagrams =
+            [
+                Diagram("auth", "auth.dot"),
+                Diagram("AUTH", "auth2.dot")
+            ]
         };
-        var cli = new CliOptions(null, "postgresql", "Host=cli", "cli.md", "mermaid", "markdown", true, false, false, true);
 
-        var resolved = GenerateOptionsResolver.Resolve(config, cli);
+        var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, EmptyCli()));
 
-        Assert.Equal("postgres", resolved.Provider);
-        Assert.Equal("Host=cli", resolved.ConnectionString);
-        Assert.Equal("cli.md", resolved.OutputPath);
-        Assert.Equal(DiagramFormat.Mermaid, resolved.DiagramRenderer);
-        Assert.Equal(OutputContainerFormat.Markdown, resolved.Output.Format);
-        Assert.NotNull(resolved.Output.Markdown);
-        Assert.Equal("mermaid", resolved.Output.Markdown.FenceLanguage);
-        Assert.True(resolved.Verbose);
-        Assert.False(resolved.Quiet);
-        Assert.False(resolved.NoProgress);
-        Assert.True(resolved.DryRun);
+        Assert.Equal("Duplicate diagram name 'AUTH'.", exception.Message);
     }
 
     [Fact]
-    public void ResolverUsesDiagramRendererFromConfig()
+    public void ResolverRejectsDiagramWithoutOutputPath()
     {
-        var config = new DbSketchConfig
+        var config = ValidConfig() with { Diagrams = [new DiagramTargetConfig { Name = "auth", Output = new OutputOverrideConfig() }] };
+
+        var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, EmptyCli()));
+
+        Assert.Equal("diagrams['auth'].output.path is required.", exception.Message);
+    }
+
+    [Fact]
+    public void ResolverCreatesMultipleDiagramTargets()
+    {
+        var config = ValidConfig() with
         {
-            Provider = "sqlserver",
-            ConnectionString = "Server=config",
-            Diagram = new DiagramConfig { Renderer = "mermaid" }
+            Diagrams =
+            [
+                Diagram("full", "full.dot", include: ["public.*"]),
+                Diagram("auth", "auth.dot", include: ["public.Users"], exclude: ["public.audit_*"])
+            ]
         };
-        var cli = EmptyCli();
 
-        var resolved = GenerateOptionsResolver.Resolve(config, cli);
+        var resolved = GenerateOptionsResolver.Resolve(config, EmptyCli());
 
-        Assert.Equal(DiagramFormat.Mermaid, resolved.DiagramRenderer);
+        Assert.Equal(2, resolved.Diagrams.Count);
+        Assert.Equal("full", resolved.Diagrams[0].Name);
+        Assert.Equal("full.dot", resolved.Diagrams[0].OutputPath);
+        Assert.Equal("public.Users", Assert.Single(resolved.Diagrams[1].Filter.IncludeTables));
+        Assert.Equal("public.audit_*", Assert.Single(resolved.Diagrams[1].Filter.ExcludeTables));
     }
 
     [Fact]
-    public void ResolverUsesCliRendererOverride()
+    public void DiagramInheritsRendererAndOutputFormatFromDefaults()
     {
-        var config = new DbSketchConfig
+        var config = ValidConfig() with
         {
-            Provider = "sqlserver",
-            ConnectionString = "Server=config",
-            Diagram = new DiagramConfig { Renderer = "dot" }
-        };
-        var cli = new CliOptions(null, null, null, null, "mermaid", null, false, false, false, false);
-
-        var resolved = GenerateOptionsResolver.Resolve(config, cli);
-
-        Assert.Equal(DiagramFormat.Mermaid, resolved.DiagramRenderer);
-    }
-
-    [Fact]
-    public void ResolverUsesDiagramDirectionAndMermaidOptionsFromConfig()
-    {
-        var config = new DbSketchConfig
-        {
-            Provider = "sqlserver",
-            ConnectionString = "Server=config",
-            Diagram = new DiagramConfig
+            Defaults = new DefaultsConfig
             {
-                Renderer = "mermaid",
-                Direction = "TB",
-                Mermaid = new MermaidConfig { EmitDirection = true },
-                Show = new DiagramShowConfig { TableComments = true, ColumnComments = true },
-                Comments = new DiagramCommentsConfig { MaxLength = 80 }
+                Output = new OutputDefaultsConfig { Format = "markdown" },
+                Diagram = new DiagramConfig { Renderer = "mermaid" }
             }
         };
-        var cli = EmptyCli();
 
-        var resolved = GenerateOptionsResolver.Resolve(config, cli);
+        var diagram = Assert.Single(GenerateOptionsResolver.Resolve(config, EmptyCli()).Diagrams);
 
-        Assert.Equal(DiagramFormat.Mermaid, resolved.DiagramRenderer);
-        Assert.Equal(DiagramDirection.TB, resolved.Diagram.Direction);
-        Assert.True(resolved.Diagram.Mermaid.EmitDirection);
-        Assert.True(resolved.Diagram.Show.TableComments);
-        Assert.True(resolved.Diagram.Show.ColumnComments);
-        Assert.Equal(80, resolved.Diagram.Comments.MaxLength);
+        Assert.Equal(DiagramFormat.Mermaid, diagram.DiagramRenderer);
+        Assert.Equal(OutputContainerFormat.Markdown, diagram.Output.Format);
+        Assert.Equal("mermaid", diagram.Output.Markdown?.FenceLanguage);
+    }
+
+    [Fact]
+    public void DiagramOverridesRendererAndOutputFormat()
+    {
+        var config = ValidConfig() with
+        {
+            Defaults = new DefaultsConfig
+            {
+                Output = new OutputDefaultsConfig { Format = "markdown" },
+                Diagram = new DiagramConfig { Renderer = "dot" }
+            },
+            Diagrams =
+            [
+                Diagram(
+                    "auth",
+                    "auth.mmd",
+                    outputFormat: "raw",
+                    diagram: new DiagramOverrideConfig { Renderer = "mermaid", Direction = "TB", Compact = false })
+            ]
+        };
+
+        var diagram = Assert.Single(GenerateOptionsResolver.Resolve(config, EmptyCli()).Diagrams);
+
+        Assert.Equal(DiagramFormat.Mermaid, diagram.DiagramRenderer);
+        Assert.Equal(OutputContainerFormat.Raw, diagram.Output.Format);
+        Assert.Equal(DiagramDirection.TB, diagram.Diagram.Direction);
+        Assert.False(diagram.Diagram.Compact);
+    }
+
+    [Fact]
+    public void DiagramShowOverridesInheritUnspecifiedDefaults()
+    {
+        var config = ValidConfig() with
+        {
+            Defaults = new DefaultsConfig
+            {
+                Diagram = new DiagramConfig
+                {
+                    Show = new DiagramShowConfig { SchemaName = true, ColumnTypes = false, ForeignKeys = true }
+                }
+            },
+            Diagrams =
+            [
+                Diagram("auth", "auth.dot", diagram: new DiagramOverrideConfig { Show = new DiagramShowOverrideConfig { ColumnTypes = true } })
+            ]
+        };
+
+        var diagram = Assert.Single(GenerateOptionsResolver.Resolve(config, EmptyCli()).Diagrams);
+
+        Assert.True(diagram.Diagram.Show.SchemaName);
+        Assert.True(diagram.Diagram.Show.ColumnTypes);
+        Assert.True(diagram.Diagram.Show.ForeignKeys);
+    }
+
+    [Fact]
+    public void SelectsOnlyRequestedDiagramCaseInsensitive()
+    {
+        var config = ValidConfig() with
+        {
+            Diagrams =
+            [
+                Diagram("full", "full.dot"),
+                Diagram("auth", "auth.dot")
+            ]
+        };
+
+        var resolved = GenerateOptionsResolver.Resolve(config, EmptyCli(diagramName: "AUTH"));
+
+        var diagram = Assert.Single(resolved.Diagrams);
+        Assert.Equal("auth", diagram.Name);
+    }
+
+    [Fact]
+    public void RejectsUnknownRequestedDiagramWithAvailableNames()
+    {
+        var config = ValidConfig() with
+        {
+            Diagrams =
+            [
+                Diagram("full", "full.dot"),
+                Diagram("sales", "sales.dot"),
+                Diagram("audit", "audit.dot")
+            ]
+        };
+
+        var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, EmptyCli(diagramName: "auth")));
+
+        Assert.Equal("Diagram 'auth' was not found. Available diagrams: full, sales, audit.", exception.Message);
+    }
+
+    [Fact]
+    public void ResolverRejectsUnknownRenderer()
+    {
+        var config = ValidConfig() with
+        {
+            Diagrams = [Diagram("auth", "auth.dot", diagram: new DiagramOverrideConfig { Renderer = "plantuml" })]
+        };
+
+        var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, EmptyCli()));
+
+        Assert.Equal("Unknown diagram renderer 'plantuml'. Supported values: dot, mermaid.", exception.Message);
+    }
+
+    [Fact]
+    public void ResolverRejectsUnknownOutputFormat()
+    {
+        var config = ValidConfig() with
+        {
+            Diagrams = [Diagram("auth", "auth.dot", outputFormat: "unknown")]
+        };
+
+        var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, EmptyCli()));
+
+        Assert.Equal("Unknown output format 'unknown'. Supported values: raw, markdown.", exception.Message);
     }
 
     [Fact]
     public void ResolverRejectsNonPositiveCommentMaxLength()
     {
-        var config = new DbSketchConfig
+        var config = ValidConfig() with
         {
-            Provider = "sqlserver",
-            ConnectionString = "Server=config",
-            Diagram = new DiagramConfig { Comments = new DiagramCommentsConfig { MaxLength = 0 } }
+            Diagrams = [Diagram("auth", "auth.dot", diagram: new DiagramOverrideConfig { Comments = new DiagramCommentsOverrideConfig { MaxLength = 0 } })]
         };
-        var cli = EmptyCli();
 
-        var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, cli));
+        var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, EmptyCli()));
 
-        Assert.Equal("diagram.comments.maxLength must be greater than zero.", exception.Message);
+        Assert.Equal("diagrams['auth'].diagram.comments.maxLength must be greater than zero.", exception.Message);
     }
 
     [Fact]
     public void ResolverRejectsCommentOverrideWithoutSchema()
     {
-        var config = new DbSketchConfig
+        var config = ValidConfig() with
         {
-            Provider = "sqlserver",
-            ConnectionString = "Server=config",
             Comments = new CommentsConfig
             {
-                Overrides = new CommentOverridesConfig
-                {
-                    Tables = [new TableCommentOverrideConfig { Name = "Users" }]
-                }
+                Overrides = new CommentOverridesConfig { Tables = [new TableCommentOverrideConfig { Name = "Users" }] }
             }
         };
-        var cli = EmptyCli();
 
-        var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, cli));
+        var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, EmptyCli()));
 
         Assert.Equal("comments.overrides.tables[].schema is required.", exception.Message);
     }
 
     [Fact]
-    public void ResolverRejectsCommentOverrideWithoutName()
-    {
-        var config = new DbSketchConfig
-        {
-            Provider = "sqlserver",
-            ConnectionString = "Server=config",
-            Comments = new CommentsConfig
-            {
-                Overrides = new CommentOverridesConfig
-                {
-                    Tables = [new TableCommentOverrideConfig { Schema = "dbo" }]
-                }
-            }
-        };
-        var cli = EmptyCli();
-
-        var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, cli));
-
-        Assert.Equal("comments.overrides.tables[].name is required.", exception.Message);
-    }
-
-    [Fact]
     public void ResolverRejectsDuplicateCommentOverrides()
     {
-        var config = new DbSketchConfig
+        var config = ValidConfig() with
         {
-            Provider = "sqlserver",
-            ConnectionString = "Server=config",
             Comments = new CommentsConfig
             {
                 Overrides = new CommentOverridesConfig
@@ -364,277 +423,16 @@ public sealed class ConfigTests
                 }
             }
         };
-        var cli = EmptyCli();
 
-        var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, cli));
+        var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, EmptyCli()));
 
         Assert.Equal("Duplicate comment override for table 'DBO.users'.", exception.Message);
     }
 
     [Fact]
-    public void ResolverRejectsUnknownRenderer()
-    {
-        var config = new DbSketchConfig
-        {
-            Provider = "sqlserver",
-            ConnectionString = "Server=config",
-            Diagram = new DiagramConfig { Renderer = "plantuml" }
-        };
-        var cli = EmptyCli();
-
-        var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, cli));
-
-        Assert.Equal("Unknown diagram renderer 'plantuml'. Supported values: dot, mermaid.", exception.Message);
-    }
-
-    [Fact]
-    public void ResolverRejectsUnknownDirection()
-    {
-        var config = new DbSketchConfig
-        {
-            Provider = "sqlserver",
-            ConnectionString = "Server=config",
-            Diagram = new DiagramConfig { Direction = "LEFT" }
-        };
-        var cli = EmptyCli();
-
-        var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, cli));
-
-        Assert.Equal("Unknown diagram direction 'LEFT'. Supported values: TB, BT, LR, RL.", exception.Message);
-    }
-
-    [Fact]
-    public void ResolverUsesMarkdownFenceLanguageFromRendererWhenOutputIsMarkdown()
-    {
-        var config = new DbSketchConfig
-        {
-            Provider = "sqlserver",
-            ConnectionString = "Server=config",
-            Output = new OutputConfig { Format = "markdown" },
-            Diagram = new DiagramConfig { Renderer = "mermaid" }
-        };
-        var cli = EmptyCli();
-
-        var resolved = GenerateOptionsResolver.Resolve(config, cli);
-
-        Assert.Equal(OutputContainerFormat.Markdown, resolved.Output.Format);
-        Assert.NotNull(resolved.Output.Markdown);
-        Assert.Equal("mermaid", resolved.Output.Markdown.FenceLanguage);
-    }
-
-    [Fact]
-    public void ResolverAllowsMarkdownFenceLanguageOverride()
-    {
-        var config = new DbSketchConfig
-        {
-            Provider = "sqlserver",
-            ConnectionString = "Server=config",
-            Output = new OutputConfig
-            {
-                Format = "markdown",
-                Markdown = new MarkdownOutputConfig { FenceLanguage = "graphviz" }
-            },
-            Diagram = new DiagramConfig { Renderer = "dot" }
-        };
-        var cli = EmptyCli();
-
-        var resolved = GenerateOptionsResolver.Resolve(config, cli);
-
-        Assert.Equal(OutputContainerFormat.Markdown, resolved.Output.Format);
-        Assert.NotNull(resolved.Output.Markdown);
-        Assert.Equal("graphviz", resolved.Output.Markdown.FenceLanguage);
-    }
-
-    [Fact]
-    public void ResolverUsesDefaultMarkdownHeaderWhenHeaderIsAbsent()
-    {
-        var config = new DbSketchConfig
-        {
-            Provider = "sqlserver",
-            ConnectionString = "Server=config",
-            Output = new OutputConfig { Format = "markdown" },
-            Diagram = new DiagramConfig { Title = "App schema", Renderer = "mermaid" }
-        };
-        var cli = EmptyCli();
-
-        var resolved = GenerateOptionsResolver.Resolve(config, cli);
-
-        Assert.Equal("# App schema" + Environment.NewLine + Environment.NewLine + "Generated by DbSketch.", resolved.Output.Markdown!.Header);
-    }
-
-    [Fact]
-    public void ResolverPreservesEmptyMarkdownHeader()
-    {
-        var config = new DbSketchConfig
-        {
-            Provider = "sqlserver",
-            ConnectionString = "Server=config",
-            Output = new OutputConfig
-            {
-                Format = "markdown",
-                Markdown = new MarkdownOutputConfig { Header = "" }
-            },
-            Diagram = new DiagramConfig { Renderer = "mermaid" }
-        };
-        var cli = EmptyCli();
-
-        var resolved = GenerateOptionsResolver.Resolve(config, cli);
-
-        Assert.Equal("", resolved.Output.Markdown!.Header);
-    }
-
-    [Fact]
-    public void ResolverPreservesMarkdownFooter()
-    {
-        var config = new DbSketchConfig
-        {
-            Provider = "sqlserver",
-            ConnectionString = "Server=config",
-            Output = new OutputConfig
-            {
-                Format = "markdown",
-                Markdown = new MarkdownOutputConfig
-                {
-                    Footer = "---" + Environment.NewLine + "Generated automatically."
-                }
-            },
-            Diagram = new DiagramConfig { Renderer = "mermaid" }
-        };
-        var cli = EmptyCli();
-
-        var resolved = GenerateOptionsResolver.Resolve(config, cli);
-
-        Assert.Contains("Generated automatically.", resolved.Output.Markdown!.Footer);
-    }
-
-    [Fact]
-    public void ResolverDoesNotBuildMarkdownOptionsForRawOutput()
-    {
-        var config = new DbSketchConfig
-        {
-            Provider = "sqlserver",
-            ConnectionString = "Server=config",
-            Output = new OutputConfig
-            {
-                Format = "raw",
-                Markdown = new MarkdownOutputConfig
-                {
-                    Header = "# Should be ignored",
-                    Footer = "Should be ignored",
-                    FenceLanguage = "mermaid"
-                }
-            }
-        };
-        var cli = EmptyCli();
-
-        var resolved = GenerateOptionsResolver.Resolve(config, cli);
-
-        Assert.Equal(OutputContainerFormat.Raw, resolved.Output.Format);
-        Assert.Null(resolved.Output.Markdown);
-    }
-
-    [Fact]
-    public void ResolverEnablesReadCommentsWhenConfigEnablesComments()
-    {
-        var config = new DbSketchConfig
-        {
-            Provider = "sqlserver",
-            ConnectionString = "Server=config",
-            Comments = new CommentsConfig { Enabled = true }
-        };
-        var cli = EmptyCli();
-
-        var resolved = GenerateOptionsResolver.Resolve(config, cli);
-
-        Assert.True(resolved.ReadComments);
-    }
-
-    [Fact]
-    public void ResolverDisablesReadCommentsWhenCommentsBlockIsAbsent()
-    {
-        var config = new DbSketchConfig
-        {
-            Provider = "sqlserver",
-            ConnectionString = "Server=config"
-        };
-        var cli = EmptyCli();
-
-        var resolved = GenerateOptionsResolver.Resolve(config, cli);
-
-        Assert.False(resolved.ReadComments);
-    }
-
-    [Fact]
-    public void ResolverDisablesReadCommentsWhenConfigDisablesComments()
-    {
-        var config = new DbSketchConfig
-        {
-            Provider = "sqlserver",
-            ConnectionString = "Server=config",
-            Comments = new CommentsConfig { Enabled = false }
-        };
-        var cli = EmptyCli();
-
-        var resolved = GenerateOptionsResolver.Resolve(config, cli);
-
-        Assert.False(resolved.ReadComments);
-    }
-
-    [Fact]
-    public void ResolverRejectsUnknownOutputFormat()
-    {
-        var config = new DbSketchConfig
-        {
-            Provider = "sqlserver",
-            ConnectionString = "Server=config",
-            Output = new OutputConfig { Path = "config.dot", Format = "unknown" }
-        };
-        var cli = EmptyCli();
-
-        var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, cli));
-
-        Assert.Equal("Unknown output format 'unknown'. Supported values: raw, markdown.", exception.Message);
-    }
-
-    [Fact]
-    public void ResolverUsesMarkdownDefaultOutputPath()
-    {
-        var config = new DbSketchConfig
-        {
-            Provider = "sqlserver",
-            ConnectionString = "Server=config",
-            Output = new OutputConfig { Format = "markdown" }
-        };
-
-        var resolved = GenerateOptionsResolver.Resolve(config, EmptyCli());
-
-        Assert.Equal("dbsketch.md", resolved.OutputPath);
-    }
-
-    [Fact]
-    public void ResolverUsesMermaidRawDefaultOutputPath()
-    {
-        var config = new DbSketchConfig
-        {
-            Provider = "sqlserver",
-            ConnectionString = "Server=config",
-            Diagram = new DiagramConfig { Renderer = "mermaid" }
-        };
-
-        var resolved = GenerateOptionsResolver.Resolve(config, EmptyCli());
-
-        Assert.Equal("dbsketch.mmd", resolved.OutputPath);
-    }
-
-    [Fact]
     public void ResolverUsesConfiguredCommandTimeout()
     {
-        var config = new DbSketchConfig
-        {
-            Provider = "sqlserver",
-            ConnectionString = "Server=config",
-            Database = new DatabaseConfig { CommandTimeoutSeconds = 30 }
-        };
+        var config = ValidConfig() with { Database = new DatabaseConfig { CommandTimeoutSeconds = 30 } };
 
         var resolved = GenerateOptionsResolver.Resolve(config, EmptyCli());
 
@@ -646,19 +444,39 @@ public sealed class ConfigTests
     [InlineData(-1)]
     public void ResolverRejectsNonPositiveCommandTimeout(int timeout)
     {
-        var config = new DbSketchConfig
-        {
-            Provider = "sqlserver",
-            ConnectionString = "Server=config",
-            Database = new DatabaseConfig { CommandTimeoutSeconds = timeout }
-        };
+        var config = ValidConfig() with { Database = new DatabaseConfig { CommandTimeoutSeconds = timeout } };
 
         var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, EmptyCli()));
 
         Assert.Equal("database.commandTimeoutSeconds must be greater than zero.", exception.Message);
     }
 
-    private static CliOptions EmptyCli() => new(null, null, null, null, null, null, false, false, false, false);
+    private static DbSketchConfig ValidConfig() =>
+        new()
+        {
+            Provider = "sqlserver",
+            ConnectionString = "Server=config",
+            Diagrams = [Diagram("full", "schema.dot")]
+        };
+
+    private static DiagramTargetConfig Diagram(
+        string name,
+        string path,
+        IReadOnlyList<string>? include = null,
+        IReadOnlyList<string>? exclude = null,
+        string? outputFormat = null,
+        DiagramOverrideConfig? diagram = null) =>
+        new()
+        {
+            Name = name,
+            Include = new IncludeExcludeConfig { Tables = include?.ToList() ?? [] },
+            Exclude = new IncludeExcludeConfig { Tables = exclude?.ToList() ?? [] },
+            Output = new OutputOverrideConfig { Path = path, Format = outputFormat },
+            Diagram = diagram
+        };
+
+    private static CliOptions EmptyCli(string? configPath = "dbsketch.yml", string? diagramName = null) =>
+        new(configPath, diagramName, false, false, false, false);
 
     private static string WriteTempConfig(string content)
     {

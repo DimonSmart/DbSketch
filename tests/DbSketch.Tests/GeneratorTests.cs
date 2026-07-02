@@ -12,41 +12,53 @@ namespace DimonSmart.DbSketch.Tests;
 public sealed class GeneratorTests
 {
     [Fact]
-    public async Task WritesFileOutput()
+    public async Task ReadsDatabaseOnceAndWritesMultipleFiles()
     {
-        var path = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.dot");
+        var firstPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.dot");
+        var secondPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.dot");
         var console = new FakeConsole();
-        var generator = CreateGenerator(console);
+        var readerFactory = new FakeReaderFactory();
+        var generator = CreateGenerator(console, readerFactory);
 
-        await generator.GenerateAsync(Options(outputPath: path), CancellationToken.None);
+        await generator.GenerateAsync(
+            Options(
+                Diagram("full", firstPath, include: []),
+                Diagram("auth", secondPath, include: ["dbo.Users"])),
+            CancellationToken.None);
 
-        Assert.True(File.Exists(path));
-        Assert.Contains("digraph DbSketch", File.ReadAllText(path));
+        Assert.Equal(1, readerFactory.Reader.ReadCount);
+        Assert.True(File.Exists(firstPath));
+        Assert.True(File.Exists(secondPath));
+        Assert.Contains("digraph DbSketch", File.ReadAllText(firstPath));
+        Assert.Contains("digraph DbSketch", File.ReadAllText(secondPath));
     }
 
     [Fact]
-    public async Task DryRunDoesNotWriteOutput()
+    public async Task DryRunDoesNotWriteOutputButAppliesFiltersForAllDiagrams()
     {
-        var path = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.dot");
+        var firstPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.dot");
+        var secondPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.dot");
         var console = new FakeConsole();
         var generator = CreateGenerator(console);
 
-        await generator.GenerateAsync(Options(outputPath: path, dryRun: true), CancellationToken.None);
+        await generator.GenerateAsync(
+            Options(
+                [
+                    Diagram("full", firstPath, include: []),
+                    Diagram("auth", secondPath, include: ["dbo.Users"])
+                ],
+                dryRun: true),
+            CancellationToken.None);
 
-        Assert.False(File.Exists(path));
-        Assert.Contains("Dry run", console.ErrorText);
-    }
-
-    [Fact]
-    public async Task StdoutOutputWritesGeneratedTextToOut()
-    {
-        var console = new FakeConsole();
-        var generator = CreateGenerator(console);
-
-        await generator.GenerateAsync(Options(outputPath: "-"), CancellationToken.None);
-
-        Assert.Contains("digraph DbSketch", console.OutText);
-        Assert.DoesNotContain("Reading database schema", console.OutText);
+        Assert.False(File.Exists(firstPath));
+        Assert.False(File.Exists(secondPath));
+        Assert.Contains("Diagram: full", console.ErrorText);
+        Assert.Contains("Tables: 2", console.ErrorText);
+        Assert.Contains("Foreign keys: 1", console.ErrorText);
+        Assert.Contains("Diagram: auth", console.ErrorText);
+        Assert.Contains("Tables: 1", console.ErrorText);
+        Assert.Contains("Foreign keys: 0", console.ErrorText);
+        Assert.Contains("Dry run: output was not written.", console.ErrorText);
     }
 
     [Fact]
@@ -55,7 +67,7 @@ public sealed class GeneratorTests
         var console = new FakeConsole();
         var generator = CreateGenerator(console);
 
-        await generator.GenerateAsync(Options(renderer: DiagramFormat.Mermaid, quiet: true, showTableComments: true, dryRun: true), CancellationToken.None);
+        await generator.GenerateAsync(Options(Diagram("auth", "auth.dot", renderer: DiagramFormat.Mermaid, showTableComments: true), quiet: true, dryRun: true), CancellationToken.None);
 
         Assert.Equal("", console.ErrorText);
     }
@@ -66,7 +78,7 @@ public sealed class GeneratorTests
         var console = new FakeConsole();
         var generator = CreateGenerator(console);
 
-        await generator.GenerateAsync(Options(renderer: DiagramFormat.Mermaid, noProgress: true, showTableComments: true, dryRun: true), CancellationToken.None);
+        await generator.GenerateAsync(Options(Diagram("auth", "auth.dot", renderer: DiagramFormat.Mermaid, showTableComments: true), noProgress: true, dryRun: true), CancellationToken.None);
 
         Assert.DoesNotContain("Reading database schema", console.ErrorText);
         Assert.Contains("Warning:", console.ErrorText);
@@ -79,7 +91,7 @@ public sealed class GeneratorTests
         var console = new FakeConsole();
         var generator = CreateGenerator(console);
 
-        await generator.GenerateAsync(Options(renderer: DiagramFormat.Mermaid, dryRun: true), CancellationToken.None);
+        await generator.GenerateAsync(Options(Diagram("auth", "auth.dot", renderer: DiagramFormat.Mermaid), dryRun: true), CancellationToken.None);
 
         Assert.Contains("column ports", console.ErrorText);
     }
@@ -90,42 +102,79 @@ public sealed class GeneratorTests
         var console = new FakeConsole();
         var generator = CreateGenerator(console);
 
-        await generator.GenerateAsync(Options(renderer: DiagramFormat.Dot, dryRun: true), CancellationToken.None);
+        await generator.GenerateAsync(Options(Diagram("auth", "auth.dot", renderer: DiagramFormat.Dot), dryRun: true), CancellationToken.None);
 
         Assert.DoesNotContain("Mermaid ER", console.ErrorText);
     }
 
-    private static DbSketchGenerator CreateGenerator(FakeConsole console) =>
-        new(new FakeReaderFactory(), new DiagramRendererFactory(), new WildcardSchemaFilter(), console);
+    [Fact]
+    public async Task ForeignKeysRemainOnlyBetweenTablesInDiagram()
+    {
+        var fullPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.dot");
+        var usersOnlyPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.dot");
+        var console = new FakeConsole();
+        var generator = CreateGenerator(console);
 
-    private static ResolvedGenerateOptions Options(
-        string outputPath = "dbsketch.dot",
+        await generator.GenerateAsync(
+            Options(
+                Diagram("full", fullPath, include: []),
+                Diagram("users", usersOnlyPath, include: ["dbo.Users"])),
+            CancellationToken.None);
+
+        Assert.Contains("FK_Orders_Users", File.ReadAllText(fullPath));
+        Assert.DoesNotContain("FK_Orders_Users", File.ReadAllText(usersOnlyPath));
+    }
+
+    private static DbSketchGenerator CreateGenerator(FakeConsole console, FakeReaderFactory? readerFactory = null) =>
+        new(readerFactory ?? new FakeReaderFactory(), new DiagramRendererFactory(), new WildcardSchemaFilter(), console);
+
+    private static ResolvedDiagramTarget Diagram(
+        string name,
+        string outputPath,
         DiagramFormat renderer = DiagramFormat.Dot,
-        bool quiet = false,
-        bool noProgress = false,
-        bool dryRun = false,
+        IReadOnlyList<string>? include = null,
         bool showTableComments = false) =>
         new(
-            "sqlserver",
-            "Server=test",
+            name,
             outputPath,
             renderer,
             new OutputFormat(OutputContainerFormat.Raw, null),
-            false,
-            quiet,
-            noProgress,
-            dryRun,
-            new SchemaFilterOptions([], []),
+            new SchemaFilterOptions(include ?? [], []),
             new DiagramRenderOptions(
                 "Database schema",
                 DiagramDirection.LR,
                 true,
                 new DiagramShowOptions(true, false, false, true, true, showTableComments, false),
                 new MermaidRenderOptions(false),
-                new DiagramCommentRenderOptions(null)),
+                new DiagramCommentRenderOptions(null)));
+
+    private static ResolvedGenerateOptions Options(
+        params ResolvedDiagramTarget[] diagrams) =>
+        Options(diagrams, false, false, false);
+
+    private static ResolvedGenerateOptions Options(
+        ResolvedDiagramTarget diagram,
+        bool quiet = false,
+        bool noProgress = false,
+        bool dryRun = false) =>
+        Options([diagram], quiet, noProgress, dryRun);
+
+    private static ResolvedGenerateOptions Options(
+        ResolvedDiagramTarget[] diagrams,
+        bool quiet = false,
+        bool noProgress = false,
+        bool dryRun = false) =>
+        new(
+            "sqlserver",
+            "Server=test",
+            false,
+            quiet,
+            noProgress,
+            dryRun,
             false,
             null,
-            new CommentOverridesConfig());
+            new CommentOverridesConfig(),
+            diagrams);
 
     private sealed class FakeConsole : ICommandLineConsole
     {
@@ -143,16 +192,28 @@ public sealed class GeneratorTests
 
     private sealed class FakeReaderFactory : IDatabaseSchemaReaderFactory
     {
-        public IDatabaseSchemaReader Create(string provider) => new FakeReader();
+        public FakeReader Reader { get; } = new();
+
+        public IDatabaseSchemaReader Create(string provider) => Reader;
     }
 
     private sealed class FakeReader : IDatabaseSchemaReader
     {
-        public Task<DatabaseModel> ReadAsync(DatabaseReadOptions options, CancellationToken cancellationToken) =>
-            Task.FromResult(new DatabaseModel(
+        public int ReadCount { get; private set; }
+
+        public Task<DatabaseModel> ReadAsync(DatabaseReadOptions options, CancellationToken cancellationToken)
+        {
+            ReadCount++;
+            return Task.FromResult(new DatabaseModel(
                 options.Provider,
                 "Test",
-                [new TableModel("dbo", "Users", [new ColumnModel("Id", "int", false, true, false)], "Application users")],
-                []));
+                [
+                    new TableModel("dbo", "Users", [new ColumnModel("Id", "int", false, true, false)], "Application users"),
+                    new TableModel("dbo", "Orders", [new ColumnModel("UserId", "int", false, false, true)])
+                ],
+                [
+                    new ForeignKeyModel("FK_Orders_Users", new TableRef("dbo", "Orders"), ["UserId"], new TableRef("dbo", "Users"), ["Id"])
+                ]));
+        }
     }
 }

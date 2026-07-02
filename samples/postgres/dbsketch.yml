@@ -1,14 +1,17 @@
 provider: postgres
 connectionString: ${DBSKETCH_POSTGRES_CONNECTION}
 
-include:
-  tables:
-    - "public.*"
+defaults:
+  output:
+    format: raw
+  diagram:
+    renderer: dot
+    direction: LR
 
-output:
-  path: samples/output/schema.dot
-  format: raw
-
-diagram:
-  renderer: dot
-  direction: LR
+diagrams:
+  - name: public
+    include:
+      tables:
+        - "public.*"
+    output:
+      path: samples/output/postgres-public.dot
