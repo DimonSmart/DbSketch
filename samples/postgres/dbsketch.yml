@@ -1,5 +1,5 @@
 provider: postgres
-connectionString: ${DBSKETCH_POSTGRES_CONNECTION}
+connectionString: "${DBSKETCH_POSTGRES_CONNECTION}"
 
 defaults:
   output:

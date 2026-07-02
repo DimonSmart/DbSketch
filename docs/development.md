@@ -1,13 +1,44 @@
 # Development
 
-Restore, build, test, and pack:
+Restore, build, and test:
 
 ```bash
 dotnet restore DbSketch.sln
 dotnet build DbSketch.sln
 dotnet test DbSketch.sln
-dotnet pack src/DbSketch.Cli/DbSketch.Cli.csproj -c Release
 ```
+
+## Release
+
+Releases are created by pushing version tags in the form `vX.Y.Z`:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+The release workflow runs on tag push. It validates the tag, builds and tests the solution, packs and publishes the NuGet tool package, publishes portable Windows x64 and Linux x64 CLI binaries, writes SHA256 checksum files, and creates a GitHub Release.
+
+Published artifacts:
+
+* NuGet tool package: `DimonSmart.DbSketch`
+* Windows x64 portable binary archive
+* Linux x64 portable binary archive
+* SHA256 checksum files
+
+Install a released version as a global tool:
+
+```bash
+dotnet tool install --global DimonSmart.DbSketch --version 0.1.0
+```
+
+Run a specific released version without installing globally:
+
+```bash
+dotnet tool exec DimonSmart.DbSketch@0.1.0 -- generate --config dbsketch.yml
+```
+
+Portable binaries are attached to the GitHub Release.
 
 ## Git Hooks
 

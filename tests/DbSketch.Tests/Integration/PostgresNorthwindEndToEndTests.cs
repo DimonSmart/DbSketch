@@ -92,23 +92,26 @@ public sealed class PostgresNorthwindEndToEndTests
         $$"""
         provider: postgres
         connectionString: {{ToYamlSingleQuoted(connectionString)}}
-        include:
-          tables:
-            - "northwind.*"
-        output:
-          path: {{ToYamlSingleQuoted(outputPath)}}
-          format: raw
-        diagram:
-          renderer: dot
-          title: "Northwind schema"
-          direction: LR
-          compact: true
-          show:
-            schemaName: true
-            columnTypes: false
-            nullability: false
-            primaryKeys: true
-            foreignKeys: true
+
+        diagrams:
+          - name: northwind
+            title: Northwind schema
+            include:
+              tables:
+                - "northwind.*"
+            output:
+              path: {{ToYamlSingleQuoted(outputPath)}}
+              format: raw
+            diagram:
+              renderer: dot
+              direction: LR
+              compact: true
+              show:
+                schemaName: true
+                columnTypes: false
+                nullability: false
+                primaryKeys: true
+                foreignKeys: true
         """;
 
     private static string ToYamlSingleQuoted(string value) => $"'{value.Replace("'", "''", StringComparison.Ordinal)}'";

@@ -1,5 +1,5 @@
 provider: mysql
-connectionString: ${DBSKETCH_MYSQL_CONNECTION}
+connectionString: "${DBSKETCH_MYSQL_CONNECTION}"
 
 defaults:
   output:

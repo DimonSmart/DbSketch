@@ -1,5 +1,5 @@
 provider: sqlserver
-connectionString: ${DBSKETCH_SQLSERVER_CONNECTION}
+connectionString: "${DBSKETCH_SQLSERVER_CONNECTION}"
 
 defaults:
   output:
