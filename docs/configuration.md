@@ -33,6 +33,7 @@ defaults:
   diagram:
     renderer: dot
     direction: LR
+    style: classic
     compact: true
     show:
       schemaName: true
@@ -180,7 +181,18 @@ columnLayout: "{name} | {keys}"
 columnLayout: "{name} | {type} | {keys}"
 columnLayout: "{name}: {type} | {keys}"
 columnLayout: "{name} :: {type} | {keys}"
+columnLayout: "{name:bold,font=Times} {type:color=#666666}\n{comment:color=#666666,fontSize=9} | {keys}"
 ```
+
+Tokens can include safe style modifiers:
+
+- `bold`
+- `italic`
+- `color=#RRGGBB`
+- `font=Font Name`
+- `fontSize=9`
+
+This is not raw HTML. DbSketch generates Graphviz HTML-like labels internally and escapes database values and literal layout text.
 
 If `columnLayout` is not set, DbSketch keeps the legacy `show.columnTypes`, `show.nullability`, `show.primaryKeys`, `show.foreignKeys`, and `show.columnComments` behavior. If `columnLayout` is set, the layout string fully controls rendered column text and cells. Foreign key relationships are still rendered independently from the text layout.
 
@@ -210,6 +222,7 @@ tableHeaderLayout: "{schema} | {table}"
 tableHeaderLayout: "{table}"
 tableHeaderLayout: "{fullName} - {comment}"
 tableHeaderLayout: "{fullName} | {comment}"
+tableHeaderLayout: "{table:bold}\n{comment:color=#666666,fontSize=9}"
 ```
 
 Diagram targets can override default layout settings:
@@ -225,3 +238,45 @@ diagrams:
 ```
 
 Custom layout is supported by DOT renderer. Mermaid ER ignores custom layout settings and keeps Mermaid-compatible syntax.
+
+## DOT readable style
+
+DOT diagrams use `classic` style by default to preserve the legacy output. Set `style: readable` for a more spacious Graphviz preset:
+
+```yaml
+defaults:
+  diagram:
+    renderer: dot
+    style: readable
+    columnLayout: "{name:bold} {type:color=#666666}\n{comment:color=#666666,fontSize=9} | {keys}"
+    tableHeaderLayout: "{table:bold}\n{comment:color=#666666,fontSize=9}"
+```
+
+`readable` enables sans-serif fonts, calmer edges, table padding, gray borders, header background color, and left-balanced multiline cells.
+
+Readable defaults can be overridden:
+
+```yaml
+defaults:
+  diagram:
+    dot:
+      graph:
+        fontName: Helvetica
+        fontSize: 16
+        nodesep: 0.55
+        ranksep: 0.9
+        backgroundColor: "#FFFFFF"
+      node:
+        fontName: Helvetica
+        fontSize: 10
+      edge:
+        fontName: Helvetica
+        fontSize: 9
+        color: "#555555"
+        penWidth: 1.1
+        arrowSize: 0.7
+      table:
+        borderColor: "#777777"
+        headerBackground: "#F1F3F5"
+        cellPadding: 4
+```

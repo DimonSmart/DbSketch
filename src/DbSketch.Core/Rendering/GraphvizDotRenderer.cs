@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using DimonSmart.DbSketch.Core.Model;
 
@@ -15,20 +16,7 @@ public sealed class GraphvizDotRenderer : IDiagramRenderer
         var builder = new StringBuilder();
 
         builder.AppendLine("digraph DbSketch {");
-        builder.AppendLine("  graph [");
-        builder.AppendLine($"    rankdir={encoder.EscapeDotString(FormatDirection(options.Direction))},");
-        builder.AppendLine("    labelloc=\"t\",");
-        builder.AppendLine($"    label=\"{encoder.EscapeDotString(options.Title)}\"");
-        builder.AppendLine("  ];");
-        builder.AppendLine();
-        builder.AppendLine("  node [");
-        builder.AppendLine("    shape=plain");
-        builder.AppendLine("  ];");
-        builder.AppendLine();
-        builder.AppendLine("  edge [");
-        builder.AppendLine("    fontsize=10");
-        builder.AppendLine("  ];");
-        builder.AppendLine();
+        AppendGraphDefaults(builder, encoder, options);
 
         foreach (var table in model.Tables.OrderBy(table => table.FullName, StringComparer.OrdinalIgnoreCase))
         {
@@ -46,6 +34,92 @@ public sealed class GraphvizDotRenderer : IDiagramRenderer
 
     private static string FormatDirection(DiagramDirection direction) => direction.ToString();
 
+    private static void AppendGraphDefaults(StringBuilder builder, DotIdEncoder encoder, DiagramRenderOptions options)
+    {
+        var graphAttributes = new List<DotAttribute>
+        {
+            new("rankdir", FormatDirection(options.Direction), Quote: false),
+            new("labelloc", "t"),
+            new("label", options.Title)
+        };
+        if (options.Style == DiagramStyle.Readable)
+        {
+            AddAttribute(graphAttributes, "fontname", options.Dot.Graph.FontName);
+            AddAttribute(graphAttributes, "fontsize", options.Dot.Graph.FontSize);
+            AddAttribute(graphAttributes, "nodesep", options.Dot.Graph.Nodesep);
+            AddAttribute(graphAttributes, "ranksep", options.Dot.Graph.Ranksep);
+            AddAttribute(graphAttributes, "bgcolor", options.Dot.Graph.BackgroundColor);
+        }
+
+        AppendAttributeBlock(builder, encoder, "graph", graphAttributes);
+
+        var nodeAttributes = new List<DotAttribute> { new("shape", "plain", Quote: false) };
+        if (options.Style == DiagramStyle.Readable)
+        {
+            AddAttribute(nodeAttributes, "fontname", options.Dot.Node.FontName);
+            AddAttribute(nodeAttributes, "fontsize", options.Dot.Node.FontSize);
+        }
+
+        AppendAttributeBlock(builder, encoder, "node", nodeAttributes);
+
+        var edgeAttributes = new List<DotAttribute>();
+        if (options.Style == DiagramStyle.Readable)
+        {
+            AddAttribute(edgeAttributes, "fontname", options.Dot.Edge.FontName);
+            AddAttribute(edgeAttributes, "fontsize", options.Dot.Edge.FontSize);
+            AddAttribute(edgeAttributes, "color", options.Dot.Edge.Color);
+            AddAttribute(edgeAttributes, "penwidth", options.Dot.Edge.PenWidth);
+            AddAttribute(edgeAttributes, "arrowsize", options.Dot.Edge.ArrowSize);
+        }
+        else
+        {
+            edgeAttributes.Add(new DotAttribute("fontsize", "10", Quote: false));
+        }
+
+        AppendAttributeBlock(builder, encoder, "edge", edgeAttributes);
+    }
+
+    private static void AddAttribute(List<DotAttribute> attributes, string name, string? value)
+    {
+        if (value is not null)
+        {
+            attributes.Add(new DotAttribute(name, value));
+        }
+    }
+
+    private static void AddAttribute(List<DotAttribute> attributes, string name, int? value)
+    {
+        if (value is not null)
+        {
+            attributes.Add(new DotAttribute(name, value.Value.ToString(CultureInfo.InvariantCulture), Quote: false));
+        }
+    }
+
+    private static void AddAttribute(List<DotAttribute> attributes, string name, double? value)
+    {
+        if (value is not null)
+        {
+            attributes.Add(new DotAttribute(name, value.Value.ToString("0.###", CultureInfo.InvariantCulture), Quote: false));
+        }
+    }
+
+    private static void AppendAttributeBlock(StringBuilder builder, DotIdEncoder encoder, string name, IReadOnlyList<DotAttribute> attributes)
+    {
+        builder.AppendLine($"  {name} [");
+        for (var i = 0; i < attributes.Count; i++)
+        {
+            var attribute = attributes[i];
+            var value = attribute.Quote
+                ? $"\"{encoder.EscapeDotString(attribute.Value)}\""
+                : encoder.EscapeDotString(attribute.Value);
+            var suffix = i == attributes.Count - 1 ? "" : ",";
+            builder.AppendLine($"    {attribute.Name}={value}{suffix}");
+        }
+
+        builder.AppendLine("  ];");
+        builder.AppendLine();
+    }
+
     private static void AppendTable(StringBuilder builder, DotIdEncoder encoder, TableModel table, DiagramRenderOptions options)
     {
         var columnTemplate = ParseColumnLayout(options.Layout.ColumnLayout);
@@ -54,7 +128,21 @@ public sealed class GraphvizDotRenderer : IDiagramRenderer
 
         builder.AppendLine($"  \"{encoder.EscapeDotString(encoder.GetTableNodeId(table))}\" [");
         builder.AppendLine("    label=<");
-        builder.AppendLine("      <TABLE BORDER=\"1\" CELLBORDER=\"1\" CELLSPACING=\"0\">");
+        builder.Append("      <TABLE BORDER=\"1\" CELLBORDER=\"1\" CELLSPACING=\"0\"");
+        if (options.Style == DiagramStyle.Readable)
+        {
+            if (options.Dot.Table.CellPadding is not null)
+            {
+                builder.Append($" CELLPADDING=\"{options.Dot.Table.CellPadding.Value}\"");
+            }
+
+            if (options.Dot.Table.BorderColor is not null)
+            {
+                builder.Append($" COLOR=\"{encoder.EscapeLabel(options.Dot.Table.BorderColor)}\"");
+            }
+        }
+
+        builder.AppendLine(">");
 
         if (headerTemplate is null)
         {
@@ -96,7 +184,8 @@ public sealed class GraphvizDotRenderer : IDiagramRenderer
     {
         var title = options.Show.SchemaName ? table.FullName : table.Name;
         var titleColumnSpan = FormatColumnSpan(bodyColumnCount);
-        builder.AppendLine($"        <TR><TD{titleColumnSpan} BGCOLOR=\"#EEEEEE\" ALIGN=\"LEFT\"><B>{encoder.EscapeLabel(title)}</B></TD></TR>");
+        var headerBackground = options.Dot.Table.HeaderBackground ?? "#EEEEEE";
+        builder.AppendLine($"        <TR><TD{titleColumnSpan} BGCOLOR=\"{encoder.EscapeLabel(headerBackground)}\" ALIGN=\"LEFT\"><B>{encoder.EscapeLabel(title)}</B></TD></TR>");
         var tableComment = options.Show.TableComments
             ? RenderTextNormalizer.NormalizeInlineComment(table.Comment, options.Comments.MaxLength)
             : null;
@@ -110,11 +199,26 @@ public sealed class GraphvizDotRenderer : IDiagramRenderer
     {
         var columnSpan = FormatColumnSpan(bodyColumnCount);
         var cells = TableHeaderLayoutFormatter.Format(table, template, options.Comments);
-        builder.Append($"        <TR><TD{columnSpan} BGCOLOR=\"#EEEEEE\" ALIGN=\"LEFT\">");
+        var headerBackground = options.Dot.Table.HeaderBackground ?? "#EEEEEE";
+        if (options.Style == DiagramStyle.Readable && cells.Count == 1)
+        {
+            builder.Append($"        <TR><TD{columnSpan} BGCOLOR=\"{encoder.EscapeLabel(headerBackground)}\" ALIGN=\"LEFT\"");
+            AppendBalign(builder, cells[0]);
+            builder.Append(">");
+            AppendRenderedLayoutCell(builder, encoder, cells[0]);
+            builder.AppendLine("</TD></TR>");
+            return;
+        }
+
+        builder.Append($"        <TR><TD{columnSpan} BGCOLOR=\"{encoder.EscapeLabel(headerBackground)}\" ALIGN=\"LEFT\">");
         builder.Append("<TABLE BORDER=\"0\" CELLBORDER=\"0\" CELLSPACING=\"0\"><TR>");
         foreach (var cell in cells)
         {
-            builder.Append($"<TD ALIGN=\"LEFT\">{encoder.EscapeLabel(cell.Text)}</TD>");
+            builder.Append("<TD ALIGN=\"LEFT\"");
+            AppendBalign(builder, cell);
+            builder.Append(">");
+            AppendRenderedLayoutCell(builder, encoder, cell);
+            builder.Append("</TD>");
         }
 
         builder.AppendLine("</TR></TABLE></TD></TR>");
@@ -160,10 +264,100 @@ public sealed class GraphvizDotRenderer : IDiagramRenderer
                 ? $" PORT=\"{encoder.EscapeLabel(mainPort)}\""
                 : fkPort is not null && i == portPlan.FkPortCellIndex ? $" PORT=\"{encoder.EscapeLabel(fkPort)}\"" : "";
             var align = cells[i].ContainsNameToken ? "LEFT" : "CENTER";
-            builder.Append($"<TD{portAttribute} ALIGN=\"{align}\">{encoder.EscapeLabel(cells[i].Text)}</TD>");
+            builder.Append($"<TD{portAttribute} ALIGN=\"{align}\"");
+            AppendBalign(builder, cells[i]);
+            builder.Append(">");
+            AppendRenderedLayoutCell(builder, encoder, cells[i]);
+            builder.Append("</TD>");
         }
 
         builder.AppendLine("</TR>");
+    }
+
+    private static void AppendBalign(StringBuilder builder, RenderedLayoutCell cell)
+    {
+        if (cell.Lines.Count > 1)
+        {
+            builder.Append(" BALIGN=\"LEFT\"");
+        }
+    }
+
+    private static void AppendRenderedLayoutCell(StringBuilder builder, DotIdEncoder encoder, RenderedLayoutCell cell)
+    {
+        for (var i = 0; i < cell.Lines.Count; i++)
+        {
+            if (i > 0)
+            {
+                builder.Append("<BR ALIGN=\"LEFT\"/>");
+            }
+
+            AppendRenderedLayoutLine(builder, encoder, cell.Lines[i]);
+        }
+    }
+
+    private static void AppendRenderedLayoutLine(StringBuilder builder, DotIdEncoder encoder, RenderedLayoutLine line)
+    {
+        foreach (var run in line.Runs)
+        {
+            AppendStyledRun(builder, encoder, run);
+        }
+    }
+
+    private static void AppendStyledRun(StringBuilder builder, DotIdEncoder encoder, RenderedTextRun run)
+    {
+        if (run.Text.Length == 0)
+        {
+            return;
+        }
+
+        if (run.Style.Bold)
+        {
+            builder.Append("<B>");
+        }
+
+        if (run.Style.Italic)
+        {
+            builder.Append("<I>");
+        }
+
+        var hasFont = run.Style.Color is not null || run.Style.Font is not null || run.Style.FontSize is not null;
+        if (hasFont)
+        {
+            builder.Append("<FONT");
+            if (run.Style.Color is not null)
+            {
+                builder.Append($" COLOR=\"{encoder.EscapeLabel(run.Style.Color)}\"");
+            }
+
+            if (run.Style.Font is not null)
+            {
+                builder.Append($" FACE=\"{encoder.EscapeLabel(run.Style.Font)}\"");
+            }
+
+            if (run.Style.FontSize is not null)
+            {
+                builder.Append($" POINT-SIZE=\"{run.Style.FontSize.Value}\"");
+            }
+
+            builder.Append(">");
+        }
+
+        builder.Append(encoder.EscapeLabel(run.Text));
+
+        if (hasFont)
+        {
+            builder.Append("</FONT>");
+        }
+
+        if (run.Style.Italic)
+        {
+            builder.Append("</I>");
+        }
+
+        if (run.Style.Bold)
+        {
+            builder.Append("</B>");
+        }
     }
 
     private static string GetForeignKeyPortId(string columnPortId) => $"{columnPortId}_fk";
@@ -247,7 +441,7 @@ public sealed class GraphvizDotRenderer : IDiagramRenderer
         var sourcePort = GetSourceColumnEdgePort(encoder, source, sourceColumn, options);
         builder.Append($"  \"{encoder.EscapeDotString(encoder.GetTableNodeId(source))}\":\"{encoder.EscapeDotString(sourcePort)}\":{GetSourceCompass(options.Direction)}");
         builder.Append($" -> \"{encoder.EscapeDotString(encoder.GetTableNodeId(target))}\":\"{encoder.EscapeDotString(encoder.GetColumnPortId(target, targetColumn))}\":{GetTargetCompass(options.Direction)}");
-        AppendEdgeAttributes(builder, encoder, label);
+        AppendRelationshipEdgeAttributes(builder, encoder, label);
     }
 
     private static string GetSourceColumnEdgePort(DotIdEncoder encoder, TableModel table, ColumnModel column, DiagramRenderOptions options)
@@ -309,7 +503,7 @@ public sealed class GraphvizDotRenderer : IDiagramRenderer
     private static void AppendTableEdge(StringBuilder builder, DotIdEncoder encoder, TableModel source, TableModel target, string? label, DiagramDirection direction)
     {
         builder.Append($"  \"{encoder.EscapeDotString(encoder.GetTableNodeId(source))}\":{GetSourceCompass(direction)} -> \"{encoder.EscapeDotString(encoder.GetTableNodeId(target))}\":{GetTargetCompass(direction)}");
-        AppendEdgeAttributes(builder, encoder, label);
+        AppendRelationshipEdgeAttributes(builder, encoder, label);
     }
 
     private static string GetSourceCompass(DiagramDirection direction) =>
@@ -332,7 +526,7 @@ public sealed class GraphvizDotRenderer : IDiagramRenderer
             _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, null)
         };
 
-    private static void AppendEdgeAttributes(StringBuilder builder, DotIdEncoder encoder, string? label)
+    private static void AppendRelationshipEdgeAttributes(StringBuilder builder, DotIdEncoder encoder, string? label)
     {
         if (string.IsNullOrWhiteSpace(label))
         {
@@ -344,4 +538,6 @@ public sealed class GraphvizDotRenderer : IDiagramRenderer
         builder.AppendLine($"    label=\"{encoder.EscapeDotString(label)}\"");
         builder.AppendLine("  ];");
     }
+
+    private sealed record DotAttribute(string Name, string Value, bool Quote = true);
 }

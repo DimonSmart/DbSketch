@@ -485,6 +485,67 @@ public sealed class ConfigTests
     }
 
     [Fact]
+    public void ReadsDotReadableYamlConfig()
+    {
+        var path = WriteTempConfig("""
+            provider: postgres
+            connectionString: Host=localhost
+            defaults:
+              diagram:
+                style: readable
+                dot:
+                  edge:
+                    color: "#555555"
+            diagrams:
+              - name: auth
+                output:
+                  path: docs/db/auth.dot
+            """);
+
+        var config = ConfigLoader.Load(path);
+        var diagram = Assert.Single(GenerateOptionsResolver.Resolve(config, EmptyCli(configPath: path)).Diagrams);
+
+        Assert.Equal("readable", config.Defaults.Diagram.Style);
+        Assert.Equal("#555555", config.Defaults.Diagram.Dot.Edge.Color);
+        Assert.Equal(DiagramStyle.Readable, diagram.Diagram.Style);
+        Assert.Equal("Helvetica", diagram.Diagram.Dot.Graph.FontName);
+        Assert.Equal(16, diagram.Diagram.Dot.Graph.FontSize);
+        Assert.Equal(0.55, diagram.Diagram.Dot.Graph.Nodesep);
+        Assert.Equal("#555555", diagram.Diagram.Dot.Edge.Color);
+        Assert.Equal(4, diagram.Diagram.Dot.Table.CellPadding);
+    }
+
+    [Fact]
+    public void DiagramDotOverridesDefaults()
+    {
+        var config = ValidConfig() with
+        {
+            Defaults = new DefaultsConfig
+            {
+                Diagram = new DiagramConfig
+                {
+                    Style = "readable",
+                    Dot = new DotConfig { Edge = new DotEdgeConfig { Color = "#555555" } }
+                }
+            },
+            Diagrams =
+            [
+                Diagram("auth", "auth.dot", diagram: new DiagramOverrideConfig
+                {
+                    Style = "classic",
+                    Dot = new DotOverrideConfig { Edge = new DotEdgeOverrideConfig { Color = "#333333" } }
+                })
+            ]
+        };
+
+        var diagram = Assert.Single(GenerateOptionsResolver.Resolve(config, EmptyCli()).Diagrams);
+
+        Assert.Equal(DiagramStyle.Classic, diagram.Diagram.Style);
+        Assert.Equal("#333333", diagram.Diagram.Dot.Edge.Color);
+        Assert.Null(diagram.Diagram.Dot.Graph.FontName);
+    }
+
+    [Fact]
     public void DiagramLayoutInheritsDefaultsWhenOverrideIsNotSet()
     {
         var config = ValidConfig() with
@@ -587,6 +648,58 @@ public sealed class ConfigTests
         var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, EmptyCli()));
 
         Assert.Equal("diagrams['auth'].diagram.tableHeaderLayout must not be empty.", exception.Message);
+    }
+
+    [Fact]
+    public void ResolverRejectsUnknownStyle()
+    {
+        var config = ValidConfig() with
+        {
+            Defaults = new DefaultsConfig { Diagram = new DiagramConfig { Style = "fancy" } }
+        };
+
+        var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, EmptyCli()));
+
+        Assert.Equal("defaults.diagram.style must be one of: classic, readable.", exception.Message);
+    }
+
+    [Fact]
+    public void ResolverRejectsInvalidDotColor()
+    {
+        var config = ValidConfig() with
+        {
+            Defaults = new DefaultsConfig { Diagram = new DiagramConfig { Dot = new DotConfig { Edge = new DotEdgeConfig { Color = "red" } } } }
+        };
+
+        var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, EmptyCli()));
+
+        Assert.Equal("defaults.diagram.dot.edge.color must be a hex color like #666666.", exception.Message);
+    }
+
+    [Fact]
+    public void ResolverRejectsInvalidDotFontSize()
+    {
+        var config = ValidConfig() with
+        {
+            Defaults = new DefaultsConfig { Diagram = new DiagramConfig { Dot = new DotConfig { Node = new DotNodeConfig { FontSize = 1000 } } } }
+        };
+
+        var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, EmptyCli()));
+
+        Assert.Equal("defaults.diagram.dot.node.fontSize must be from 6 to 72.", exception.Message);
+    }
+
+    [Fact]
+    public void ResolverRejectsUnsafeDotFont()
+    {
+        var config = ValidConfig() with
+        {
+            Defaults = new DefaultsConfig { Diagram = new DiagramConfig { Dot = new DotConfig { Graph = new DotGraphConfig { FontName = "<script>" } } } }
+        };
+
+        var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, EmptyCli()));
+
+        Assert.Equal("defaults.diagram.dot.graph.fontName must contain only letters, digits, spaces, '_', '-', '.', and be at most 64 characters.", exception.Message);
     }
 
     private static DbSketchConfig ValidConfig() =>

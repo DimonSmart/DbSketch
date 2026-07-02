@@ -75,12 +75,17 @@ diagrams:
         - "northwind.*"
     diagram:
       renderer: dot
-      columnLayout: "{name}"
-      tableHeaderLayout: "{fullName}"
+      style: readable
+      columnLayout: "{name:bold} {type:color=#666666}\n{comment:color=#666666,fontSize=9} | {keys}"
+      tableHeaderLayout: "{table:bold}\n{comment:color=#666666,fontSize=9}"
       show:
-        primaryKeys: false
-        foreignKeys: false
+        schemaName: false
         foreignKeyLabels: false
+        selfReferencingForeignKeys: false
+        tableComments: true
+        columnComments: true
+      comments:
+        maxLength: 60
     output:
       path: docs/examples/northwind.readme.dot
       format: raw

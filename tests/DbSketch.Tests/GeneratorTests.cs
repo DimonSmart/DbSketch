@@ -159,11 +159,20 @@ public sealed class GeneratorTests
             new DiagramRenderOptions(
                 "Database schema",
                 DiagramDirection.LR,
+                DiagramStyle.Classic,
                 true,
                 new DiagramLayoutOptions(columnLayout, tableHeaderLayout),
                 new DiagramShowOptions(true, false, false, true, true, true, true, showTableComments, false),
                 new MermaidRenderOptions(false),
-                new DiagramCommentRenderOptions(null)));
+                new DiagramCommentRenderOptions(null),
+                ClassicDot()));
+
+    private static GraphvizDotRenderOptions ClassicDot() =>
+        new(
+            new GraphvizDotGraphRenderOptions(null, null, null, null, null),
+            new GraphvizDotNodeRenderOptions(null, null),
+            new GraphvizDotEdgeRenderOptions(null, null, null, null, null),
+            new GraphvizDotTableRenderOptions(null, null, null));
 
     private static ResolvedGenerateOptions Options(
         params ResolvedDiagramTarget[] diagrams) =>

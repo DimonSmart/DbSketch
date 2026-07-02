@@ -68,24 +68,106 @@ public sealed class DiagramConfig
     public string? Title { get; init; }
     public string Renderer { get; init; } = "dot";
     public string Direction { get; init; } = "LR";
+    public string Style { get; init; } = "classic";
     public bool Compact { get; init; } = true;
     public string? ColumnLayout { get; init; }
     public string? TableHeaderLayout { get; init; }
     public DiagramShowConfig Show { get; init; } = new();
     public MermaidConfig Mermaid { get; init; } = new();
     public DiagramCommentsConfig Comments { get; init; } = new();
+    public DotConfig Dot { get; init; } = new();
 }
 
 public sealed class DiagramOverrideConfig
 {
     public string? Renderer { get; init; }
     public string? Direction { get; init; }
+    public string? Style { get; init; }
     public bool? Compact { get; init; }
     public string? ColumnLayout { get; init; }
     public string? TableHeaderLayout { get; init; }
     public DiagramShowOverrideConfig? Show { get; init; }
     public MermaidOverrideConfig? Mermaid { get; init; }
     public DiagramCommentsOverrideConfig? Comments { get; init; }
+    public DotOverrideConfig? Dot { get; init; }
+}
+
+public sealed class DotConfig
+{
+    public DotGraphConfig Graph { get; init; } = new();
+    public DotNodeConfig Node { get; init; } = new();
+    public DotEdgeConfig Edge { get; init; } = new();
+    public DotTableConfig Table { get; init; } = new();
+}
+
+public sealed class DotGraphConfig
+{
+    public string? FontName { get; init; }
+    public int? FontSize { get; init; }
+    public double? Nodesep { get; init; }
+    public double? Ranksep { get; init; }
+    public string? BackgroundColor { get; init; }
+}
+
+public sealed class DotNodeConfig
+{
+    public string? FontName { get; init; }
+    public int? FontSize { get; init; }
+}
+
+public sealed class DotEdgeConfig
+{
+    public string? FontName { get; init; }
+    public int? FontSize { get; init; }
+    public string? Color { get; init; }
+    public double? PenWidth { get; init; }
+    public double? ArrowSize { get; init; }
+}
+
+public sealed class DotTableConfig
+{
+    public string? BorderColor { get; init; }
+    public string? HeaderBackground { get; init; }
+    public int? CellPadding { get; init; }
+}
+
+public sealed class DotOverrideConfig
+{
+    public DotGraphOverrideConfig? Graph { get; init; }
+    public DotNodeOverrideConfig? Node { get; init; }
+    public DotEdgeOverrideConfig? Edge { get; init; }
+    public DotTableOverrideConfig? Table { get; init; }
+}
+
+public sealed class DotGraphOverrideConfig
+{
+    public string? FontName { get; init; }
+    public int? FontSize { get; init; }
+    public double? Nodesep { get; init; }
+    public double? Ranksep { get; init; }
+    public string? BackgroundColor { get; init; }
+}
+
+public sealed class DotNodeOverrideConfig
+{
+    public string? FontName { get; init; }
+    public int? FontSize { get; init; }
+}
+
+public sealed class DotEdgeOverrideConfig
+{
+    public string? FontName { get; init; }
+    public int? FontSize { get; init; }
+    public string? Color { get; init; }
+    public double? PenWidth { get; init; }
+    public double? ArrowSize { get; init; }
+}
+
+public sealed class DotTableOverrideConfig
+{
+    public string? BorderColor { get; init; }
+    public string? HeaderBackground { get; init; }
+    public int? CellPadding { get; init; }
 }
 
 public sealed class MermaidConfig

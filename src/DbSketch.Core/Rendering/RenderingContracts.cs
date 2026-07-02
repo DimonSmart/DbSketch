@@ -21,14 +21,22 @@ public enum DiagramDirection
     RL
 }
 
+public enum DiagramStyle
+{
+    Classic,
+    Readable
+}
+
 public sealed record DiagramRenderOptions(
     string Title,
     DiagramDirection Direction,
+    DiagramStyle Style,
     bool Compact,
     DiagramLayoutOptions Layout,
     DiagramShowOptions Show,
     MermaidRenderOptions Mermaid,
-    DiagramCommentRenderOptions Comments);
+    DiagramCommentRenderOptions Comments,
+    GraphvizDotRenderOptions Dot);
 
 public sealed record DiagramLayoutOptions(
     string? ColumnLayout,
@@ -37,6 +45,35 @@ public sealed record DiagramLayoutOptions(
 public sealed record MermaidRenderOptions(bool EmitDirection);
 
 public sealed record DiagramCommentRenderOptions(int? MaxLength);
+
+public sealed record GraphvizDotRenderOptions(
+    GraphvizDotGraphRenderOptions Graph,
+    GraphvizDotNodeRenderOptions Node,
+    GraphvizDotEdgeRenderOptions Edge,
+    GraphvizDotTableRenderOptions Table);
+
+public sealed record GraphvizDotGraphRenderOptions(
+    string? FontName,
+    int? FontSize,
+    double? Nodesep,
+    double? Ranksep,
+    string? BackgroundColor);
+
+public sealed record GraphvizDotNodeRenderOptions(
+    string? FontName,
+    int? FontSize);
+
+public sealed record GraphvizDotEdgeRenderOptions(
+    string? FontName,
+    int? FontSize,
+    string? Color,
+    double? PenWidth,
+    double? ArrowSize);
+
+public sealed record GraphvizDotTableRenderOptions(
+    string? BorderColor,
+    string? HeaderBackground,
+    int? CellPadding);
 
 public sealed record DiagramShowOptions(
     bool SchemaName,

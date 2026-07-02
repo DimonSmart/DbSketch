@@ -310,11 +310,17 @@ public sealed class MermaidRendererTests
             new DiagramRenderOptions(
                 "Database schema",
                 direction,
+                DiagramStyle.Classic,
                 true,
                 new DiagramLayoutOptions(columnLayout, tableHeaderLayout),
                 new DiagramShowOptions(showSchemaName, showColumnTypes, showNullability, true, true, showForeignKeyLabels, showSelfReferencingForeignKeys, showTableComments, showColumnComments),
                 new MermaidRenderOptions(emitDirection),
-                new DiagramCommentRenderOptions(maxCommentLength)));
+                new DiagramCommentRenderOptions(maxCommentLength),
+                new GraphvizDotRenderOptions(
+                    new GraphvizDotGraphRenderOptions(null, null, null, null, null),
+                    new GraphvizDotNodeRenderOptions(null, null),
+                    new GraphvizDotEdgeRenderOptions(null, null, null, null, null),
+                    new GraphvizDotTableRenderOptions(null, null, null))));
 
     private static DatabaseModel Model() =>
         new(

@@ -486,6 +486,101 @@ public sealed class DotRendererTests
         Assert.Contains("Use &lt;tags&gt; &amp; &quot;quotes&quot;", dot);
     }
 
+    [Fact]
+    public void ReadableStyleEmitsGraphNodeAndEdgeDefaults()
+    {
+        var dot = Render(Model(), style: DiagramStyle.Readable, dotOptions: ReadableDot());
+
+        Assert.Contains("fontname=\"Helvetica\"", dot);
+        Assert.Contains("fontsize=16", dot);
+        Assert.Contains("nodesep=0.55", dot);
+        Assert.Contains("ranksep=0.9", dot);
+        Assert.Contains("bgcolor=\"#FFFFFF\"", dot);
+        Assert.Contains("color=\"#555555\"", dot);
+        Assert.Contains("penwidth=1.1", dot);
+        Assert.Contains("arrowsize=0.7", dot);
+    }
+
+    [Fact]
+    public void ReadableStyleEmitsTablePaddingAndBorderColor()
+    {
+        var dot = Render(Model(), style: DiagramStyle.Readable, dotOptions: ReadableDot());
+
+        Assert.Contains("<TABLE BORDER=\"1\" CELLBORDER=\"1\" CELLSPACING=\"0\" CELLPADDING=\"4\" COLOR=\"#777777\">", dot);
+    }
+
+    [Fact]
+    public void StyledColumnLayoutRendersBoldNameGrayTypeAndGrayComment()
+    {
+        var model = new DatabaseModel(
+            "sqlserver",
+            null,
+            [new TableModel("dbo", "Orders", [new ColumnModel("order_id", "int4", false, true, false, "Order header identifier.")])],
+            []);
+
+        var dot = Render(
+            model,
+            style: DiagramStyle.Readable,
+            dotOptions: ReadableDot(),
+            columnLayout: "{name:bold,font=Times} {type:color=#666666}\n{comment:color=#666666,fontSize=9} | {keys}");
+
+        Assert.Contains("<B><FONT FACE=\"Times\">order_id</FONT></B> <FONT COLOR=\"#666666\">int4</FONT>", dot);
+        Assert.Contains("<BR ALIGN=\"LEFT\"/>", dot);
+        Assert.Contains("<FONT COLOR=\"#666666\" POINT-SIZE=\"9\">Order header identifier.</FONT>", dot);
+        Assert.Contains("BALIGN=\"LEFT\"", dot);
+    }
+
+    [Fact]
+    public void StyledTableHeaderLayoutRendersBoldTableAndComment()
+    {
+        var model = new DatabaseModel(
+            "sqlserver",
+            null,
+            [new TableModel("dbo", "orders", [new ColumnModel("id", "int4", false, true, false)], "Customer purchase orders.")],
+            []);
+
+        var dot = Render(
+            model,
+            style: DiagramStyle.Readable,
+            dotOptions: ReadableDot(),
+            tableHeaderLayout: "{table:bold}\n{comment:color=#666666,fontSize=9}");
+
+        Assert.Contains("<TR><TD COLSPAN=\"3\" BGCOLOR=\"#F1F3F5\" ALIGN=\"LEFT\" BALIGN=\"LEFT\"><B>orders</B><BR ALIGN=\"LEFT\"/><FONT COLOR=\"#666666\" POINT-SIZE=\"9\">Customer purchase orders.</FONT></TD></TR>", dot);
+    }
+
+    [Fact]
+    public void StyledLayoutEscapesTokenValuesButKeepsGeneratedTags()
+    {
+        var model = new DatabaseModel(
+            "sqlserver",
+            null,
+            [new TableModel("dbo", "T", [new ColumnModel("A&B<Id>", "int", false, false, false)])],
+            []);
+
+        var dot = Render(model, columnLayout: "{name:bold}");
+
+        Assert.Contains("<B>A&amp;B&lt;Id&gt;</B>", dot);
+        Assert.DoesNotContain("&lt;B&gt;", dot);
+    }
+
+    [Fact]
+    public void StyledLayoutEscapesLiteralHtmlText()
+    {
+        var dot = Render(Model(), columnLayout: "<B>{name}</B>");
+
+        Assert.Contains("&lt;B&gt;Name&lt;/B&gt;", dot);
+        Assert.DoesNotContain("<B>Name</B>", dot);
+    }
+
+    [Fact]
+    public void StyledKeysTokenKeepsFkPortDetectionWithModifiers()
+    {
+        var dot = Render(Model(), columnLayout: "{name:bold} | {keys:color=#666666}");
+
+        Assert.Contains("<TD PORT=\"col_UserId\" ALIGN=\"LEFT\"><B>UserId</B></TD><TD PORT=\"col_UserId_fk\" ALIGN=\"CENTER\"><FONT COLOR=\"#666666\">FK</FONT></TD>", dot);
+        Assert.Contains("\"table_dbo_Orders\":\"col_UserId_fk\":e -> \"table_dbo_Users\":\"col_Id\":w", dot);
+    }
+
     private static string Render(
         DatabaseModel model,
         DiagramDirection direction = DiagramDirection.LR,
@@ -496,17 +591,35 @@ public sealed class DotRendererTests
         bool showColumnComments = false,
         int? maxCommentLength = null,
         string? columnLayout = null,
-        string? tableHeaderLayout = null) =>
+        string? tableHeaderLayout = null,
+        DiagramStyle style = DiagramStyle.Classic,
+        GraphvizDotRenderOptions? dotOptions = null) =>
         new GraphvizDotRenderer().Render(
             model,
             new DiagramRenderOptions(
                 "Database schema",
                 direction,
+                style,
                 true,
                 new DiagramLayoutOptions(columnLayout, tableHeaderLayout),
                 new DiagramShowOptions(true, false, false, true, true, showForeignKeyLabels, showSelfReferencingForeignKeys, showTableComments, showColumnComments),
                 new MermaidRenderOptions(mermaidEmitDirection),
-                new DiagramCommentRenderOptions(maxCommentLength)));
+                new DiagramCommentRenderOptions(maxCommentLength),
+                dotOptions ?? ClassicDot()));
+
+    private static GraphvizDotRenderOptions ClassicDot() =>
+        new(
+            new GraphvizDotGraphRenderOptions(null, null, null, null, null),
+            new GraphvizDotNodeRenderOptions(null, null),
+            new GraphvizDotEdgeRenderOptions(null, null, null, null, null),
+            new GraphvizDotTableRenderOptions(null, null, null));
+
+    private static GraphvizDotRenderOptions ReadableDot() =>
+        new(
+            new GraphvizDotGraphRenderOptions("Helvetica", 16, 0.55, 0.9, "#FFFFFF"),
+            new GraphvizDotNodeRenderOptions("Helvetica", 10),
+            new GraphvizDotEdgeRenderOptions("Helvetica", 9, "#555555", 1.1, 0.7),
+            new GraphvizDotTableRenderOptions("#777777", "#F1F3F5", 4));
 
     private static DatabaseModel CommentsModel() =>
         new(

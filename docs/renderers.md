@@ -11,6 +11,8 @@ The DOT renderer is the best choice for precise technical diagrams.
 - Can show or hide self-referencing foreign key edges with `diagram.show.selfReferencingForeignKeys`.
 - Renders PK/FK markers as separate table cells and left-aligns table and column text.
 - Supports table and column comments.
+- Supports styled layout tokens in `columnLayout` and `tableHeaderLayout`.
+- Supports `diagram.style: readable` for sans-serif fonts, calmer edges, padded tables, gray borders, and multiline left-balanced cells.
 - Works well as source for PNG generation through Graphviz.
 
 GitHub does not render DOT code fences as diagrams. Commit a generated PNG when a diagram needs to be visible on a README or package page.
@@ -23,6 +25,7 @@ The Mermaid ER renderer is convenient for GitHub Markdown.
 - Can show or hide foreign key names on relationships with `diagram.show.foreignKeyLabels`.
 - Can show or hide self-referencing relationships with `diagram.show.selfReferencingForeignKeys`.
 - Supports column comments when enabled.
+- Ignores custom DOT layout and DOT style settings.
 - Does not emit table comments because Mermaid ER has no natural table comment syntax.
 
 For Mermaid ER diagrams, DbSketch does not emit `direction LR` by default. Some Markdown renderers display `direction` and `LR` as separate entities. Set `diagram.mermaid.emitDirection: true` only when your Mermaid renderer correctly supports `direction` inside `erDiagram`.

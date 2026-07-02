@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using DimonSmart.DbSketch.Core.Config;
 using DimonSmart.DbSketch.Core.Rendering;
 using DimonSmart.DbSketch.Core.Schema;
@@ -24,7 +25,7 @@ public sealed record ResolvedDiagramTarget(
     SchemaFilterOptions Filter,
     DiagramRenderOptions Diagram);
 
-public static class GenerateOptionsResolver
+public static partial class GenerateOptionsResolver
 {
     public static ResolvedGenerateOptions Resolve(DbSketchConfig config, CliOptions cli)
     {
@@ -80,6 +81,7 @@ public static class GenerateOptionsResolver
         var diagramRenderer = DiagramRendererParser.Parse(target.Diagram?.Renderer ?? defaults.Diagram.Renderer);
         var outputFormat = OutputContainerFormatParser.Parse(target.Output?.Format ?? defaults.Output.Format);
         var direction = DiagramDirectionParser.Parse(target.Diagram?.Direction ?? defaults.Diagram.Direction);
+        var style = ParseStyle(target.Diagram?.Style ?? defaults.Diagram.Style, target.Diagram?.Style is null ? "defaults.diagram.style" : $"diagrams['{target.Name}'].diagram.style");
         var title = string.IsNullOrWhiteSpace(target.Title)
             ? defaults.Diagram.Title ?? "Database schema"
             : target.Title;
@@ -90,6 +92,7 @@ public static class GenerateOptionsResolver
         var tableHeaderLayout = target.Diagram?.TableHeaderLayout ?? defaults.Diagram.TableHeaderLayout;
         ValidateLayout(columnLayout, ColumnLayoutFormatter.SupportedTokens, GetLayoutConfigPath(target, target.Diagram?.ColumnLayout, "columnLayout"));
         ValidateLayout(tableHeaderLayout, TableHeaderLayoutFormatter.SupportedTokens, GetLayoutConfigPath(target, target.Diagram?.TableHeaderLayout, "tableHeaderLayout"));
+        var dot = ResolveDotOptions(defaults.Diagram.Dot, target.Diagram?.Dot, style, target);
 
         var markdownOptions = outputFormat == OutputContainerFormat.Markdown
             ? new MarkdownRenderOptions(
@@ -107,12 +110,22 @@ public static class GenerateOptionsResolver
             new DiagramRenderOptions(
                 title,
                 direction,
+                style,
                 target.Diagram?.Compact ?? defaults.Diagram.Compact,
                 new DiagramLayoutOptions(columnLayout, tableHeaderLayout),
                 ResolveShowOptions(defaults.Diagram.Show, target.Diagram?.Show),
                 new MermaidRenderOptions(target.Diagram?.Mermaid?.EmitDirection ?? defaults.Diagram.Mermaid.EmitDirection),
-                new DiagramCommentRenderOptions(commentMaxLength)));
+                new DiagramCommentRenderOptions(commentMaxLength),
+                dot));
     }
+
+    private static DiagramStyle ParseStyle(string? style, string path) =>
+        style?.Trim().ToLowerInvariant() switch
+        {
+            "classic" => DiagramStyle.Classic,
+            "readable" => DiagramStyle.Readable,
+            var value => throw new CliException($"{path} must be one of: classic, readable.")
+        };
 
     private static string GetLayoutConfigPath(DiagramTargetConfig target, string? overrideValue, string propertyName) =>
         overrideValue is null
@@ -147,6 +160,101 @@ public static class GenerateOptionsResolver
             overrides?.SelfReferencingForeignKeys ?? defaults.SelfReferencingForeignKeys,
             overrides?.TableComments ?? defaults.TableComments,
             overrides?.ColumnComments ?? defaults.ColumnComments);
+
+    private static GraphvizDotRenderOptions ResolveDotOptions(
+        DotConfig defaults,
+        DotOverrideConfig? overrides,
+        DiagramStyle style,
+        DiagramTargetConfig target)
+    {
+        var preset = GetDotPreset(style);
+        var graph = new GraphvizDotGraphRenderOptions(
+            overrides?.Graph?.FontName ?? defaults.Graph.FontName ?? preset.Graph.FontName,
+            overrides?.Graph?.FontSize ?? defaults.Graph.FontSize ?? preset.Graph.FontSize,
+            overrides?.Graph?.Nodesep ?? defaults.Graph.Nodesep ?? preset.Graph.Nodesep,
+            overrides?.Graph?.Ranksep ?? defaults.Graph.Ranksep ?? preset.Graph.Ranksep,
+            overrides?.Graph?.BackgroundColor ?? defaults.Graph.BackgroundColor ?? preset.Graph.BackgroundColor);
+        var node = new GraphvizDotNodeRenderOptions(
+            overrides?.Node?.FontName ?? defaults.Node.FontName ?? preset.Node.FontName,
+            overrides?.Node?.FontSize ?? defaults.Node.FontSize ?? preset.Node.FontSize);
+        var edge = new GraphvizDotEdgeRenderOptions(
+            overrides?.Edge?.FontName ?? defaults.Edge.FontName ?? preset.Edge.FontName,
+            overrides?.Edge?.FontSize ?? defaults.Edge.FontSize ?? preset.Edge.FontSize,
+            overrides?.Edge?.Color ?? defaults.Edge.Color ?? preset.Edge.Color,
+            overrides?.Edge?.PenWidth ?? defaults.Edge.PenWidth ?? preset.Edge.PenWidth,
+            overrides?.Edge?.ArrowSize ?? defaults.Edge.ArrowSize ?? preset.Edge.ArrowSize);
+        var table = new GraphvizDotTableRenderOptions(
+            overrides?.Table?.BorderColor ?? defaults.Table.BorderColor ?? preset.Table.BorderColor,
+            overrides?.Table?.HeaderBackground ?? defaults.Table.HeaderBackground ?? preset.Table.HeaderBackground,
+            overrides?.Table?.CellPadding ?? defaults.Table.CellPadding ?? preset.Table.CellPadding);
+
+        var basePath = overrides is null ? "defaults.diagram.dot" : $"diagrams['{target.Name}'].diagram.dot";
+        ValidateFont(graph.FontName, $"{basePath}.graph.fontName");
+        ValidateFont(node.FontName, $"{basePath}.node.fontName");
+        ValidateFont(edge.FontName, $"{basePath}.edge.fontName");
+        ValidateFontSize(graph.FontSize, $"{basePath}.graph.fontSize", 6, 72);
+        ValidateFontSize(node.FontSize, $"{basePath}.node.fontSize", 6, 72);
+        ValidateFontSize(edge.FontSize, $"{basePath}.edge.fontSize", 6, 72);
+        ValidateColor(graph.BackgroundColor, $"{basePath}.graph.backgroundColor");
+        ValidateColor(edge.Color, $"{basePath}.edge.color");
+        ValidateColor(table.BorderColor, $"{basePath}.table.borderColor");
+        ValidateColor(table.HeaderBackground, $"{basePath}.table.headerBackground");
+        ValidateRange(graph.Nodesep, $"{basePath}.graph.nodesep", 0.01, 10);
+        ValidateRange(graph.Ranksep, $"{basePath}.graph.ranksep", 0.01, 10);
+        ValidateRange(edge.PenWidth, $"{basePath}.edge.penWidth", 0.01, 10);
+        ValidateRange(edge.ArrowSize, $"{basePath}.edge.arrowSize", 0.01, 10);
+        ValidateIntRange(table.CellPadding, $"{basePath}.table.cellPadding", 0, 20);
+
+        return new GraphvizDotRenderOptions(graph, node, edge, table);
+    }
+
+    private static GraphvizDotRenderOptions GetDotPreset(DiagramStyle style) =>
+        style == DiagramStyle.Readable
+            ? new GraphvizDotRenderOptions(
+                new GraphvizDotGraphRenderOptions("Helvetica", 16, 0.55, 0.9, "#FFFFFF"),
+                new GraphvizDotNodeRenderOptions("Helvetica", 10),
+                new GraphvizDotEdgeRenderOptions("Helvetica", 9, "#555555", 1.1, 0.7),
+                new GraphvizDotTableRenderOptions("#777777", "#F1F3F5", 4))
+            : new GraphvizDotRenderOptions(
+                new GraphvizDotGraphRenderOptions(null, null, null, null, null),
+                new GraphvizDotNodeRenderOptions(null, null),
+                new GraphvizDotEdgeRenderOptions(null, null, null, null, null),
+                new GraphvizDotTableRenderOptions(null, null, null));
+
+    private static void ValidateColor(string? color, string path)
+    {
+        if (color is not null && !HexColorPattern().IsMatch(color))
+        {
+            throw new CliException($"{path} must be a hex color like #666666.");
+        }
+    }
+
+    private static void ValidateFont(string? font, string path)
+    {
+        if (font is not null && !SafeFontPattern().IsMatch(font))
+        {
+            throw new CliException($"{path} must contain only letters, digits, spaces, '_', '-', '.', and be at most 64 characters.");
+        }
+    }
+
+    private static void ValidateFontSize(int? fontSize, string path, int min, int max) =>
+        ValidateIntRange(fontSize, path, min, max);
+
+    private static void ValidateIntRange(int? value, string path, int min, int max)
+    {
+        if (value is not null && (value < min || value > max))
+        {
+            throw new CliException($"{path} must be from {min} to {max}.");
+        }
+    }
+
+    private static void ValidateRange(double? value, string path, double min, double max)
+    {
+        if (value is not null && (value < min || value > max))
+        {
+            throw new CliException($"{path} must be from {min} to {max}.");
+        }
+    }
 
     private static void ValidateDiagrams(DbSketchConfig config)
     {
@@ -248,4 +356,10 @@ public static class GenerateOptionsResolver
             var value => throw new CliException($"Unknown provider '{value}'. Supported values: sqlserver, postgres, mysql.")
         };
     }
+
+    [GeneratedRegex("^#[0-9A-Fa-f]{6}$")]
+    private static partial Regex HexColorPattern();
+
+    [GeneratedRegex("^[A-Za-z0-9 _\\-.]{1,64}$")]
+    private static partial Regex SafeFontPattern();
 }
