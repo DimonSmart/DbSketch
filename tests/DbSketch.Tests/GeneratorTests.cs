@@ -144,7 +144,7 @@ public sealed class GeneratorTests
                 "Database schema",
                 DiagramDirection.LR,
                 true,
-                new DiagramShowOptions(true, false, false, true, true, showTableComments, false),
+                new DiagramShowOptions(true, false, false, true, true, true, true, showTableComments, false),
                 new MermaidRenderOptions(false),
                 new DiagramCommentRenderOptions(null)));
 

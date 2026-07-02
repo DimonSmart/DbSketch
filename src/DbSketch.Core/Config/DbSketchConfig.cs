@@ -101,6 +101,8 @@ public sealed class DiagramShowConfig
     public bool Nullability { get; init; }
     public bool PrimaryKeys { get; init; } = true;
     public bool ForeignKeys { get; init; } = true;
+    public bool ForeignKeyLabels { get; init; } = true;
+    public bool SelfReferencingForeignKeys { get; init; } = true;
     public bool TableComments { get; init; }
     public bool ColumnComments { get; init; }
 }
@@ -112,6 +114,8 @@ public sealed class DiagramShowOverrideConfig
     public bool? Nullability { get; init; }
     public bool? PrimaryKeys { get; init; }
     public bool? ForeignKeys { get; init; }
+    public bool? ForeignKeyLabels { get; init; }
+    public bool? SelfReferencingForeignKeys { get; init; }
     public bool? TableComments { get; init; }
     public bool? ColumnComments { get; init; }
 }

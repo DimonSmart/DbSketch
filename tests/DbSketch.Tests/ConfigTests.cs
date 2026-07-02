@@ -26,6 +26,8 @@ public sealed class ConfigTests
                 show:
                   schemaName: false
                   columnTypes: true
+                  foreignKeyLabels: false
+                  selfReferencingForeignKeys: false
                   tableComments: true
                 comments:
                   maxLength: 80
@@ -69,6 +71,8 @@ public sealed class ConfigTests
         Assert.Equal("dot", config.Defaults.Diagram.Renderer);
         Assert.False(config.Defaults.Diagram.Show.SchemaName);
         Assert.True(config.Defaults.Diagram.Show.ColumnTypes);
+        Assert.False(config.Defaults.Diagram.Show.ForeignKeyLabels);
+        Assert.False(config.Defaults.Diagram.Show.SelfReferencingForeignKeys);
         Assert.True(config.Defaults.Diagram.Show.TableComments);
         Assert.Equal(80, config.Defaults.Diagram.Comments.MaxLength);
         Assert.True(config.Comments.Enabled);
@@ -299,7 +303,7 @@ public sealed class ConfigTests
             {
                 Diagram = new DiagramConfig
                 {
-                    Show = new DiagramShowConfig { SchemaName = true, ColumnTypes = false, ForeignKeys = true }
+                    Show = new DiagramShowConfig { SchemaName = true, ColumnTypes = false, ForeignKeys = true, ForeignKeyLabels = false, SelfReferencingForeignKeys = false }
                 }
             },
             Diagrams =
@@ -313,6 +317,8 @@ public sealed class ConfigTests
         Assert.True(diagram.Diagram.Show.SchemaName);
         Assert.True(diagram.Diagram.Show.ColumnTypes);
         Assert.True(diagram.Diagram.Show.ForeignKeys);
+        Assert.False(diagram.Diagram.Show.ForeignKeyLabels);
+        Assert.False(diagram.Diagram.Show.SelfReferencingForeignKeys);
     }
 
     [Fact]

@@ -91,8 +91,14 @@ public sealed class MermaidErRenderer : IDiagramRenderer
             return;
         }
 
+        if (!options.Show.SelfReferencingForeignKeys && IsSelfReferencing(foreignKey))
+        {
+            return;
+        }
+
         var sourceCardinality = IsNullableForeignKey(source, foreignKey) ? "}o" : "}|";
-        builder.AppendLine($"  {FormatEntityName(GetTableDisplayName(source, options))} {sourceCardinality}--|| {FormatEntityName(GetTableDisplayName(target, options))} : {FormatEntityName(foreignKey.Name)}");
+        var label = options.Show.ForeignKeyLabels ? FormatEntityName(foreignKey.Name) : "\"\"";
+        builder.AppendLine($"  {FormatEntityName(GetTableDisplayName(source, options))} {sourceCardinality}--|| {FormatEntityName(GetTableDisplayName(target, options))} : {label}");
     }
 
     private static bool IsNullableForeignKey(TableModel source, ForeignKeyModel foreignKey)
@@ -113,6 +119,10 @@ public sealed class MermaidErRenderer : IDiagramRenderer
         tables.FirstOrDefault(table =>
             string.Equals(table.SchemaName, tableRef.SchemaName, StringComparison.OrdinalIgnoreCase) &&
             string.Equals(table.Name, tableRef.TableName, StringComparison.OrdinalIgnoreCase));
+
+    private static bool IsSelfReferencing(ForeignKeyModel foreignKey) =>
+        string.Equals(foreignKey.SourceTable.SchemaName, foreignKey.TargetTable.SchemaName, StringComparison.OrdinalIgnoreCase) &&
+        string.Equals(foreignKey.SourceTable.TableName, foreignKey.TargetTable.TableName, StringComparison.OrdinalIgnoreCase);
 
     private static string GetTableDisplayName(TableModel table, DiagramRenderOptions options) =>
         options.Show.SchemaName ? table.FullName : table.Name;

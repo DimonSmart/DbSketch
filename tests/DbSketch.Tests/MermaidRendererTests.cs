@@ -104,6 +104,31 @@ public sealed class MermaidRendererTests
     }
 
     [Fact]
+    public void CanHideForeignKeyLabels()
+    {
+        var mermaid = Render(Model(), showForeignKeyLabels: false);
+
+        Assert.Contains("\"dbo.Orders\" }|--|| \"dbo.Users\" : \"\"", mermaid);
+        Assert.DoesNotContain("\"FK_Orders_Users\"", mermaid);
+    }
+
+    [Fact]
+    public void CanHideSelfReferencingForeignKeys()
+    {
+        var model = new DatabaseModel(
+            "sqlserver",
+            null,
+            [new TableModel("dbo", "Employees", [new ColumnModel("Id", "int", false, true, false), new ColumnModel("ManagerId", "int", true, false, true)])],
+            [new ForeignKeyModel("FK_Employees_Manager", new TableRef("dbo", "Employees"), ["ManagerId"], new TableRef("dbo", "Employees"), ["Id"])]);
+
+        var mermaid = Render(model, showSelfReferencingForeignKeys: false);
+
+        Assert.Contains("column ManagerId FK", mermaid);
+        Assert.DoesNotContain("FK_Employees_Manager", mermaid);
+        Assert.DoesNotContain("}o--||", mermaid);
+    }
+
+    [Fact]
     public void NullableForeignKeyUsesOptionalSourceCardinality()
     {
         var model = new DatabaseModel(
@@ -253,6 +278,8 @@ public sealed class MermaidRendererTests
         bool showNullability = false,
         DiagramDirection direction = DiagramDirection.LR,
         bool emitDirection = false,
+        bool showForeignKeyLabels = true,
+        bool showSelfReferencingForeignKeys = true,
         bool showTableComments = false,
         bool showColumnComments = false,
         int? maxCommentLength = null) =>
@@ -262,7 +289,7 @@ public sealed class MermaidRendererTests
                 "Database schema",
                 direction,
                 true,
-                new DiagramShowOptions(showSchemaName, showColumnTypes, showNullability, true, true, showTableComments, showColumnComments),
+                new DiagramShowOptions(showSchemaName, showColumnTypes, showNullability, true, true, showForeignKeyLabels, showSelfReferencingForeignKeys, showTableComments, showColumnComments),
                 new MermaidRenderOptions(emitDirection),
                 new DiagramCommentRenderOptions(maxCommentLength)));
 

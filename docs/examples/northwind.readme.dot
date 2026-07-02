@@ -1,8 +1,3 @@
-# Northwind DbSketch generated output
-
-This file is generated from the Northwind PostgreSQL test fixture.
-
-```dot
 digraph DbSketch {
   graph [
     rankdir=LR,
@@ -88,23 +83,9 @@ digraph DbSketch {
     >
   ];
 
-  "table_northwind_employees":"col_reports_to_fk":e -> "table_northwind_employees":"col_employee_id":w [
-    label="fk_employees_reports_to"
-  ];
-  "table_northwind_orders":"col_customer_id_fk":e -> "table_northwind_customers":"col_customer_id":w [
-    label="fk_orders_customers"
-  ];
-  "table_northwind_orders":"col_employee_id_fk":e -> "table_northwind_employees":"col_employee_id":w [
-    label="fk_orders_employees"
-  ];
-  "table_northwind_order_details":"col_order_id_fk":e -> "table_northwind_orders":"col_order_id":w [
-    label="fk_order_details_orders"
-  ];
-  "table_northwind_order_details":"col_product_id_fk":e -> "table_northwind_products":"col_product_id":w [
-    label="fk_order_details_products"
-  ];
-  "table_northwind_products":"col_category_id_fk":e -> "table_northwind_categories":"col_category_id":w [
-    label="fk_products_categories"
-  ];
+  "table_northwind_orders":"col_customer_id_fk":e -> "table_northwind_customers":"col_customer_id":w;
+  "table_northwind_orders":"col_employee_id_fk":e -> "table_northwind_employees":"col_employee_id":w;
+  "table_northwind_order_details":"col_order_id_fk":e -> "table_northwind_orders":"col_order_id":w;
+  "table_northwind_order_details":"col_product_id_fk":e -> "table_northwind_products":"col_product_id":w;
+  "table_northwind_products":"col_category_id_fk":e -> "table_northwind_categories":"col_category_id":w;
 }
-```

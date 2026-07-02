@@ -48,11 +48,11 @@ public sealed class PostgresNorthwindEndToEndTests
             Assert.Contains("northwind.categories", dot);
             Assert.Contains("northwind.employees", dot);
 
-            Assert.Contains("PK customer_id", dot);
-            Assert.Contains("PK order_id", dot);
-            Assert.Contains("PK product_id", dot);
-            Assert.Contains("FK customer_id", dot);
-            Assert.Contains("FK category_id", dot);
+            Assert.Contains("col_customer_id\" ALIGN=\"LEFT\">customer_id", dot);
+            Assert.Contains("col_order_id\" ALIGN=\"LEFT\">order_id", dot);
+            Assert.Contains("col_product_id\" ALIGN=\"LEFT\">product_id", dot);
+            Assert.Contains("<FONT POINT-SIZE=\"9\">PK</FONT>", dot);
+            Assert.Contains("<FONT POINT-SIZE=\"9\">FK</FONT>", dot);
 
             Assert.Contains("fk_orders_customers", dot);
             Assert.Contains("fk_orders_employees", dot);
@@ -60,8 +60,8 @@ public sealed class PostgresNorthwindEndToEndTests
             Assert.Contains("fk_order_details_products", dot);
             Assert.Contains("fk_products_categories", dot);
 
-            Assert.Contains("\"table_northwind_orders\":\"col_customer_id\" -> \"table_northwind_customers\":\"col_customer_id\"", dot);
-            Assert.Contains("\"table_northwind_order_details\":\"col_product_id\" -> \"table_northwind_products\":\"col_product_id\"", dot);
+            Assert.Contains("\"table_northwind_orders\":\"col_customer_id_fk\":e -> \"table_northwind_customers\":\"col_customer_id\":w", dot);
+            Assert.Contains("\"table_northwind_order_details\":\"col_product_id_fk\":e -> \"table_northwind_products\":\"col_product_id\":w", dot);
         }
         finally
         {

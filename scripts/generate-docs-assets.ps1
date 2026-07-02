@@ -47,6 +47,11 @@ if (-not $SkipPng) {
     Require-Command "dot" "Install Graphviz and make sure the 'dot' CLI is on PATH, or rerun with -SkipPng."
 }
 
+& docker info *> $null
+if ($LASTEXITCODE -ne 0) {
+    throw "Docker is installed, but the Docker daemon is not reachable. Start Docker Desktop or Docker Engine and rerun the script."
+}
+
 if (-not (Test-Path $fixturePath)) {
     throw "Northwind fixture was not found: $fixturePath"
 }
@@ -84,7 +89,7 @@ try {
     }
 
     Write-Host "Applying Northwind schema fixture..."
-    Get-Content -Raw $fixturePath | docker exec -i $containerName psql -U dbsketch -d dbsketch_northwind
+    Get-Content -Raw $fixturePath | docker exec -i $containerName psql -h 127.0.0.1 -U dbsketch -d dbsketch_northwind
     if ($LASTEXITCODE -ne 0) {
         throw "Failed to apply Northwind schema fixture."
     }
@@ -106,7 +111,7 @@ try {
 
     if (-not $SkipPng) {
         Write-Host "Rendering docs/assets/northwind-schema.png with Graphviz..."
-        Invoke-Checked "dot" @("-Tpng", "docs/examples/northwind.dot", "-o", "docs/assets/northwind-schema.png")
+        Invoke-Checked "dot" @("-Tpng", "docs/examples/northwind.readme.dot", "-o", "docs/assets/northwind-schema.png")
     }
 
     Write-Host "Docs assets generated."
@@ -119,6 +124,11 @@ finally {
     }
     else {
         Write-Host "Removing PostgreSQL container $containerName..."
-        & docker rm -f $containerName *> $null
+        try {
+            & docker rm -f $containerName *> $null
+        }
+        catch {
+            Write-Warning "Failed to remove PostgreSQL container '$containerName'. Remove it manually if it exists."
+        }
     }
 }

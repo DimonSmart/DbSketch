@@ -14,6 +14,7 @@ Example files:
 
 - [Northwind DbSketch config](northwind.dbsketch.yml)
 - [Generated DOT](northwind.dot)
+- [Generated README DOT](northwind.readme.dot)
 - [Generated Mermaid ER](northwind.mmd)
 - [Generated Markdown](northwind.generated.md)
 

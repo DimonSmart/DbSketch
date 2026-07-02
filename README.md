@@ -45,6 +45,7 @@ defaults:
       nullability: false
       primaryKeys: true
       foreignKeys: true
+      foreignKeyLabels: false
 
 diagrams:
   - name: full

@@ -40,6 +40,8 @@ defaults:
       nullability: false
       primaryKeys: true
       foreignKeys: true
+      foreignKeyLabels: true
+      selfReferencingForeignKeys: true
       tableComments: false
       columnComments: false
     comments:

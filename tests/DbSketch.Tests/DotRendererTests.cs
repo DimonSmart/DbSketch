@@ -56,7 +56,7 @@ public sealed class DotRendererTests
     {
         var dot = Render(Model());
 
-        Assert.Contains("PORT=\"col_UserId\"", dot);
+        Assert.Contains("<TD PORT=\"col_UserId\" ALIGN=\"LEFT\">UserId</TD><TD WIDTH=\"24\"></TD><TD PORT=\"col_UserId_fk\" WIDTH=\"24\" ALIGN=\"CENTER\"><FONT POINT-SIZE=\"9\">FK</FONT></TD>", dot);
     }
 
     [Fact]
@@ -64,11 +64,44 @@ public sealed class DotRendererTests
     {
         var dot = Render(Model());
 
-        Assert.Contains("\"table_dbo_Orders\":\"col_UserId\" -> \"table_dbo_Users\":\"col_Id\"", dot);
+        Assert.Contains("\"table_dbo_Orders\":\"col_UserId_fk\":e -> \"table_dbo_Users\":\"col_Id\":w", dot);
     }
 
     [Fact]
-    public void RendersPrimaryKeyAndForeignKeyMarkersTogether()
+    public void RendersForeignKeyLabelsByDefault()
+    {
+        var dot = Render(Model());
+
+        Assert.Contains("label=\"FK_Orders_Users\"", dot);
+    }
+
+    [Fact]
+    public void CanHideForeignKeyLabels()
+    {
+        var dot = Render(Model(), showForeignKeyLabels: false);
+
+        Assert.Contains("\"table_dbo_Orders\":\"col_UserId_fk\":e -> \"table_dbo_Users\":\"col_Id\":w;", dot);
+        Assert.DoesNotContain("label=\"FK_Orders_Users\"", dot);
+    }
+
+    [Fact]
+    public void CanHideSelfReferencingForeignKeys()
+    {
+        var model = new DatabaseModel(
+            "sqlserver",
+            null,
+            [new TableModel("dbo", "Employees", [new ColumnModel("Id", "int", false, true, false), new ColumnModel("ManagerId", "int", true, false, true)])],
+            [new ForeignKeyModel("FK_Employees_Manager", new TableRef("dbo", "Employees"), ["ManagerId"], new TableRef("dbo", "Employees"), ["Id"])]);
+
+        var dot = Render(model, showSelfReferencingForeignKeys: false);
+
+        Assert.Contains("<TD PORT=\"col_ManagerId\" ALIGN=\"LEFT\">ManagerId</TD><TD WIDTH=\"24\"></TD><TD PORT=\"col_ManagerId_fk\" WIDTH=\"24\" ALIGN=\"CENTER\"><FONT POINT-SIZE=\"9\">FK</FONT></TD>", dot);
+        Assert.DoesNotContain("FK_Employees_Manager", dot);
+        Assert.DoesNotContain("\"table_dbo_Employees\":\"col_ManagerId_fk\":e -> \"table_dbo_Employees\":\"col_Id\":w", dot);
+    }
+
+    [Fact]
+    public void RendersPrimaryKeyAndForeignKeyMarkersInSeparateCells()
     {
         var model = new DatabaseModel(
             "sqlserver",
@@ -78,7 +111,16 @@ public sealed class DotRendererTests
 
         var dot = Render(model);
 
-        Assert.Contains("PK FK UserId", dot);
+        Assert.Contains("<TD PORT=\"col_UserId\" ALIGN=\"LEFT\">UserId</TD><TD WIDTH=\"24\" ALIGN=\"CENTER\"><FONT POINT-SIZE=\"9\">PK</FONT></TD><TD PORT=\"col_UserId_fk\" WIDTH=\"24\" ALIGN=\"CENTER\"><FONT POINT-SIZE=\"9\">FK</FONT></TD>", dot);
+    }
+
+    [Fact]
+    public void LeftAlignsTableAndColumnText()
+    {
+        var dot = Render(Model());
+
+        Assert.Contains("<TD COLSPAN=\"3\" BGCOLOR=\"#EEEEEE\" ALIGN=\"LEFT\"><B>dbo.Users</B></TD>", dot);
+        Assert.Contains("<TD PORT=\"col_Name\" ALIGN=\"LEFT\">Name</TD>", dot);
     }
 
     [Fact]
@@ -95,8 +137,8 @@ public sealed class DotRendererTests
 
         var dot = Render(model);
 
-        Assert.Contains("\"table_dbo_Source\":\"col_A\" -> \"table_dbo_Target\":\"col_X\"", dot);
-        Assert.Contains("\"table_dbo_Source\":\"col_B\" -> \"table_dbo_Target\":\"col_Y\"", dot);
+        Assert.Contains("\"table_dbo_Source\":\"col_A_fk\":e -> \"table_dbo_Target\":\"col_X\":w", dot);
+        Assert.Contains("\"table_dbo_Source\":\"col_B_fk\":e -> \"table_dbo_Target\":\"col_Y\":w", dot);
     }
 
     [Fact]
@@ -177,7 +219,7 @@ public sealed class DotRendererTests
         Assert.Contains("Application users", dot);
         Assert.DoesNotContain("User identifier", dot);
         Assert.Contains("PORT=\"col_Id\"", dot);
-        Assert.Contains("\"table_dbo_Orders\":\"col_UserId\" -> \"table_dbo_Users\":\"col_Id\"", dot);
+        Assert.Contains("\"table_dbo_Orders\":\"col_UserId_fk\":e -> \"table_dbo_Users\":\"col_Id\":w", dot);
     }
 
     [Fact]
@@ -204,7 +246,7 @@ public sealed class DotRendererTests
         Assert.DoesNotContain("Application users", dot);
         Assert.Contains("User identifier", dot);
         Assert.Contains("PORT=\"col_Id\"", dot);
-        Assert.Contains("\"table_dbo_Orders\":\"col_UserId\" -> \"table_dbo_Users\":\"col_Id\"", dot);
+        Assert.Contains("\"table_dbo_Orders\":\"col_UserId_fk\":e -> \"table_dbo_Users\":\"col_Id\":w", dot);
     }
 
     [Fact]
@@ -263,14 +305,22 @@ public sealed class DotRendererTests
         Assert.Contains("PORT=\"col_Id\"", dot);
     }
 
-    private static string Render(DatabaseModel model, DiagramDirection direction = DiagramDirection.LR, bool mermaidEmitDirection = false, bool showTableComments = false, bool showColumnComments = false, int? maxCommentLength = null) =>
+    private static string Render(
+        DatabaseModel model,
+        DiagramDirection direction = DiagramDirection.LR,
+        bool mermaidEmitDirection = false,
+        bool showForeignKeyLabels = true,
+        bool showSelfReferencingForeignKeys = true,
+        bool showTableComments = false,
+        bool showColumnComments = false,
+        int? maxCommentLength = null) =>
         new GraphvizDotRenderer().Render(
             model,
             new DiagramRenderOptions(
                 "Database schema",
                 direction,
                 true,
-                new DiagramShowOptions(true, false, false, true, true, showTableComments, showColumnComments),
+                new DiagramShowOptions(true, false, false, true, true, showForeignKeyLabels, showSelfReferencingForeignKeys, showTableComments, showColumnComments),
                 new MermaidRenderOptions(mermaidEmitDirection),
                 new DiagramCommentRenderOptions(maxCommentLength)));
 

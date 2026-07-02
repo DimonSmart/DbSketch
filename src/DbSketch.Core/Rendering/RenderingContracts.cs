@@ -37,5 +37,7 @@ public sealed record DiagramShowOptions(
     bool Nullability,
     bool PrimaryKeys,
     bool ForeignKeys,
+    bool ForeignKeyLabels,
+    bool SelfReferencingForeignKeys,
     bool TableComments,
     bool ColumnComments);

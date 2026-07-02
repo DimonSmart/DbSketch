@@ -24,6 +24,20 @@ diagrams:
       path: docs/examples/northwind.dot
       format: raw
 
+  - name: northwind-readme-dot
+    title: Northwind schema
+    include:
+      tables:
+        - "northwind.*"
+    diagram:
+      renderer: dot
+      show:
+        foreignKeyLabels: false
+        selfReferencingForeignKeys: false
+    output:
+      path: docs/examples/northwind.readme.dot
+      format: raw
+
   - name: northwind-mermaid
     title: Northwind schema
     include:

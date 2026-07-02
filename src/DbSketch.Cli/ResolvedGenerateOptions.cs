@@ -116,6 +116,8 @@ public static class GenerateOptionsResolver
             overrides?.Nullability ?? defaults.Nullability,
             overrides?.PrimaryKeys ?? defaults.PrimaryKeys,
             overrides?.ForeignKeys ?? defaults.ForeignKeys,
+            overrides?.ForeignKeyLabels ?? defaults.ForeignKeyLabels,
+            overrides?.SelfReferencingForeignKeys ?? defaults.SelfReferencingForeignKeys,
             overrides?.TableComments ?? defaults.TableComments,
             overrides?.ColumnComments ?? defaults.ColumnComments);
 
