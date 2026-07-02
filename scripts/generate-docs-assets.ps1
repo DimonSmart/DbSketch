@@ -138,6 +138,12 @@ try {
 
         Write-Host "Rendering docs/assets/northwind-schema.png with Graphviz..."
         Invoke-Checked $dotPath @("-Tpng", "docs/examples/northwind.compact.dot", "-o", "docs/assets/northwind-schema.png")
+
+        $styleNames = @("classic", "readable", "compact", "soft", "blueprint", "contrast")
+        foreach ($styleName in $styleNames) {
+            Write-Host "Rendering docs/assets/northwind-style-$styleName.png with Graphviz..."
+            Invoke-Checked $dotPath @("-Tpng", "docs/examples/northwind.style.$styleName.dot", "-o", "docs/assets/northwind-style-$styleName.png")
+        }
     }
 
     Write-Host "Docs assets generated."

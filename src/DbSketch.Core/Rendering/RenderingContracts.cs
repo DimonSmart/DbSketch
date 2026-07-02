@@ -24,7 +24,11 @@ public enum DiagramDirection
 public enum DiagramStyle
 {
     Classic,
-    Readable
+    Readable,
+    Compact,
+    Soft,
+    Blueprint,
+    Contrast
 }
 
 public sealed record DiagramRenderOptions(

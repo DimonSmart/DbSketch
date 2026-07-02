@@ -12,7 +12,7 @@ The DOT renderer is the best choice for precise technical diagrams.
 - Renders PK/FK markers as separate table cells and left-aligns table and column text.
 - Supports table and column comments.
 - Supports styled layout tokens in `columnLayout` and `tableHeaderLayout`.
-- Supports `diagram.style: readable` for sans-serif fonts, calmer edges, padded tables, gray borders, and multiline left-balanced cells.
+- Supports `diagram.style` presets: `classic`, `readable`, `compact`, `soft`, `blueprint`, and `contrast`.
 - Works well as source for PNG generation through Graphviz.
 
 GitHub does not render DOT code fences as diagrams. Commit a generated PNG when a diagram needs to be visible on a README or package page.

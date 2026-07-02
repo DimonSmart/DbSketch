@@ -2,7 +2,7 @@ digraph DbSketch {
   graph [
     rankdir=LR,
     labelloc="t",
-    label="Northwind schema",
+    label="Northwind schema - readable",
     fontname="Helvetica",
     fontsize=16,
     nodesep=0.55,
@@ -28,7 +28,7 @@ digraph DbSketch {
     label=<
       <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4" COLOR="#777777">
         <TR><TD COLSPAN="2" BGCOLOR="#F1F3F5" ALIGN="LEFT" BALIGN="LEFT"><B>categories</B><BR ALIGN="LEFT"/><FONT COLOR="#666666" POINT-SIZE="9">Product categories used for catalog grouping.</FONT></TD></TR>
-        <TR><TD PORT="col_category_id" ALIGN="LEFT" BALIGN="LEFT"><B>category_id</B> <FONT COLOR="#666666">int4</FONT><BR ALIGN="LEFT"/><FONT COLOR="#666666" POINT-SIZE="9">Category identifier referenced by products.</FONT></TD><TD ALIGN="CENTER">PK</TD></TR>
+        <TR><TD PORT="col_category_id" ALIGN="LEFT" BALIGN="LEFT"><B>category_id</B> <FONT COLOR="#666666">int4</FONT><BR ALIGN="LEFT"/><FONT COLOR="#666666" POINT-SIZE="9">Category identifier referenced by products.</FONT></TD><TD ALIGN="CENTER"><FONT COLOR="#666666">PK</FONT></TD></TR>
         <TR><TD PORT="col_category_name" ALIGN="LEFT" BALIGN="LEFT"><B>category_name</B> <FONT COLOR="#666666">text</FONT><BR ALIGN="LEFT"/><FONT COLOR="#666666" POINT-SIZE="9">Display name for the category.</FONT></TD><TD ALIGN="CENTER"></TD></TR>
       </TABLE>
     >
@@ -38,7 +38,7 @@ digraph DbSketch {
     label=<
       <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4" COLOR="#777777">
         <TR><TD COLSPAN="2" BGCOLOR="#F1F3F5" ALIGN="LEFT" BALIGN="LEFT"><B>customers</B><BR ALIGN="LEFT"/><FONT COLOR="#666666" POINT-SIZE="9">Companies and contacts that place orders.</FONT></TD></TR>
-        <TR><TD PORT="col_customer_id" ALIGN="LEFT" BALIGN="LEFT"><B>customer_id</B> <FONT COLOR="#666666">text</FONT><BR ALIGN="LEFT"/><FONT COLOR="#666666" POINT-SIZE="9">Stable customer code used on orders.</FONT></TD><TD ALIGN="CENTER">PK</TD></TR>
+        <TR><TD PORT="col_customer_id" ALIGN="LEFT" BALIGN="LEFT"><B>customer_id</B> <FONT COLOR="#666666">text</FONT><BR ALIGN="LEFT"/><FONT COLOR="#666666" POINT-SIZE="9">Stable customer code used on orders.</FONT></TD><TD ALIGN="CENTER"><FONT COLOR="#666666">PK</FONT></TD></TR>
         <TR><TD PORT="col_company_name" ALIGN="LEFT" BALIGN="LEFT"><B>company_name</B> <FONT COLOR="#666666">text</FONT><BR ALIGN="LEFT"/><FONT COLOR="#666666" POINT-SIZE="9">Legal or trading company name.</FONT></TD><TD ALIGN="CENTER"></TD></TR>
         <TR><TD PORT="col_contact_name" ALIGN="LEFT" BALIGN="LEFT"><B>contact_name</B> <FONT COLOR="#666666">text</FONT><BR ALIGN="LEFT"/><FONT COLOR="#666666" POINT-SIZE="9">Primary contact person for the customer.</FONT></TD><TD ALIGN="CENTER"></TD></TR>
       </TABLE>
@@ -49,10 +49,10 @@ digraph DbSketch {
     label=<
       <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4" COLOR="#777777">
         <TR><TD COLSPAN="2" BGCOLOR="#F1F3F5" ALIGN="LEFT" BALIGN="LEFT"><B>employees</B><BR ALIGN="LEFT"/><FONT COLOR="#666666" POINT-SIZE="9">Sales employees and their reporting hierarchy.</FONT></TD></TR>
-        <TR><TD PORT="col_employee_id" ALIGN="LEFT" BALIGN="LEFT"><B>employee_id</B> <FONT COLOR="#666666">int4</FONT><BR ALIGN="LEFT"/><FONT COLOR="#666666" POINT-SIZE="9">Internal employee identifier.</FONT></TD><TD ALIGN="CENTER">PK</TD></TR>
+        <TR><TD PORT="col_employee_id" ALIGN="LEFT" BALIGN="LEFT"><B>employee_id</B> <FONT COLOR="#666666">int4</FONT><BR ALIGN="LEFT"/><FONT COLOR="#666666" POINT-SIZE="9">Internal employee identifier.</FONT></TD><TD ALIGN="CENTER"><FONT COLOR="#666666">PK</FONT></TD></TR>
         <TR><TD PORT="col_last_name" ALIGN="LEFT" BALIGN="LEFT"><B>last_name</B> <FONT COLOR="#666666">text</FONT><BR ALIGN="LEFT"/><FONT COLOR="#666666" POINT-SIZE="9">Employee family name.</FONT></TD><TD ALIGN="CENTER"></TD></TR>
         <TR><TD PORT="col_first_name" ALIGN="LEFT" BALIGN="LEFT"><B>first_name</B> <FONT COLOR="#666666">text</FONT><BR ALIGN="LEFT"/><FONT COLOR="#666666" POINT-SIZE="9">Employee given name.</FONT></TD><TD ALIGN="CENTER"></TD></TR>
-        <TR><TD PORT="col_reports_to" ALIGN="LEFT" BALIGN="LEFT"><B>reports_to</B> <FONT COLOR="#666666">int4</FONT><BR ALIGN="LEFT"/><FONT COLOR="#666666" POINT-SIZE="9">Manager employee id for hierarchy links.</FONT></TD><TD PORT="col_reports_to_fk" ALIGN="CENTER">FK</TD></TR>
+        <TR><TD PORT="col_reports_to" ALIGN="LEFT" BALIGN="LEFT"><B>reports_to</B> <FONT COLOR="#666666">int4</FONT><BR ALIGN="LEFT"/><FONT COLOR="#666666" POINT-SIZE="9">Manager employee id for hierarchy links.</FONT></TD><TD PORT="col_reports_to_fk" ALIGN="CENTER"><FONT COLOR="#666666">FK</FONT></TD></TR>
       </TABLE>
     >
   ];
@@ -61,9 +61,9 @@ digraph DbSketch {
     label=<
       <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4" COLOR="#777777">
         <TR><TD COLSPAN="2" BGCOLOR="#F1F3F5" ALIGN="LEFT" BALIGN="LEFT"><B>orders</B><BR ALIGN="LEFT"/><FONT COLOR="#666666" POINT-SIZE="9">Customer purchase orders handled by employees.</FONT></TD></TR>
-        <TR><TD PORT="col_order_id" ALIGN="LEFT" BALIGN="LEFT"><B>order_id</B> <FONT COLOR="#666666">int4</FONT><BR ALIGN="LEFT"/><FONT COLOR="#666666" POINT-SIZE="9">Order header identifier.</FONT></TD><TD ALIGN="CENTER">PK</TD></TR>
-        <TR><TD PORT="col_customer_id" ALIGN="LEFT" BALIGN="LEFT"><B>customer_id</B> <FONT COLOR="#666666">text</FONT><BR ALIGN="LEFT"/><FONT COLOR="#666666" POINT-SIZE="9">Customer that placed the order.</FONT></TD><TD PORT="col_customer_id_fk" ALIGN="CENTER">FK</TD></TR>
-        <TR><TD PORT="col_employee_id" ALIGN="LEFT" BALIGN="LEFT"><B>employee_id</B> <FONT COLOR="#666666">int4</FONT><BR ALIGN="LEFT"/><FONT COLOR="#666666" POINT-SIZE="9">Employee responsible for the order.</FONT></TD><TD PORT="col_employee_id_fk" ALIGN="CENTER">FK</TD></TR>
+        <TR><TD PORT="col_order_id" ALIGN="LEFT" BALIGN="LEFT"><B>order_id</B> <FONT COLOR="#666666">int4</FONT><BR ALIGN="LEFT"/><FONT COLOR="#666666" POINT-SIZE="9">Order header identifier.</FONT></TD><TD ALIGN="CENTER"><FONT COLOR="#666666">PK</FONT></TD></TR>
+        <TR><TD PORT="col_customer_id" ALIGN="LEFT" BALIGN="LEFT"><B>customer_id</B> <FONT COLOR="#666666">text</FONT><BR ALIGN="LEFT"/><FONT COLOR="#666666" POINT-SIZE="9">Customer that placed the order.</FONT></TD><TD PORT="col_customer_id_fk" ALIGN="CENTER"><FONT COLOR="#666666">FK</FONT></TD></TR>
+        <TR><TD PORT="col_employee_id" ALIGN="LEFT" BALIGN="LEFT"><B>employee_id</B> <FONT COLOR="#666666">int4</FONT><BR ALIGN="LEFT"/><FONT COLOR="#666666" POINT-SIZE="9">Employee responsible for the order.</FONT></TD><TD PORT="col_employee_id_fk" ALIGN="CENTER"><FONT COLOR="#666666">FK</FONT></TD></TR>
         <TR><TD PORT="col_order_date" ALIGN="LEFT" BALIGN="LEFT"><B>order_date</B> <FONT COLOR="#666666">timestamp</FONT><BR ALIGN="LEFT"/><FONT COLOR="#666666" POINT-SIZE="9">Date and time when the order was created.</FONT></TD><TD ALIGN="CENTER"></TD></TR>
       </TABLE>
     >
@@ -73,8 +73,8 @@ digraph DbSketch {
     label=<
       <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4" COLOR="#777777">
         <TR><TD COLSPAN="2" BGCOLOR="#F1F3F5" ALIGN="LEFT" BALIGN="LEFT"><B>order_details</B><BR ALIGN="LEFT"/><FONT COLOR="#666666" POINT-SIZE="9">Line items that connect orders to purchased products.</FONT></TD></TR>
-        <TR><TD PORT="col_order_id" ALIGN="LEFT" BALIGN="LEFT"><B>order_id</B> <FONT COLOR="#666666">int4</FONT><BR ALIGN="LEFT"/><FONT COLOR="#666666" POINT-SIZE="9">Order that owns this line item.</FONT></TD><TD PORT="col_order_id_fk" ALIGN="CENTER">PK FK</TD></TR>
-        <TR><TD PORT="col_product_id" ALIGN="LEFT" BALIGN="LEFT"><B>product_id</B> <FONT COLOR="#666666">int4</FONT><BR ALIGN="LEFT"/><FONT COLOR="#666666" POINT-SIZE="9">Product sold on this line item.</FONT></TD><TD PORT="col_product_id_fk" ALIGN="CENTER">PK FK</TD></TR>
+        <TR><TD PORT="col_order_id" ALIGN="LEFT" BALIGN="LEFT"><B>order_id</B> <FONT COLOR="#666666">int4</FONT><BR ALIGN="LEFT"/><FONT COLOR="#666666" POINT-SIZE="9">Order that owns this line item.</FONT></TD><TD PORT="col_order_id_fk" ALIGN="CENTER"><FONT COLOR="#666666">PK FK</FONT></TD></TR>
+        <TR><TD PORT="col_product_id" ALIGN="LEFT" BALIGN="LEFT"><B>product_id</B> <FONT COLOR="#666666">int4</FONT><BR ALIGN="LEFT"/><FONT COLOR="#666666" POINT-SIZE="9">Product sold on this line item.</FONT></TD><TD PORT="col_product_id_fk" ALIGN="CENTER"><FONT COLOR="#666666">PK FK</FONT></TD></TR>
         <TR><TD PORT="col_unit_price" ALIGN="LEFT" BALIGN="LEFT"><B>unit_price</B> <FONT COLOR="#666666">numeric</FONT><BR ALIGN="LEFT"/><FONT COLOR="#666666" POINT-SIZE="9">Unit price captured at order time.</FONT></TD><TD ALIGN="CENTER"></TD></TR>
         <TR><TD PORT="col_quantity" ALIGN="LEFT" BALIGN="LEFT"><B>quantity</B> <FONT COLOR="#666666">int2</FONT><BR ALIGN="LEFT"/><FONT COLOR="#666666" POINT-SIZE="9">Number of product units ordered.</FONT></TD><TD ALIGN="CENTER"></TD></TR>
         <TR><TD PORT="col_discount" ALIGN="LEFT" BALIGN="LEFT"><B>discount</B> <FONT COLOR="#666666">numeric</FONT><BR ALIGN="LEFT"/><FONT COLOR="#666666" POINT-SIZE="9">Discount fraction applied to the line.</FONT></TD><TD ALIGN="CENTER"></TD></TR>
@@ -86,9 +86,9 @@ digraph DbSketch {
     label=<
       <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4" COLOR="#777777">
         <TR><TD COLSPAN="2" BGCOLOR="#F1F3F5" ALIGN="LEFT" BALIGN="LEFT"><B>products</B><BR ALIGN="LEFT"/><FONT COLOR="#666666" POINT-SIZE="9">Sellable catalog items grouped by category.</FONT></TD></TR>
-        <TR><TD PORT="col_product_id" ALIGN="LEFT" BALIGN="LEFT"><B>product_id</B> <FONT COLOR="#666666">int4</FONT><BR ALIGN="LEFT"/><FONT COLOR="#666666" POINT-SIZE="9">Product identifier used in order lines.</FONT></TD><TD ALIGN="CENTER">PK</TD></TR>
+        <TR><TD PORT="col_product_id" ALIGN="LEFT" BALIGN="LEFT"><B>product_id</B> <FONT COLOR="#666666">int4</FONT><BR ALIGN="LEFT"/><FONT COLOR="#666666" POINT-SIZE="9">Product identifier used in order lines.</FONT></TD><TD ALIGN="CENTER"><FONT COLOR="#666666">PK</FONT></TD></TR>
         <TR><TD PORT="col_product_name" ALIGN="LEFT" BALIGN="LEFT"><B>product_name</B> <FONT COLOR="#666666">text</FONT><BR ALIGN="LEFT"/><FONT COLOR="#666666" POINT-SIZE="9">Customer-facing product name.</FONT></TD><TD ALIGN="CENTER"></TD></TR>
-        <TR><TD PORT="col_category_id" ALIGN="LEFT" BALIGN="LEFT"><B>category_id</B> <FONT COLOR="#666666">int4</FONT><BR ALIGN="LEFT"/><FONT COLOR="#666666" POINT-SIZE="9">Category that classifies the product.</FONT></TD><TD PORT="col_category_id_fk" ALIGN="CENTER">FK</TD></TR>
+        <TR><TD PORT="col_category_id" ALIGN="LEFT" BALIGN="LEFT"><B>category_id</B> <FONT COLOR="#666666">int4</FONT><BR ALIGN="LEFT"/><FONT COLOR="#666666" POINT-SIZE="9">Category that classifies the product.</FONT></TD><TD PORT="col_category_id_fk" ALIGN="CENTER"><FONT COLOR="#666666">FK</FONT></TD></TR>
         <TR><TD PORT="col_unit_price" ALIGN="LEFT" BALIGN="LEFT"><B>unit_price</B> <FONT COLOR="#666666">numeric</FONT><BR ALIGN="LEFT"/><FONT COLOR="#666666" POINT-SIZE="9">Current catalog price per unit.</FONT></TD><TD ALIGN="CENTER"></TD></TR>
       </TABLE>
     >

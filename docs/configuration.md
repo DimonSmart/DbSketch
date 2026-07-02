@@ -252,7 +252,16 @@ defaults:
     tableHeaderLayout: "{table:bold}\n{comment:color=#666666,fontSize=9}"
 ```
 
-`readable` enables sans-serif fonts, calmer edges, table padding, gray borders, header background color, and left-balanced multiline cells.
+Supported styles:
+
+- `classic`: legacy-looking output and the default.
+- `readable`: neutral sans-serif diagram with calmer edges and padded tables.
+- `compact`: denser tables and shorter spacing for large schemas.
+- `soft`: light green-tinted headers and softer relationships.
+- `blueprint`: blue technical drawing style.
+- `contrast`: stronger borders, darker edges, and larger text.
+
+All non-classic styles enable sans-serif fonts, calmer edges, table padding, colored borders, header background color, and left-balanced multiline cells.
 
 Readable defaults can be overridden:
 

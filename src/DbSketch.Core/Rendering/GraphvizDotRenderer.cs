@@ -34,6 +34,9 @@ public sealed class GraphvizDotRenderer : IDiagramRenderer
 
     private static string FormatDirection(DiagramDirection direction) => direction.ToString();
 
+    private static bool UsesResolvedDotStyle(DiagramRenderOptions options) =>
+        options.Style != DiagramStyle.Classic;
+
     private static void AppendGraphDefaults(StringBuilder builder, DotIdEncoder encoder, DiagramRenderOptions options)
     {
         var graphAttributes = new List<DotAttribute>
@@ -42,7 +45,7 @@ public sealed class GraphvizDotRenderer : IDiagramRenderer
             new("labelloc", "t"),
             new("label", options.Title)
         };
-        if (options.Style == DiagramStyle.Readable)
+        if (UsesResolvedDotStyle(options))
         {
             AddAttribute(graphAttributes, "fontname", options.Dot.Graph.FontName);
             AddAttribute(graphAttributes, "fontsize", options.Dot.Graph.FontSize);
@@ -54,7 +57,7 @@ public sealed class GraphvizDotRenderer : IDiagramRenderer
         AppendAttributeBlock(builder, encoder, "graph", graphAttributes);
 
         var nodeAttributes = new List<DotAttribute> { new("shape", "plain", Quote: false) };
-        if (options.Style == DiagramStyle.Readable)
+        if (UsesResolvedDotStyle(options))
         {
             AddAttribute(nodeAttributes, "fontname", options.Dot.Node.FontName);
             AddAttribute(nodeAttributes, "fontsize", options.Dot.Node.FontSize);
@@ -63,7 +66,7 @@ public sealed class GraphvizDotRenderer : IDiagramRenderer
         AppendAttributeBlock(builder, encoder, "node", nodeAttributes);
 
         var edgeAttributes = new List<DotAttribute>();
-        if (options.Style == DiagramStyle.Readable)
+        if (UsesResolvedDotStyle(options))
         {
             AddAttribute(edgeAttributes, "fontname", options.Dot.Edge.FontName);
             AddAttribute(edgeAttributes, "fontsize", options.Dot.Edge.FontSize);
@@ -129,7 +132,7 @@ public sealed class GraphvizDotRenderer : IDiagramRenderer
         builder.AppendLine($"  \"{encoder.EscapeDotString(encoder.GetTableNodeId(table))}\" [");
         builder.AppendLine("    label=<");
         builder.Append("      <TABLE BORDER=\"1\" CELLBORDER=\"1\" CELLSPACING=\"0\"");
-        if (options.Style == DiagramStyle.Readable)
+        if (UsesResolvedDotStyle(options))
         {
             if (options.Dot.Table.CellPadding is not null)
             {
@@ -200,7 +203,7 @@ public sealed class GraphvizDotRenderer : IDiagramRenderer
         var columnSpan = FormatColumnSpan(bodyColumnCount);
         var cells = TableHeaderLayoutFormatter.Format(table, template, options.Comments);
         var headerBackground = options.Dot.Table.HeaderBackground ?? "#EEEEEE";
-        if (options.Style == DiagramStyle.Readable && cells.Count == 1)
+        if (UsesResolvedDotStyle(options) && cells.Count == 1)
         {
             builder.Append($"        <TR><TD{columnSpan} BGCOLOR=\"{encoder.EscapeLabel(headerBackground)}\" ALIGN=\"LEFT\"");
             AppendBalign(builder, cells[0]);

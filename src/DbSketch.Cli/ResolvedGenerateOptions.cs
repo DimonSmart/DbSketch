@@ -124,7 +124,11 @@ public static partial class GenerateOptionsResolver
         {
             "classic" => DiagramStyle.Classic,
             "readable" => DiagramStyle.Readable,
-            var value => throw new CliException($"{path} must be one of: classic, readable.")
+            "compact" => DiagramStyle.Compact,
+            "soft" => DiagramStyle.Soft,
+            "blueprint" => DiagramStyle.Blueprint,
+            "contrast" => DiagramStyle.Contrast,
+            var value => throw new CliException($"{path} must be one of: classic, readable, compact, soft, blueprint, contrast.")
         };
 
     private static string GetLayoutConfigPath(DiagramTargetConfig target, string? overrideValue, string propertyName) =>
@@ -209,17 +213,40 @@ public static partial class GenerateOptionsResolver
     }
 
     private static GraphvizDotRenderOptions GetDotPreset(DiagramStyle style) =>
-        style == DiagramStyle.Readable
-            ? new GraphvizDotRenderOptions(
+        style switch
+        {
+            DiagramStyle.Readable => new GraphvizDotRenderOptions(
                 new GraphvizDotGraphRenderOptions("Helvetica", 16, 0.55, 0.9, "#FFFFFF"),
                 new GraphvizDotNodeRenderOptions("Helvetica", 10),
                 new GraphvizDotEdgeRenderOptions("Helvetica", 9, "#555555", 1.1, 0.7),
-                new GraphvizDotTableRenderOptions("#777777", "#F1F3F5", 4))
-            : new GraphvizDotRenderOptions(
+                new GraphvizDotTableRenderOptions("#777777", "#F1F3F5", 4)),
+            DiagramStyle.Compact => new GraphvizDotRenderOptions(
+                new GraphvizDotGraphRenderOptions("Arial", 14, 0.35, 0.55, "#FFFFFF"),
+                new GraphvizDotNodeRenderOptions("Arial", 9),
+                new GraphvizDotEdgeRenderOptions("Arial", 8, "#666666", 0.9, 0.6),
+                new GraphvizDotTableRenderOptions("#8A8A8A", "#F4F4F4", 2)),
+            DiagramStyle.Soft => new GraphvizDotRenderOptions(
+                new GraphvizDotGraphRenderOptions("Segoe UI", 16, 0.65, 1.0, "#FBFCFA"),
+                new GraphvizDotNodeRenderOptions("Segoe UI", 10),
+                new GraphvizDotEdgeRenderOptions("Segoe UI", 9, "#5E7568", 1.0, 0.7),
+                new GraphvizDotTableRenderOptions("#7D9488", "#EAF3EE", 5)),
+            DiagramStyle.Blueprint => new GraphvizDotRenderOptions(
+                new GraphvizDotGraphRenderOptions("Helvetica", 16, 0.65, 1.0, "#F7FAFC"),
+                new GraphvizDotNodeRenderOptions("Helvetica", 10),
+                new GraphvizDotEdgeRenderOptions("Helvetica", 9, "#2B6CB0", 1.15, 0.75),
+                new GraphvizDotTableRenderOptions("#2C5282", "#EBF8FF", 5)),
+            DiagramStyle.Contrast => new GraphvizDotRenderOptions(
+                new GraphvizDotGraphRenderOptions("Helvetica", 17, 0.6, 0.95, "#FFFFFF"),
+                new GraphvizDotNodeRenderOptions("Helvetica", 11),
+                new GraphvizDotEdgeRenderOptions("Helvetica", 10, "#222222", 1.35, 0.8),
+                new GraphvizDotTableRenderOptions("#333333", "#E9ECEF", 5)),
+            DiagramStyle.Classic => new GraphvizDotRenderOptions(
                 new GraphvizDotGraphRenderOptions(null, null, null, null, null),
                 new GraphvizDotNodeRenderOptions(null, null),
                 new GraphvizDotEdgeRenderOptions(null, null, null, null, null),
-                new GraphvizDotTableRenderOptions(null, null, null));
+                new GraphvizDotTableRenderOptions(null, null, null)),
+            _ => throw new ArgumentOutOfRangeException(nameof(style), style, null)
+        };
 
     private static void ValidateColor(string? color, string path)
     {

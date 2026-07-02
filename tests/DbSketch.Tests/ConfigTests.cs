@@ -660,7 +660,26 @@ public sealed class ConfigTests
 
         var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, EmptyCli()));
 
-        Assert.Equal("defaults.diagram.style must be one of: classic, readable.", exception.Message);
+        Assert.Equal("defaults.diagram.style must be one of: classic, readable, compact, soft, blueprint, contrast.", exception.Message);
+    }
+
+    [Theory]
+    [InlineData("classic", DiagramStyle.Classic)]
+    [InlineData("readable", DiagramStyle.Readable)]
+    [InlineData("compact", DiagramStyle.Compact)]
+    [InlineData("soft", DiagramStyle.Soft)]
+    [InlineData("blueprint", DiagramStyle.Blueprint)]
+    [InlineData("contrast", DiagramStyle.Contrast)]
+    public void ResolverAcceptsDiagramStyles(string style, DiagramStyle expected)
+    {
+        var config = ValidConfig() with
+        {
+            Defaults = new DefaultsConfig { Diagram = new DiagramConfig { Style = style } }
+        };
+
+        var diagram = Assert.Single(GenerateOptionsResolver.Resolve(config, EmptyCli()).Diagrams);
+
+        Assert.Equal(expected, diagram.Diagram.Style);
     }
 
     [Fact]

@@ -90,6 +90,138 @@ diagrams:
       path: docs/examples/northwind.readme.dot
       format: raw
 
+  - name: northwind-style-classic
+    title: Northwind schema - classic
+    include:
+      tables:
+        - "northwind.*"
+    diagram:
+      renderer: dot
+      style: classic
+      columnLayout: "{name} | {type} | {comment} | {keys}"
+      tableHeaderLayout: "{fullName} | {comment}"
+      show:
+        columnTypes: true
+        tableComments: true
+        columnComments: true
+        foreignKeyLabels: false
+        selfReferencingForeignKeys: false
+      comments:
+        maxLength: 60
+    output:
+      path: docs/examples/northwind.style.classic.dot
+      format: raw
+
+  - name: northwind-style-readable
+    title: Northwind schema - readable
+    include:
+      tables:
+        - "northwind.*"
+    diagram:
+      renderer: dot
+      style: readable
+      columnLayout: "{name:bold} {type:color=#666666}\n{comment:color=#666666,fontSize=9} | {keys:color=#666666}"
+      tableHeaderLayout: "{table:bold}\n{comment:color=#666666,fontSize=9}"
+      show:
+        schemaName: false
+        foreignKeyLabels: false
+        selfReferencingForeignKeys: false
+        tableComments: true
+        columnComments: true
+      comments:
+        maxLength: 60
+    output:
+      path: docs/examples/northwind.style.readable.dot
+      format: raw
+
+  - name: northwind-style-compact
+    title: Northwind schema - compact
+    include:
+      tables:
+        - "northwind.*"
+    diagram:
+      renderer: dot
+      style: compact
+      columnLayout: "{name:bold} {type:color=#666666} | {comment:color=#666666,fontSize=9} | {keys:color=#666666}"
+      tableHeaderLayout: "{table:bold}\n{comment:color=#666666,fontSize=9}"
+      show:
+        schemaName: false
+        foreignKeyLabels: false
+        selfReferencingForeignKeys: false
+        tableComments: true
+        columnComments: true
+      comments:
+        maxLength: 60
+    output:
+      path: docs/examples/northwind.style.compact.dot
+      format: raw
+
+  - name: northwind-style-soft
+    title: Northwind schema - soft
+    include:
+      tables:
+        - "northwind.*"
+    diagram:
+      renderer: dot
+      style: soft
+      columnLayout: "{name:bold} {type:color=#5E7568}\n{comment:color=#5E7568,fontSize=9} | {keys:color=#5E7568}"
+      tableHeaderLayout: "{table:bold}\n{comment:color=#5E7568,fontSize=9}"
+      show:
+        schemaName: false
+        foreignKeyLabels: false
+        selfReferencingForeignKeys: false
+        tableComments: true
+        columnComments: true
+      comments:
+        maxLength: 60
+    output:
+      path: docs/examples/northwind.style.soft.dot
+      format: raw
+
+  - name: northwind-style-blueprint
+    title: Northwind schema - blueprint
+    include:
+      tables:
+        - "northwind.*"
+    diagram:
+      renderer: dot
+      style: blueprint
+      columnLayout: "{name:bold} {type:color=#2B6CB0} | {comment:color=#2B6CB0,fontSize=9} | {keys:color=#2B6CB0}"
+      tableHeaderLayout: "{table:bold}\n{comment:color=#2B6CB0,fontSize=9}"
+      show:
+        schemaName: false
+        foreignKeyLabels: false
+        selfReferencingForeignKeys: false
+        tableComments: true
+        columnComments: true
+      comments:
+        maxLength: 60
+    output:
+      path: docs/examples/northwind.style.blueprint.dot
+      format: raw
+
+  - name: northwind-style-contrast
+    title: Northwind schema - contrast
+    include:
+      tables:
+        - "northwind.*"
+    diagram:
+      renderer: dot
+      style: contrast
+      columnLayout: "{name:bold} {type:color=#222222} | {comment:color=#222222,fontSize=9} | {keys:color=#222222}"
+      tableHeaderLayout: "{table:bold}\n{comment:color=#222222,fontSize=9}"
+      show:
+        schemaName: false
+        foreignKeyLabels: false
+        selfReferencingForeignKeys: false
+        tableComments: true
+        columnComments: true
+      comments:
+        maxLength: 60
+    output:
+      path: docs/examples/northwind.style.contrast.dot
+      format: raw
+
   - name: northwind-mermaid
     title: Northwind schema
     include:
