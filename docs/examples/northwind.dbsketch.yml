@@ -1,0 +1,55 @@
+provider: postgres
+connectionString: "${DBSKETCH_DOCS_CONNECTION}"
+
+defaults:
+  diagram:
+    direction: LR
+    compact: true
+    show:
+      schemaName: true
+      columnTypes: false
+      nullability: false
+      primaryKeys: true
+      foreignKeys: true
+
+diagrams:
+  - name: northwind-dot
+    title: Northwind schema
+    include:
+      tables:
+        - "northwind.*"
+    diagram:
+      renderer: dot
+    output:
+      path: docs/examples/northwind.dot
+      format: raw
+
+  - name: northwind-mermaid
+    title: Northwind schema
+    include:
+      tables:
+        - "northwind.*"
+    diagram:
+      renderer: mermaid
+      mermaid:
+        emitDirection: false
+    output:
+      path: docs/examples/northwind.mmd
+      format: raw
+
+  - name: northwind-markdown
+    title: Northwind schema
+    include:
+      tables:
+        - "northwind.*"
+    diagram:
+      renderer: dot
+    output:
+      path: docs/examples/northwind.generated.md
+      format: markdown
+      markdown:
+        fenceLanguage: dot
+        header: |
+          # Northwind DbSketch generated output
+
+          This file is generated from the Northwind PostgreSQL test fixture.

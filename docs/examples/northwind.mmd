@@ -1,0 +1,48 @@
+erDiagram
+
+  "northwind.categories" {
+    column category_id PK
+    column category_name
+  }
+
+  "northwind.customers" {
+    column customer_id PK
+    column company_name
+    column contact_name
+  }
+
+  "northwind.employees" {
+    column employee_id PK
+    column last_name
+    column first_name
+    column reports_to FK
+  }
+
+  "northwind.orders" {
+    column order_id PK
+    column customer_id FK
+    column employee_id FK
+    column order_date
+  }
+
+  "northwind.order_details" {
+    column order_id PK FK
+    column product_id PK FK
+    column unit_price
+    column quantity
+    column discount
+  }
+
+  "northwind.products" {
+    column product_id PK
+    column product_name
+    column category_id FK
+    column unit_price
+  }
+
+  "northwind.employees" }o--|| "northwind.employees" : "fk_employees_reports_to"
+  "northwind.orders" }|--|| "northwind.customers" : "fk_orders_customers"
+  "northwind.orders" }o--|| "northwind.employees" : "fk_orders_employees"
+  "northwind.order_details" }|--|| "northwind.orders" : "fk_order_details_orders"
+  "northwind.order_details" }|--|| "northwind.products" : "fk_order_details_products"
+  "northwind.products" }|--|| "northwind.categories" : "fk_products_categories"

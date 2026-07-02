@@ -1,0 +1,19 @@
+# DbSketch
+
+> DbSketch is a .NET CLI tool that generates database schema diagrams from live SQL Server, PostgreSQL, and MySQL databases.
+
+DbSketch reads tables, columns, primary keys, foreign keys, and database comments, then writes Graphviz DOT, Mermaid ER, or Markdown output. It is useful for repository documentation, onboarding, pull request reviews, and CI-generated schema snapshots.
+
+## Important docs
+
+- [README](README.md): short overview, quick start, and main example image.
+- [Getting started](docs/getting-started.md): installation and first run.
+- [Configuration](docs/configuration.md): YAML configuration reference.
+- [Renderers](docs/renderers.md): DOT, Mermaid, Markdown, and PNG illustration notes.
+- [Database comments](docs/comments.md): comment reading and overrides.
+- [Northwind example](docs/examples/northwind.md): generated sample diagram.
+- [Development](docs/development.md): build, test, packaging, and docs asset generation.
+
+## Suggested AI task
+
+Add DbSketch database diagram generation to this repository. Create a `dbsketch.yml` that reads `DB_CONNECTION`, generates focused database diagrams under `docs/db`, and adds a CI step to refresh them.
