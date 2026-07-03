@@ -92,9 +92,9 @@ public sealed class ConfigTests
     [Fact]
     public void ExpandsEnvironmentVariable()
     {
-        Environment.SetEnvironmentVariable("DBSKETCH_TEST_CONNECTION", "Host=test");
+        Environment.SetEnvironmentVariable("DBSKETCH_TEST_EXPAND_CONNECTION", "Host=test");
 
-        var expanded = ConfigLoader.ExpandEnvironmentVariables("connectionString: ${DBSKETCH_TEST_CONNECTION}");
+        var expanded = ConfigLoader.ExpandEnvironmentVariables("connectionString: ${DBSKETCH_TEST_EXPAND_CONNECTION}");
 
         Assert.Equal("connectionString: Host=test", expanded);
     }
@@ -120,9 +120,10 @@ public sealed class ConfigTests
     [Fact]
     public void LoadsMinimalYamlConfig()
     {
+        Environment.SetEnvironmentVariable("DBSKETCH_TEST_MINIMAL_CONNECTION", null);
         var path = WriteTempConfig("""
             provider: postgres
-            connectionString: "${DBSKETCH_TEST_CONNECTION:-Host=localhost}"
+            connectionString: "${DBSKETCH_TEST_MINIMAL_CONNECTION:-Host=localhost}"
             """);
 
         var config = ConfigLoader.Load(path);
