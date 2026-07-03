@@ -8,7 +8,7 @@ public sealed class MySqlSchemaReader : IDatabaseSchemaReader
 {
     public async Task<DatabaseModel> ReadAsync(DatabaseReadOptions options, CancellationToken cancellationToken)
     {
-        await using var connection = new MySqlConnection(options.ConnectionString);
+        await using var connection = CreateConnection(options.ConnectionString);
         await connection.OpenAsync(cancellationToken);
 
         var tables = await ReadTablesAsync(connection, options.CommandTimeoutSeconds, cancellationToken);
@@ -27,6 +27,20 @@ public sealed class MySqlSchemaReader : IDatabaseSchemaReader
                 columns.TryGetValue(table, out var c) ? c : [],
                 comments.GetTableComment(table.SchemaName, table.TableName))).ToArray(),
             foreignKeys);
+    }
+
+    private static MySqlConnection CreateConnection(string connectionString)
+    {
+        try
+        {
+            return new MySqlConnection(connectionString);
+        }
+        catch (ArgumentException exception)
+        {
+            throw new DatabaseConnectionException(
+                "Invalid mysql connectionString. MySQL connection strings use keys like Server, Port, Database, User ID, and Password.",
+                exception);
+        }
     }
 
     private static async Task<IReadOnlyList<TableRef>> ReadTablesAsync(MySqlConnection connection, int? timeout, CancellationToken cancellationToken)

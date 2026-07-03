@@ -10,7 +10,7 @@ public sealed class SqlServerSchemaReader : IDatabaseSchemaReader
 
     public async Task<DatabaseModel> ReadAsync(DatabaseReadOptions options, CancellationToken cancellationToken)
     {
-        await using var connection = new SqlConnection(options.ConnectionString);
+        await using var connection = CreateConnection(options.ConnectionString);
         await connection.OpenAsync(cancellationToken);
 
         var databaseName = connection.Database;
@@ -30,6 +30,20 @@ public sealed class SqlServerSchemaReader : IDatabaseSchemaReader
             .ToArray();
 
         return new DatabaseModel(options.Provider, databaseName, models, foreignKeys);
+    }
+
+    private static SqlConnection CreateConnection(string connectionString)
+    {
+        try
+        {
+            return new SqlConnection(connectionString);
+        }
+        catch (ArgumentException exception)
+        {
+            throw new DatabaseConnectionException(
+                "Invalid sqlserver connectionString. SQL Server connection strings use keys like Server, Database, User Id, and Password. If the connectionString uses Host, set provider: postgres.",
+                exception);
+        }
     }
 
     private static async Task<IReadOnlyList<TableRef>> ReadTablesAsync(SqlConnection connection, int? timeout, CancellationToken cancellationToken)

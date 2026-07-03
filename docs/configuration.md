@@ -54,7 +54,7 @@ connectionString: "${DB_CONNECTION}"
 A fallback value can be provided:
 
 ```yaml
-connectionString: "${DB_CONNECTION:-Host=localhost;Database=app}"
+connectionString: "${DB_CONNECTION:-Server=localhost;Database=app;User Id=app;Password=secret;TrustServerCertificate=True}"
 ```
 
 Wrap placeholders in YAML quotes. Connection strings often contain `:`, `;`, `#`, spaces, backslashes, or other characters with special YAML meaning.

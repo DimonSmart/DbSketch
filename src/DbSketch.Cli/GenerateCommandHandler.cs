@@ -1,6 +1,7 @@
 using DimonSmart.DbSketch.Cli.Console;
 using DimonSmart.DbSketch.Cli.Generation;
 using DimonSmart.DbSketch.Core.Config;
+using DimonSmart.DbSketch.Core.Schema;
 
 namespace DimonSmart.DbSketch.Cli;
 
@@ -17,7 +18,7 @@ public sealed class GenerateCommandHandler(DbSketchGenerator generator, ICommand
             await generator.GenerateAsync(resolved, cancellationToken);
             return 0;
         }
-        catch (Exception ex) when (ex is CliException or InvalidOperationException)
+        catch (Exception ex) when (ex is CliException or DatabaseConnectionException or InvalidOperationException)
         {
             progress.Error(ex.Message);
             return 1;

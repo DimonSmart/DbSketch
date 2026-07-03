@@ -32,7 +32,7 @@ dotnet tool restore
 For committed configs, keep the real connection string out of `dbsketch.yml` and read it from an environment variable:
 
 ```yaml
-provider: postgres
+provider: sqlserver
 connectionString: "${DB_CONNECTION}"
 ```
 
@@ -43,13 +43,13 @@ For a local run with this config, set the variable before running DbSketch.
 On Bash:
 
 ```bash
-export DB_CONNECTION="Host=localhost;Database=app;Username=app;Password=secret"
+export DB_CONNECTION="Server=localhost;Database=app;User Id=app;Password=secret;TrustServerCertificate=True"
 ```
 
 On PowerShell:
 
 ```powershell
-$env:DB_CONNECTION = "Host=localhost;Database=app;Username=app;Password=secret"
+$env:DB_CONNECTION = "Server=localhost;Database=app;User Id=app;Password=secret;TrustServerCertificate=True"
 ```
 
 ## GitHub Actions example

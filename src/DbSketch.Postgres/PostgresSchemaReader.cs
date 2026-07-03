@@ -8,7 +8,7 @@ public sealed class PostgresSchemaReader : IDatabaseSchemaReader
 {
     public async Task<DatabaseModel> ReadAsync(DatabaseReadOptions options, CancellationToken cancellationToken)
     {
-        await using var connection = new NpgsqlConnection(options.ConnectionString);
+        await using var connection = CreateConnection(options.ConnectionString);
         await connection.OpenAsync(cancellationToken);
 
         var tables = await ReadTablesAsync(connection, options.CommandTimeoutSeconds, cancellationToken);
@@ -27,6 +27,20 @@ public sealed class PostgresSchemaReader : IDatabaseSchemaReader
                 columns.TryGetValue(table, out var c) ? c : [],
                 comments.GetTableComment(table.SchemaName, table.TableName))).ToArray(),
             foreignKeys);
+    }
+
+    private static NpgsqlConnection CreateConnection(string connectionString)
+    {
+        try
+        {
+            return new NpgsqlConnection(connectionString);
+        }
+        catch (ArgumentException exception)
+        {
+            throw new DatabaseConnectionException(
+                "Invalid postgres connectionString. PostgreSQL connection strings use keys like Host, Port, Database, Username, and Password.",
+                exception);
+        }
     }
 
     private static async Task<IReadOnlyList<TableRef>> ReadTablesAsync(NpgsqlConnection connection, int? timeout, CancellationToken cancellationToken)

@@ -25,6 +25,7 @@
     <ProjectReference Include="..\..\src\DbSketch.Core\DbSketch.Core.csproj" />
     <ProjectReference Include="..\..\src\DbSketch.Cli\DbSketch.Cli.csproj" />
     <ProjectReference Include="..\..\src\DbSketch.Postgres\DbSketch.Postgres.csproj" />
+    <ProjectReference Include="..\..\src\DbSketch.SqlServer\DbSketch.SqlServer.csproj" />
   </ItemGroup>
 
   <ItemGroup>
