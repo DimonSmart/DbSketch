@@ -10,7 +10,7 @@ Create a `dbsketch.yml` file in your repository root:
 
 ```yaml
 provider: postgres
-connectionString: "${DB_CONNECTION}"
+connectionString: "Host=localhost;Database=app;Username=app;Password=secret"
 ```
 
 Only `provider` and `connectionString` are required. With this minimal config, DbSketch generates a Mermaid diagram wrapped in Markdown.
@@ -21,9 +21,7 @@ Supported providers:
 - `sqlserver`
 - `mysql`
 
-Provider aliases are also supported: `postgresql` maps to `postgres`, and `mssql` maps to `sqlserver`.
-
-Keep the real connection string out of the config file and read it from an environment variable. Wrap the placeholder in quotes because connection strings often contain YAML-sensitive characters.
+Use the connection string format for your database provider. Wrap the connection string in quotes because connection strings often contain YAML-sensitive characters.
 
 ## 2. Install DbSketch
 
@@ -33,31 +31,21 @@ Install DbSketch as a global .NET tool:
 dotnet tool install --global DimonSmart.DbSketch
 ```
 
-A global install is the simplest option for the first run. For team repositories and CI, use a local tool manifest later. See [CI and automation](ci.md).
+If `dnx` is available, you can also run DbSketch without installing it globally.
 
-## 3. Set the connection string
-
-On Bash:
-
-```bash
-export DB_CONNECTION="Host=localhost;Database=app;Username=app;Password=secret"
-```
-
-On PowerShell:
-
-```powershell
-$env:DB_CONNECTION = "Host=localhost;Database=app;Username=app;Password=secret"
-```
-
-Use the connection string format for your database provider.
-
-## 4. Generate the diagram
+## 3. Generate the diagram
 
 ```bash
 dbsketch generate --config dbsketch.yml
 ```
 
-## 5. Open the generated file
+Or with `dnx`:
+
+```bash
+dnx DimonSmart.DbSketch -- generate --config dbsketch.yml
+```
+
+## 4. Open the generated file
 
 With the minimal config, DbSketch generates one diagram named `main` and writes it to:
 
@@ -85,4 +73,4 @@ Start here, then add options only when the project needs them.
 - Need filters, focused diagrams, custom output paths, or layout settings? See [Configuration](configuration.md).
 - Need DOT, Mermaid, Markdown, PNG, or SVG details? See [Renderers](renderers.md).
 - Need table and column comments? See [Database comments](comments.md).
-- Need CI, pinned local tools, or non-interactive command options? See [CI and automation](ci.md).
+- Need CI, pinned local tools, secrets, or non-interactive command options? See [CI and automation](ci.md).
