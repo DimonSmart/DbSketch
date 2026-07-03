@@ -54,7 +54,7 @@ connectionString: "${DB_CONNECTION}"
 A fallback value can be provided:
 
 ```yaml
-connectionString: "${DB_CONNECTION:-Server=localhost;Database=app;User Id=app;Password=secret;TrustServerCertificate=True}"
+connectionString: "${DB_CONNECTION:-Host=localhost;Database=app}"
 ```
 
 Wrap placeholders in YAML quotes. Connection strings often contain `:`, `;`, `#`, spaces, backslashes, or other characters with special YAML meaning.
@@ -199,53 +199,17 @@ diagrams:
 
 The same `columnLayout` string can be used when switching between DOT and Mermaid. `tableHeaderLayout` remains DOT-only.
 
-## DOT readable style
+## DOT styling
 
-Diagrams use `classic` style by default. For DOT output, set `style: readable` for a more spacious Graphviz preset:
+For DOT output, `diagram.style` selects a Graphviz style preset:
 
 ```yaml
 defaults:
   diagram:
     renderer: dot
     style: readable
-    columnLayout: "{name:bold} {type:color=#666666}\n{comment:color=#666666,fontSize=9} | {keys}"
-    tableHeaderLayout: "{table:bold}\n{comment:color=#666666,fontSize=9}"
 ```
 
-Supported styles:
+Supported styles: `classic`, `readable`, `compact`, `soft`, `blueprint`, and `contrast`.
 
-- `classic`: legacy-looking output and the default.
-- `readable`: neutral sans-serif diagram with calmer edges and padded tables.
-- `compact`: denser tables and shorter spacing for large schemas.
-- `soft`: light green-tinted headers and softer relationships.
-- `blueprint`: blue technical drawing style.
-- `contrast`: stronger borders, darker edges, and larger text.
-
-All non-classic styles enable sans-serif fonts, calmer edges, table padding, colored borders, header background color, and left-balanced multiline cells.
-
-Readable defaults can be overridden:
-
-```yaml
-defaults:
-  diagram:
-    dot:
-      graph:
-        fontName: Helvetica
-        fontSize: 16
-        nodesep: 0.55
-        ranksep: 0.9
-        backgroundColor: "#FFFFFF"
-      node:
-        fontName: Helvetica
-        fontSize: 10
-      edge:
-        fontName: Helvetica
-        fontSize: 9
-        color: "#555555"
-        penWidth: 1.1
-        arrowSize: 0.7
-      table:
-        borderColor: "#777777"
-        headerBackground: "#F1F3F5"
-        cellPadding: 4
-```
+Use styled `columnLayout` and `tableHeaderLayout` for DOT-specific typography. For style preset details, low-level Graphviz options, and image generation, see [Renderers](renderers.md#dot-styling).
