@@ -4,6 +4,8 @@ Use this page when DbSketch becomes part of the repository workflow: shared tool
 
 For the first local run, start with [Getting started](getting-started.md).
 
+DbSketch targets .NET 10, so CI examples should use the .NET 10 SDK.
+
 ## Pin the tool version
 
 For a team repository or CI, prefer a local .NET tool manifest. It keeps every contributor and CI run on the same DbSketch version.
@@ -75,7 +77,7 @@ jobs:
 
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: 10.0.x
 
       - name: Restore local tools
         run: dotnet tool restore
