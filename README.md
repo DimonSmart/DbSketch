@@ -2,17 +2,19 @@
 
 DbSketch turns a live database into version-controlled schema documentation.
 
-It reads tables, columns, primary keys, foreign keys, and comments directly from SQL Server, PostgreSQL, or MySQL, then generates diagram source files you can commit, review, and refresh from CI.
+It reads tables, columns, primary keys, foreign keys, and comments directly from SQL Server, PostgreSQL, or MySQL, then generates diagram-as-code files you can commit, review, render, reuse as LLM context, and refresh from CI.
 
 ## What it produces
 
-DbSketch is a CLI documentation generator, not a visual database designer. It generates text-based diagram files:
+DbSketch is a CLI documentation generator, not a visual database designer. Its primary output is text-based, Markdown-friendly documentation:
 
 - `.dot`: Graphviz DOT, best for precise technical diagrams and column-to-column foreign key edges.
-- `.mmd`: Mermaid ER, convenient for GitHub Markdown and other Mermaid-compatible renderers.
+- `.mmd`: Mermaid ER, convenient for Markdown renderers that support Mermaid diagrams.
 - `.md`: Markdown documentation that wraps DOT or Mermaid in a fenced code block.
 
-When you need a ready-to-display image for a README, NuGet package page, or documentation site, generate a PNG from the DOT output with Graphviz and commit that image alongside the generated source.
+These files can often be used directly in repositories, wikis, issue trackers, documentation sites, and other tools that understand diagram-as-code or Markdown-like formats.
+
+They are also useful as compact context for LLM assistants. Instead of asking an agent to inspect the database with ad-hoc commands or parse creation scripts and migrations, you can give it generated schema documentation that already contains the relevant tables, columns, keys, relationships, and comments.
 
 Compact layout, using `tableHeaderLayout: "{fullName}"` and `columnLayout: "{name}"`:
 
@@ -30,6 +32,7 @@ Full layout, using `tableHeaderLayout: "{fullName} | {comment}"` and `columnLayo
 - Preserves precise column-to-column foreign key edges in DOT
 - Can include database-native table and column comments
 - Works locally, in CI, or as a repository documentation step
+- Produces compact schema context for AI coding assistants
 
 ## Quick start
 
@@ -79,8 +82,45 @@ Start with one diagram, then add focused diagrams, comments, filters, layout set
 ## Output formats
 
 - DOT: best for precise technical diagrams and column-to-column relationships.
-- Mermaid: convenient for GitHub Markdown, with entity-level relationships.
+- Mermaid: convenient for Markdown renderers that support Mermaid diagrams, with entity-level relationships.
 - Markdown: useful for generated docs because it wraps DOT or Mermaid in a fenced block.
+
+## Optional PNG or SVG rendering
+
+DbSketch does not require image generation. Use the generated text output directly when your documentation platform can render DOT, Mermaid, or Markdown-like diagram formats.
+
+Static images are useful for places that cannot render diagram source directly, such as package pages, PDFs, presentations, or documentation sites without Mermaid or Graphviz support. The images in this README are committed PNG files for that reason.
+
+To render DOT output as an image, first generate a raw `.dot` file:
+
+```yaml
+diagrams:
+  - name: main-dot
+    title: Database schema
+    output:
+      format: raw
+      path: docs/db/schema.dot
+```
+
+Install Graphviz:
+
+```bash
+# Windows
+winget install graphviz
+
+# macOS
+brew install graphviz
+
+# Ubuntu / Debian
+sudo apt install graphviz
+```
+
+Then render PNG or SVG from the generated DOT file:
+
+```bash
+dot -Tpng docs/db/schema.dot -o docs/db/schema.png
+dot -Tsvg docs/db/schema.dot -o docs/db/schema.svg
+```
 
 ## Documentation
 
