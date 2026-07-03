@@ -55,21 +55,10 @@ docs/db/schema.md
 
 The generated file can be committed with the rest of your documentation.
 
-## What the Minimal Config Does
-
-The minimal config uses these defaults:
-
-| Setting | Default |
-| --- | --- |
-| Diagram renderer | `mermaid` |
-| Output format | `markdown` |
-| Diagram name | `main` |
-| Output path | `docs/db/schema.md` |
-
-Start here, then add options only when the project needs them.
-
 ## Next Steps
 
+- Want an AI assistant to add DbSketch to an existing repository? See [AI-assisted setup](ai-setup.md).
+- Need a complete config example? See [Full config example](examples/full-config.md).
 - Need filters, focused diagrams, custom output paths, or layout settings? See [Configuration](configuration.md).
 - Need DOT, Mermaid, Markdown, PNG, or SVG details? See [Renderers](renderers.md).
 - Need table and column comments? See [Database comments](comments.md).
