@@ -1,43 +1,43 @@
 erDiagram
 
   "northwind.categories" {
-    column category_id PK
-    column category_name
+    integer category_id PK "Category identifier referenced by products."
+    text category_name "Display name for the category."
   }
 
   "northwind.customers" {
-    column customer_id PK
-    column company_name
-    column contact_name
+    text customer_id PK "Stable customer code used on orders."
+    text company_name "Legal or trading company name."
+    text contact_name "Primary contact person for the customer."
   }
 
   "northwind.employees" {
-    column employee_id PK
-    column last_name
-    column first_name
-    column reports_to FK
+    integer employee_id PK "Internal employee identifier."
+    text last_name "Employee family name."
+    text first_name "Employee given name."
+    integer reports_to FK "Manager employee id for hierarchy links."
   }
 
   "northwind.orders" {
-    column order_id PK
-    column customer_id FK
-    column employee_id FK
-    column order_date
+    integer order_id PK "Order header identifier."
+    text customer_id FK "Customer that placed the order."
+    integer employee_id FK "Employee responsible for the order."
+    timestamp order_date "Date and time when the order was created."
   }
 
   "northwind.order_details" {
-    column order_id PK FK
-    column product_id PK FK
-    column unit_price
-    column quantity
-    column discount
+    integer order_id PK FK "Order that owns this line item."
+    integer product_id PK FK "Product sold on this line item."
+    numeric_10_2 unit_price "Unit price captured at order time."
+    smallint quantity "Number of product units ordered."
+    numeric_4_2 discount "Discount fraction applied to the line."
   }
 
   "northwind.products" {
-    column product_id PK
-    column product_name
-    column category_id FK
-    column unit_price
+    integer product_id PK "Product identifier used in order lines."
+    text product_name "Customer-facing product name."
+    integer category_id FK "Category that classifies the product."
+    numeric_10_2 unit_price "Current catalog price per unit."
   }
 
   "northwind.employees" }o--|| "northwind.employees" : "fk_employees_reports_to"
@@ -46,3 +46,4 @@ erDiagram
   "northwind.order_details" }|--|| "northwind.orders" : "fk_order_details_orders"
   "northwind.order_details" }|--|| "northwind.products" : "fk_order_details_products"
   "northwind.products" }|--|| "northwind.categories" : "fk_products_categories"
+

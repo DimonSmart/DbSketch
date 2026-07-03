@@ -106,12 +106,9 @@ public sealed class PostgresNorthwindEndToEndTests
               renderer: dot
               direction: LR
               compact: true
+              columnLayout: "{name} | {type} | {keys}"
               show:
                 schemaName: true
-                columnTypes: false
-                nullability: false
-                primaryKeys: true
-                foreignKeys: true
         """;
 
     private static string ToYamlSingleQuoted(string value) => $"'{value.Replace("'", "''", StringComparison.Ordinal)}'";

@@ -117,8 +117,8 @@ public sealed class GeneratorTests
             Options(Diagram("auth", "auth.dot", renderer: DiagramFormat.Mermaid, columnLayout: "{name} | {keys}", tableHeaderLayout: "{fullName}"), dryRun: true),
             CancellationToken.None);
 
-        Assert.Contains("custom columnLayout/tableHeaderLayout", console.ErrorText);
-        Assert.Contains("Layout settings will be ignored", console.ErrorText);
+        Assert.Contains("logical projection only", console.ErrorText);
+        Assert.Contains("tableHeaderLayout", console.ErrorText);
     }
 
     [Fact]
@@ -161,7 +161,7 @@ public sealed class GeneratorTests
                 DiagramDirection.LR,
                 DiagramStyle.Classic,
                 true,
-                new DiagramLayoutOptions(columnLayout, tableHeaderLayout),
+                new DiagramLayoutOptions(columnLayout ?? "{name} | {type} | {keys}", tableHeaderLayout),
                 new DiagramShowOptions(true, false, false, true, true, true, true, showTableComments, false),
                 new MermaidRenderOptions(false),
                 new DiagramCommentRenderOptions(null),

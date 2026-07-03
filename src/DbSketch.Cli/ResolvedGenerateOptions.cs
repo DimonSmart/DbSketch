@@ -90,7 +90,7 @@ public static partial class GenerateOptionsResolver
         ValidateCommentMaxLength(commentMaxLength, $"diagrams['{target.Name}'].diagram.comments.maxLength");
         var columnLayout = target.Diagram?.ColumnLayout ?? defaults.Diagram.ColumnLayout;
         var tableHeaderLayout = target.Diagram?.TableHeaderLayout ?? defaults.Diagram.TableHeaderLayout;
-        ValidateLayout(columnLayout, ColumnLayoutFormatter.SupportedTokens, GetLayoutConfigPath(target, target.Diagram?.ColumnLayout, "columnLayout"));
+        ValidateRequiredColumnLayout(columnLayout, GetLayoutConfigPath(target, target.Diagram?.ColumnLayout, "columnLayout"));
         ValidateLayout(tableHeaderLayout, TableHeaderLayoutFormatter.SupportedTokens, GetLayoutConfigPath(target, target.Diagram?.TableHeaderLayout, "tableHeaderLayout"));
         var dot = ResolveDotOptions(defaults.Diagram.Dot, target.Diagram?.Dot, style, target);
 
@@ -146,6 +146,27 @@ public static partial class GenerateOptionsResolver
         try
         {
             LayoutTemplateParser.Parse(layout, supportedTokens, configPath);
+        }
+        catch (LayoutTemplateException exception)
+        {
+            throw new CliException(exception.Message);
+        }
+    }
+
+    private static void ValidateRequiredColumnLayout(string? layout, string configPath)
+    {
+        if (string.IsNullOrWhiteSpace(layout))
+        {
+            throw new CliException("diagram.columnLayout is required. Example: columnLayout: \"{name} | {type} | {keys} | {comment}\"");
+        }
+
+        try
+        {
+            var template = LayoutTemplateParser.Parse(layout, ColumnLayoutFormatter.SupportedTokens, configPath);
+            if (!template.GetTokenSequence().Contains("name", StringComparer.Ordinal))
+            {
+                throw new CliException("diagram.columnLayout must contain {name}.");
+            }
         }
         catch (LayoutTemplateException exception)
         {

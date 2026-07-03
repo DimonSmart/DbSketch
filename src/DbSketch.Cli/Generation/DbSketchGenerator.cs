@@ -93,10 +93,25 @@ public sealed class DbSketchGenerator(
             }
         }
 
-        if (!renderer.Capabilities.SupportsCustomTableLayouts &&
-            (diagram.Diagram.Layout.ColumnLayout is not null || diagram.Diagram.Layout.TableHeaderLayout is not null))
+        if (renderer.Capabilities.ColumnLayout == ColumnLayoutSupport.ProjectionOnly && MermaidLayoutWarningApplies(diagram.Diagram.Layout))
         {
-            progress.Warning("Mermaid ER does not support custom columnLayout/tableHeaderLayout. Layout settings will be ignored. Use DOT for custom table cell layouts.");
+            progress.Warning("Mermaid ER uses columnLayout as a logical projection only. Style modifiers, multiline cells, and tableHeaderLayout are not rendered.");
         }
+    }
+
+    private static bool MermaidLayoutWarningApplies(DiagramLayoutOptions layout)
+    {
+        if (layout.TableHeaderLayout is not null)
+        {
+            return true;
+        }
+
+        if (layout.ColumnLayout is null)
+        {
+            return false;
+        }
+
+        var template = LayoutTemplateParser.Parse(layout.ColumnLayout, ColumnLayoutFormatter.SupportedTokens, "diagram.columnLayout");
+        return template.HasStyleModifiers() || template.HasMultilineCells();
     }
 }

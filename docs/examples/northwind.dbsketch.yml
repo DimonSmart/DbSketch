@@ -8,12 +8,9 @@ defaults:
   diagram:
     direction: LR
     compact: true
+    columnLayout: "{name} | {type} | {keys} | {comment}"
     show:
       schemaName: true
-      columnTypes: false
-      nullability: false
-      primaryKeys: true
-      foreignKeys: true
 
 diagrams:
   - name: northwind-compact-dot
@@ -26,8 +23,6 @@ diagrams:
       columnLayout: "{name}"
       tableHeaderLayout: "{fullName}"
       show:
-        primaryKeys: false
-        foreignKeys: false
         foreignKeyLabels: false
     output:
       path: docs/examples/northwind.compact.dot
@@ -43,9 +38,7 @@ diagrams:
       columnLayout: "{name} | {type} | {comment} | {keys}"
       tableHeaderLayout: "{fullName} | {comment}"
       show:
-        columnTypes: true
         tableComments: true
-        columnComments: true
         foreignKeyLabels: true
     output:
       path: docs/examples/northwind.full.dot
@@ -61,9 +54,7 @@ diagrams:
       columnLayout: "{name} | {type} | {comment} | {keys}"
       tableHeaderLayout: "{fullName} | {comment}"
       show:
-        columnTypes: true
         tableComments: true
-        columnComments: true
     output:
       path: docs/examples/northwind.dot
       format: raw
@@ -83,7 +74,6 @@ diagrams:
         foreignKeyLabels: false
         selfReferencingForeignKeys: false
         tableComments: true
-        columnComments: true
       comments:
         maxLength: 60
     output:
@@ -101,9 +91,7 @@ diagrams:
       columnLayout: "{name} | {type} | {comment} | {keys}"
       tableHeaderLayout: "{fullName} | {comment}"
       show:
-        columnTypes: true
         tableComments: true
-        columnComments: true
         foreignKeyLabels: false
         selfReferencingForeignKeys: false
       comments:
@@ -127,7 +115,6 @@ diagrams:
         foreignKeyLabels: false
         selfReferencingForeignKeys: false
         tableComments: true
-        columnComments: true
       comments:
         maxLength: 60
     output:
@@ -149,7 +136,6 @@ diagrams:
         foreignKeyLabels: false
         selfReferencingForeignKeys: false
         tableComments: true
-        columnComments: true
       comments:
         maxLength: 60
     output:
@@ -171,7 +157,6 @@ diagrams:
         foreignKeyLabels: false
         selfReferencingForeignKeys: false
         tableComments: true
-        columnComments: true
       comments:
         maxLength: 60
     output:
@@ -193,7 +178,6 @@ diagrams:
         foreignKeyLabels: false
         selfReferencingForeignKeys: false
         tableComments: true
-        columnComments: true
       comments:
         maxLength: 60
     output:
@@ -215,7 +199,6 @@ diagrams:
         foreignKeyLabels: false
         selfReferencingForeignKeys: false
         tableComments: true
-        columnComments: true
       comments:
         maxLength: 60
     output:
@@ -229,6 +212,7 @@ diagrams:
         - "northwind.*"
     diagram:
       renderer: mermaid
+      columnLayout: "{name} | {type} | {keys} | {comment}"
       show:
         tableComments: false
       mermaid:
@@ -247,9 +231,7 @@ diagrams:
       columnLayout: "{name} | {type} | {comment} | {keys}"
       tableHeaderLayout: "{fullName} | {comment}"
       show:
-        columnTypes: true
         tableComments: true
-        columnComments: true
     output:
       path: docs/examples/northwind.generated.md
       format: markdown

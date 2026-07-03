@@ -228,6 +228,27 @@ public static partial class LayoutTemplateParser
     private static partial Regex SafeFontPattern();
 }
 
+public static class LayoutTemplateExtensions
+{
+    public static IReadOnlyList<string> GetTokenSequence(this LayoutTemplate template) =>
+        template.Cells
+            .SelectMany(cell => cell.Lines)
+            .SelectMany(line => line.Parts)
+            .OfType<TokenLayoutPartTemplate>()
+            .Select(part => part.Token)
+            .ToArray();
+
+    public static bool HasStyleModifiers(this LayoutTemplate template) =>
+        template.Cells
+            .SelectMany(cell => cell.Lines)
+            .SelectMany(line => line.Parts)
+            .OfType<TokenLayoutPartTemplate>()
+            .Any(part => part.Style.Bold || part.Style.Italic || part.Style.Color is not null || part.Style.Font is not null || part.Style.FontSize is not null);
+
+    public static bool HasMultilineCells(this LayoutTemplate template) =>
+        template.Cells.Any(cell => cell.Lines.Count > 1);
+}
+
 public sealed record RenderedLayoutCell(
     IReadOnlyList<RenderedLayoutLine> Lines,
     bool ContainsNameToken,

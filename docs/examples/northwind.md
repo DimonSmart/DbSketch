@@ -21,7 +21,6 @@ columnLayout: "{name} | {type} | {comment} | {keys}"
 show:
   foreignKeyLabels: true
   tableComments: true
-  columnComments: true
 ```
 
 ![Full DbSketch generated Northwind database schema](../assets/northwind-schema-full.png)

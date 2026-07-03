@@ -63,6 +63,7 @@ defaults:
   diagram:
     renderer: dot
     direction: LR
+    columnLayout: "{name} | {type} | {keys} | {comment}"
 
 diagrams:
   - name: main

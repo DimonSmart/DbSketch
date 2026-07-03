@@ -25,7 +25,6 @@ public sealed class ConfigTests
                 compact: true
                 show:
                   schemaName: false
-                  columnTypes: true
                   foreignKeyLabels: false
                   selfReferencingForeignKeys: false
                   tableComments: true
@@ -70,7 +69,6 @@ public sealed class ConfigTests
         Assert.Contains("# App schema", config.Defaults.Output.Markdown.Header);
         Assert.Equal("dot", config.Defaults.Diagram.Renderer);
         Assert.False(config.Defaults.Diagram.Show.SchemaName);
-        Assert.True(config.Defaults.Diagram.Show.ColumnTypes);
         Assert.False(config.Defaults.Diagram.Show.ForeignKeyLabels);
         Assert.False(config.Defaults.Diagram.Show.SelfReferencingForeignKeys);
         Assert.True(config.Defaults.Diagram.Show.TableComments);
@@ -255,7 +253,7 @@ public sealed class ConfigTests
             Defaults = new DefaultsConfig
             {
                 Output = new OutputDefaultsConfig { Format = "markdown" },
-                Diagram = new DiagramConfig { Renderer = "mermaid" }
+                Diagram = new DiagramConfig { Renderer = "mermaid", ColumnLayout = "{name} | {type} | {keys} | {comment}" }
             }
         };
 
@@ -274,7 +272,7 @@ public sealed class ConfigTests
             Defaults = new DefaultsConfig
             {
                 Output = new OutputDefaultsConfig { Format = "markdown" },
-                Diagram = new DiagramConfig { Renderer = "dot" }
+                Diagram = new DiagramConfig { Renderer = "dot", ColumnLayout = "{name} | {type} | {keys} | {comment}" }
             },
             Diagrams =
             [
@@ -303,6 +301,7 @@ public sealed class ConfigTests
             {
                 Diagram = new DiagramConfig
                 {
+                    ColumnLayout = "{name} | {type} | {keys} | {comment}",
                     Show = new DiagramShowConfig { SchemaName = true, ColumnTypes = false, ForeignKeys = true, ForeignKeyLabels = false, SelfReferencingForeignKeys = false }
                 }
             },
@@ -493,6 +492,7 @@ public sealed class ConfigTests
             defaults:
               diagram:
                 style: readable
+                columnLayout: "{name} | {type} | {keys} | {comment}"
                 dot:
                   edge:
                     color: "#555555"
@@ -524,6 +524,7 @@ public sealed class ConfigTests
             {
                 Diagram = new DiagramConfig
                 {
+                    ColumnLayout = "{name} | {type} | {keys} | {comment}",
                     Style = "readable",
                     Dot = new DotConfig { Edge = new DotEdgeConfig { Color = "#555555" } }
                 }
@@ -634,7 +635,20 @@ public sealed class ConfigTests
 
         var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, EmptyCli()));
 
-        Assert.Equal("defaults.diagram.columnLayout must not be empty.", exception.Message);
+        Assert.Equal("diagram.columnLayout is required. Example: columnLayout: \"{name} | {type} | {keys} | {comment}\"", exception.Message);
+    }
+
+    [Fact]
+    public void ResolverRejectsColumnLayoutWithoutName()
+    {
+        var config = ValidConfig() with
+        {
+            Defaults = new DefaultsConfig { Diagram = new DiagramConfig { ColumnLayout = "{type} | {comment}" } }
+        };
+
+        var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, EmptyCli()));
+
+        Assert.Equal("diagram.columnLayout must contain {name}.", exception.Message);
     }
 
     [Fact]
@@ -655,7 +669,7 @@ public sealed class ConfigTests
     {
         var config = ValidConfig() with
         {
-            Defaults = new DefaultsConfig { Diagram = new DiagramConfig { Style = "fancy" } }
+            Defaults = new DefaultsConfig { Diagram = new DiagramConfig { ColumnLayout = "{name} | {type} | {keys} | {comment}", Style = "fancy" } }
         };
 
         var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, EmptyCli()));
@@ -674,7 +688,7 @@ public sealed class ConfigTests
     {
         var config = ValidConfig() with
         {
-            Defaults = new DefaultsConfig { Diagram = new DiagramConfig { Style = style } }
+            Defaults = new DefaultsConfig { Diagram = new DiagramConfig { ColumnLayout = "{name} | {type} | {keys} | {comment}", Style = style } }
         };
 
         var diagram = Assert.Single(GenerateOptionsResolver.Resolve(config, EmptyCli()).Diagrams);
@@ -687,7 +701,7 @@ public sealed class ConfigTests
     {
         var config = ValidConfig() with
         {
-            Defaults = new DefaultsConfig { Diagram = new DiagramConfig { Dot = new DotConfig { Edge = new DotEdgeConfig { Color = "red" } } } }
+            Defaults = new DefaultsConfig { Diagram = new DiagramConfig { ColumnLayout = "{name} | {type} | {keys} | {comment}", Dot = new DotConfig { Edge = new DotEdgeConfig { Color = "red" } } } }
         };
 
         var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, EmptyCli()));
@@ -700,7 +714,7 @@ public sealed class ConfigTests
     {
         var config = ValidConfig() with
         {
-            Defaults = new DefaultsConfig { Diagram = new DiagramConfig { Dot = new DotConfig { Node = new DotNodeConfig { FontSize = 1000 } } } }
+            Defaults = new DefaultsConfig { Diagram = new DiagramConfig { ColumnLayout = "{name} | {type} | {keys} | {comment}", Dot = new DotConfig { Node = new DotNodeConfig { FontSize = 1000 } } } }
         };
 
         var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, EmptyCli()));
@@ -713,7 +727,7 @@ public sealed class ConfigTests
     {
         var config = ValidConfig() with
         {
-            Defaults = new DefaultsConfig { Diagram = new DiagramConfig { Dot = new DotConfig { Graph = new DotGraphConfig { FontName = "<script>" } } } }
+            Defaults = new DefaultsConfig { Diagram = new DiagramConfig { ColumnLayout = "{name} | {type} | {keys} | {comment}", Dot = new DotConfig { Graph = new DotGraphConfig { FontName = "<script>" } } } }
         };
 
         var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, EmptyCli()));
@@ -726,6 +740,7 @@ public sealed class ConfigTests
         {
             Provider = "sqlserver",
             ConnectionString = "Server=config",
+            Defaults = new DefaultsConfig { Diagram = new DiagramConfig { ColumnLayout = "{name} | {type} | {keys} | {comment}" } },
             Diagrams = [Diagram("full", "schema.dot")]
         };
 

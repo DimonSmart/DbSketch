@@ -35,16 +35,12 @@ defaults:
     direction: LR
     style: classic
     compact: true
+    columnLayout: "{name} | {type} | {keys} | {comment}"
     show:
       schemaName: true
-      columnTypes: false
-      nullability: false
-      primaryKeys: true
-      foreignKeys: true
       foreignKeyLabels: true
       selfReferencingForeignKeys: true
       tableComments: false
-      columnComments: false
     comments:
       maxLength: 80
 
@@ -153,13 +149,17 @@ Supported diagram renderers:
 
 ## Column Layout
 
-DOT renderer can use `columnLayout` to control how each column row is split into table cells. The `|` character separates cells; use `\|` for a literal pipe and `\\` for a literal backslash.
+`columnLayout` controls which column attributes are shown and in what order. It is required and must contain `{name}`.
+
+DOT uses `columnLayout` as a full table layout. The `|` character separates table cells; use `\|` for a literal pipe and `\\` for a literal backslash.
+
+Mermaid uses the same `columnLayout` as a logical projection and maps supported tokens to valid Mermaid ER attribute syntax. The `|` character only separates logical fields for Mermaid; Mermaid decides how attributes are displayed.
 
 ```yaml
 defaults:
   diagram:
     renderer: dot
-    columnLayout: "{name}: {type} | {pk} | {fk}"
+    columnLayout: "{name} | {type} | {keys} | {comment}"
 ```
 
 Supported column tokens:
@@ -171,6 +171,14 @@ Supported column tokens:
 - `{fk}`: `FK` for foreign key columns, otherwise empty.
 - `{keys}`: `PK`, `FK`, `PK FK`, or empty.
 - `{comment}`: column comment, normalized and truncated by `defaults.diagram.comments.maxLength` when configured.
+
+Mermaid projection rules:
+
+- `{name}` is required and becomes the Mermaid attribute name.
+- `{type}` becomes the Mermaid attribute type. If omitted, DbSketch emits the stable placeholder type `column`.
+- `{keys}`, `{pk}`, and `{fk}` control Mermaid `PK` and `FK` markers.
+- `{comment}` controls Mermaid attribute comments.
+- `{nullability}` is ignored by Mermaid because Mermaid ER has no native nullability slot.
 
 Examples:
 
@@ -192,13 +200,15 @@ Tokens can include safe style modifiers:
 - `font=Font Name`
 - `fontSize=9`
 
+Style modifiers, real table cells, and multiline cells are DOT-only. Mermaid ignores valid style modifiers and multiline structure while preserving token meaning.
+
 This is not raw HTML. DbSketch generates Graphviz HTML-like labels internally and escapes database values and literal layout text.
 
-If `columnLayout` is not set, DbSketch keeps the legacy `show.columnTypes`, `show.nullability`, `show.primaryKeys`, `show.foreignKeys`, and `show.columnComments` behavior. If `columnLayout` is set, the layout string fully controls rendered column text and cells. Foreign key relationships are still rendered independently from the text layout.
+Column text output is controlled by `columnLayout`. Foreign key relationships are still rendered independently from the text layout.
 
 ## Table Header Layout
 
-DOT renderer can use `tableHeaderLayout` to control the table header cells.
+DOT renderer can use `tableHeaderLayout` to control the table header cells. Mermaid ignores `tableHeaderLayout`.
 
 ```yaml
 defaults:
@@ -237,7 +247,7 @@ diagrams:
       tableHeaderLayout: "{schema} | {table} | {comment}"
 ```
 
-Custom layout is supported by DOT renderer. Mermaid ER ignores custom layout settings and keeps Mermaid-compatible syntax.
+The same `columnLayout` string can be used when switching between DOT and Mermaid. `tableHeaderLayout` remains DOT-only.
 
 ## DOT readable style
 

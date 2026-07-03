@@ -8,7 +8,9 @@ public sealed class GraphvizDotRenderer : IDiagramRenderer
 {
     public DiagramRendererCapabilities Capabilities { get; } = new(
         SupportsColumnToColumnRelationships: true,
-        SupportsCustomTableLayouts: true);
+        ColumnLayout: ColumnLayoutSupport.FullTableLayout,
+        SupportsTableHeaderLayout: true,
+        SupportsStyledLayout: true);
 
     public string Render(DatabaseModel model, DiagramRenderOptions options)
     {
@@ -127,7 +129,7 @@ public sealed class GraphvizDotRenderer : IDiagramRenderer
     {
         var columnTemplate = ParseColumnLayout(options.Layout.ColumnLayout);
         var headerTemplate = ParseTableHeaderLayout(options.Layout.TableHeaderLayout);
-        var bodyColumnCount = GetBodyColumnCount(options, columnTemplate);
+        var bodyColumnCount = columnTemplate.Cells.Count;
 
         builder.AppendLine($"  \"{encoder.EscapeDotString(encoder.GetTableNodeId(table))}\" [");
         builder.AppendLine("    label=<");
@@ -158,14 +160,7 @@ public sealed class GraphvizDotRenderer : IDiagramRenderer
 
         foreach (var column in table.Columns)
         {
-            if (columnTemplate is null)
-            {
-                AppendLegacyColumn(builder, encoder, table, column, options, GetMarkerColumnCount(options));
-            }
-            else
-            {
-                AppendLayoutColumn(builder, encoder, table, column, options, columnTemplate);
-            }
+            AppendLayoutColumn(builder, encoder, table, column, options, columnTemplate);
         }
 
         builder.AppendLine("      </TABLE>");
@@ -173,12 +168,6 @@ public sealed class GraphvizDotRenderer : IDiagramRenderer
         builder.AppendLine("  ];");
         builder.AppendLine();
     }
-
-    private static int GetMarkerColumnCount(DiagramRenderOptions options) =>
-        options.Show.PrimaryKeys || options.Show.ForeignKeys ? 2 : 0;
-
-    private static int GetBodyColumnCount(DiagramRenderOptions options, LayoutTemplate? columnTemplate) =>
-        columnTemplate?.Cells.Count ?? GetMarkerColumnCount(options) + 1;
 
     private static string FormatColumnSpan(int columnCount) =>
         columnCount <= 1 ? "" : $" COLSPAN=\"{columnCount}\"";
@@ -225,30 +214,6 @@ public sealed class GraphvizDotRenderer : IDiagramRenderer
         }
 
         builder.AppendLine("</TR></TABLE></TD></TR>");
-    }
-
-    private static void AppendLegacyColumn(StringBuilder builder, DotIdEncoder encoder, TableModel table, ColumnModel column, DiagramRenderOptions options, int markerColumnCount)
-    {
-        var port = encoder.GetColumnPortId(table, column);
-        var columnComment = options.Show.ColumnComments
-            ? RenderTextNormalizer.NormalizeInlineComment(column.Comment, options.Comments.MaxLength)
-            : null;
-
-        builder.Append("        <TR>");
-        builder.Append($"<TD PORT=\"{encoder.EscapeLabel(port)}\" ALIGN=\"LEFT\">{encoder.EscapeLabel(FormatColumnDetails(column, options))}");
-        if (columnComment is not null)
-        {
-            builder.Append($"<BR/><FONT POINT-SIZE=\"9\">{encoder.EscapeLabel(columnComment)}</FONT>");
-        }
-
-        builder.Append("</TD>");
-        if (markerColumnCount > 0)
-        {
-            AppendMarkerCell(builder, encoder, null, options.Show.PrimaryKeys && column.IsPrimaryKey ? "PK" : null);
-            AppendMarkerCell(builder, encoder, column.IsForeignKey ? GetForeignKeyPortId(port) : null, options.Show.ForeignKeys && column.IsForeignKey ? "FK" : null);
-        }
-
-        builder.AppendLine("</TR>");
     }
 
     private static void AppendLayoutColumn(StringBuilder builder, DotIdEncoder encoder, TableModel table, ColumnModel column, DiagramRenderOptions options, LayoutTemplate template)
@@ -365,35 +330,6 @@ public sealed class GraphvizDotRenderer : IDiagramRenderer
 
     private static string GetForeignKeyPortId(string columnPortId) => $"{columnPortId}_fk";
 
-    private static void AppendMarkerCell(StringBuilder builder, DotIdEncoder encoder, string? port, string? marker)
-    {
-        var portAttribute = port is null ? "" : $" PORT=\"{encoder.EscapeLabel(port)}\"";
-        if (marker is null)
-        {
-            builder.Append($"<TD{portAttribute} WIDTH=\"24\"></TD>");
-            return;
-        }
-
-        builder.Append($"<TD{portAttribute} WIDTH=\"24\" ALIGN=\"CENTER\"><FONT POINT-SIZE=\"9\">{marker}</FONT></TD>");
-    }
-
-    private static string FormatColumnDetails(ColumnModel column, DiagramRenderOptions options)
-    {
-        var parts = new List<string>();
-        parts.Add(column.Name);
-        if (options.Show.ColumnTypes)
-        {
-            parts.Add(column.StoreType);
-        }
-
-        if (options.Show.Nullability)
-        {
-            parts.Add(column.IsNullable ? "NULL" : "NOT NULL");
-        }
-
-        return string.Join(' ', parts);
-    }
-
     private static void AppendForeignKey(StringBuilder builder, DotIdEncoder encoder, IReadOnlyList<TableModel> tables, ForeignKeyModel foreignKey, DiagramRenderOptions options)
     {
         var source = FindTable(tables, foreignKey.SourceTable);
@@ -456,11 +392,6 @@ public sealed class GraphvizDotRenderer : IDiagramRenderer
         }
 
         var template = ParseColumnLayout(options.Layout.ColumnLayout);
-        if (template is null)
-        {
-            return GetForeignKeyPortId(mainPort);
-        }
-
         return GetLayoutPortPlan(template).FkPortCellIndex is null
             ? mainPort
             : GetForeignKeyPortId(mainPort);
@@ -491,9 +422,9 @@ public sealed class GraphvizDotRenderer : IDiagramRenderer
         return new LayoutPortPlan(nameCellIndex, fkCellIndex);
     }
 
-    private static LayoutTemplate? ParseColumnLayout(string? layout) =>
+    private static LayoutTemplate ParseColumnLayout(string? layout) =>
         layout is null
-            ? null
+            ? throw new InvalidOperationException("diagram.columnLayout is required.")
             : LayoutTemplateParser.Parse(layout, ColumnLayoutFormatter.SupportedTokens, "diagram.columnLayout");
 
     private static LayoutTemplate? ParseTableHeaderLayout(string? layout) =>

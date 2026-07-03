@@ -11,7 +11,16 @@ public interface IDiagramRenderer
 
 public sealed record DiagramRendererCapabilities(
     bool SupportsColumnToColumnRelationships,
-    bool SupportsCustomTableLayouts);
+    ColumnLayoutSupport ColumnLayout,
+    bool SupportsTableHeaderLayout,
+    bool SupportsStyledLayout);
+
+public enum ColumnLayoutSupport
+{
+    None,
+    ProjectionOnly,
+    FullTableLayout
+}
 
 public enum DiagramDirection
 {

@@ -78,21 +78,23 @@ public sealed class MermaidRendererTests
     }
 
     [Fact]
-    public void UsesGenericTypeWhenColumnTypesAreHidden()
+    public void UsesGenericTypeWhenTypeTokenIsOmitted()
     {
-        var mermaid = Render(Model(), showColumnTypes: false);
+        var mermaid = Render(Model(), columnLayout: "{name} | {keys}");
 
         Assert.Contains("column Id PK", mermaid);
         Assert.Contains("column UserId FK", mermaid);
     }
 
     [Fact]
-    public void WritesNullabilityMarkers()
+    public void IgnoresNullabilityToken()
     {
-        var mermaid = Render(Model(), showColumnTypes: true, showNullability: true);
+        var mermaid = Render(Model(), columnLayout: "{name} | {type} | {nullability} | {keys}");
 
-        Assert.Contains("int Id PK NOT_NULL", mermaid);
-        Assert.Contains("nvarchar_100 Name NULL", mermaid);
+        Assert.Contains("int Id PK", mermaid);
+        Assert.Contains("nvarchar_100 Name", mermaid);
+        Assert.DoesNotContain("NOT_NULL", mermaid);
+        Assert.DoesNotContain(" NULL", mermaid);
     }
 
     [Fact]
@@ -123,7 +125,7 @@ public sealed class MermaidRendererTests
 
         var mermaid = Render(model, showSelfReferencingForeignKeys: false);
 
-        Assert.Contains("column ManagerId FK", mermaid);
+        Assert.Contains("int ManagerId FK", mermaid);
         Assert.DoesNotContain("FK_Employees_Manager", mermaid);
         Assert.DoesNotContain("}o--||", mermaid);
     }
@@ -194,7 +196,7 @@ public sealed class MermaidRendererTests
             [new TableModel("dbo", "Users", [new ColumnModel("Id", "int", false, true, false, "User identifier")])],
             []);
 
-        var mermaid = Render(model, showColumnTypes: true, showColumnComments: true);
+        var mermaid = Render(model, columnLayout: "{name} | {type} | {keys} | {comment}");
 
         Assert.Contains("int Id PK \"User identifier\"", mermaid);
     }
@@ -208,7 +210,7 @@ public sealed class MermaidRendererTests
             [new TableModel("dbo", "Users", [new ColumnModel("Id", "int", false, true, false, "User \"identifier\"\nLine 2")])],
             []);
 
-        var mermaid = Render(model, showColumnTypes: true, showColumnComments: true);
+        var mermaid = Render(model, columnLayout: "{name} | {type} | {keys} | {comment}");
 
         Assert.Contains("int Id PK \"User \\\"identifier\\\" Line 2\"", mermaid);
     }
@@ -251,7 +253,7 @@ public sealed class MermaidRendererTests
             [new TableModel("dbo", "Users", [new ColumnModel("Id", "int", false, true, false, "Long column comment")])],
             []);
 
-        var mermaid = Render(model, showColumnTypes: true, showColumnComments: true, maxCommentLength: 10);
+        var mermaid = Render(model, maxCommentLength: 10, columnLayout: "{name} | {type} | {keys} | {comment}");
 
         Assert.Contains("int Id PK \"Long colu…\"", mermaid);
         Assert.DoesNotContain("Long column comment", mermaid);
@@ -266,19 +268,20 @@ public sealed class MermaidRendererTests
             [new TableModel("dbo", "Users", [new ColumnModel("Id", "int", false, true, false, "User \"identifier\" with long text")])],
             []);
 
-        var mermaid = Render(model, showColumnTypes: true, showColumnComments: true, maxCommentLength: 18);
+        var mermaid = Render(model, maxCommentLength: 18, columnLayout: "{name} | {type} | {keys} | {comment}");
 
         Assert.Contains("int Id PK \"User \\\"identifier\\\"…\"", mermaid);
     }
 
     [Fact]
-    public void IgnoresColumnLayout()
+    public void UsesColumnLayoutProjection()
     {
-        var withoutLayout = Render(Model(), showColumnTypes: true);
-        var withLayout = Render(Model(), showColumnTypes: true, columnLayout: "{name}: {type} | {pk} | {fk}");
+        var withoutKeys = Render(Model(), columnLayout: "{name} | {type}");
+        var withKeys = Render(Model(), columnLayout: "{name}: {type} | {pk} | {fk}");
 
-        Assert.Equal(withoutLayout, withLayout);
-        Assert.DoesNotContain("Id: int", withLayout);
+        Assert.DoesNotContain("int Id PK", withoutKeys);
+        Assert.Contains("int Id PK", withKeys);
+        Assert.DoesNotContain("Id: int", withKeys);
     }
 
     [Fact]
@@ -312,7 +315,7 @@ public sealed class MermaidRendererTests
                 direction,
                 DiagramStyle.Classic,
                 true,
-                new DiagramLayoutOptions(columnLayout, tableHeaderLayout),
+                new DiagramLayoutOptions(columnLayout ?? "{name} | {type} | {keys}", tableHeaderLayout),
                 new DiagramShowOptions(showSchemaName, showColumnTypes, showNullability, true, true, showForeignKeyLabels, showSelfReferencingForeignKeys, showTableComments, showColumnComments),
                 new MermaidRenderOptions(emitDirection),
                 new DiagramCommentRenderOptions(maxCommentLength),

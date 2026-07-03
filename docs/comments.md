@@ -37,15 +37,15 @@ comments:
 ```yaml
 defaults:
   diagram:
+    columnLayout: "{name} | {type} | {keys} | {comment}"
     show:
       tableComments: true
-      columnComments: true
     comments:
       maxLength: 80
 ```
 
-DOT supports table and column comments.
-Mermaid ER supports column comments.
+DOT supports table comments through the default header or `tableHeaderLayout`, and column comments through `{comment}` in `columnLayout`.
+Mermaid ER supports column comments when `columnLayout` contains `{comment}`.
 Mermaid ER does not emit table comments because Mermaid ER has no natural table comment syntax.
 
 `diagram.comments.maxLength` limits rendered comments after inline whitespace normalization. It is optional; by default comments are not truncated.

@@ -56,7 +56,7 @@ public sealed class DotRendererTests
     {
         var dot = Render(Model());
 
-        Assert.Contains("<TD PORT=\"col_UserId\" ALIGN=\"LEFT\">UserId</TD><TD WIDTH=\"24\"></TD><TD PORT=\"col_UserId_fk\" WIDTH=\"24\" ALIGN=\"CENTER\"><FONT POINT-SIZE=\"9\">FK</FONT></TD>", dot);
+        Assert.Contains("<TD PORT=\"col_UserId\" ALIGN=\"LEFT\">UserId</TD><TD ALIGN=\"CENTER\"></TD><TD PORT=\"col_UserId_fk\" ALIGN=\"CENTER\">FK</TD>", dot);
     }
 
     [Fact]
@@ -95,7 +95,7 @@ public sealed class DotRendererTests
 
         var dot = Render(model, showSelfReferencingForeignKeys: false);
 
-        Assert.Contains("<TD PORT=\"col_ManagerId\" ALIGN=\"LEFT\">ManagerId</TD><TD WIDTH=\"24\"></TD><TD PORT=\"col_ManagerId_fk\" WIDTH=\"24\" ALIGN=\"CENTER\"><FONT POINT-SIZE=\"9\">FK</FONT></TD>", dot);
+        Assert.Contains("<TD PORT=\"col_ManagerId\" ALIGN=\"LEFT\">ManagerId</TD><TD ALIGN=\"CENTER\"></TD><TD PORT=\"col_ManagerId_fk\" ALIGN=\"CENTER\">FK</TD>", dot);
         Assert.DoesNotContain("FK_Employees_Manager", dot);
         Assert.DoesNotContain("\"table_dbo_Employees\":\"col_ManagerId_fk\":e -> \"table_dbo_Employees\":\"col_Id\":w", dot);
     }
@@ -111,7 +111,7 @@ public sealed class DotRendererTests
 
         var dot = Render(model);
 
-        Assert.Contains("<TD PORT=\"col_UserId\" ALIGN=\"LEFT\">UserId</TD><TD WIDTH=\"24\" ALIGN=\"CENTER\"><FONT POINT-SIZE=\"9\">PK</FONT></TD><TD PORT=\"col_UserId_fk\" WIDTH=\"24\" ALIGN=\"CENTER\"><FONT POINT-SIZE=\"9\">FK</FONT></TD>", dot);
+        Assert.Contains("<TD PORT=\"col_UserId\" ALIGN=\"LEFT\">UserId</TD><TD ALIGN=\"CENTER\">PK</TD><TD PORT=\"col_UserId_fk\" ALIGN=\"CENTER\">FK</TD>", dot);
     }
 
     [Fact]
@@ -189,7 +189,7 @@ public sealed class DotRendererTests
     {
         var model = CommentsModel();
 
-        var dot = Render(model, showTableComments: true, showColumnComments: true);
+        var dot = Render(model, showTableComments: true, columnLayout: "{name} | {pk} | {fk} | {comment}");
 
         Assert.Contains("Application users", dot);
         Assert.Contains("User identifier", dot);
@@ -241,7 +241,7 @@ public sealed class DotRendererTests
             ],
             [new ForeignKeyModel("FK_Orders_Users", new TableRef("dbo", "Orders"), ["UserId"], new TableRef("dbo", "Users"), ["Id"])]);
 
-        var dot = Render(model, showColumnComments: true);
+        var dot = Render(model, columnLayout: "{name} | {pk} | {fk} | {comment}");
 
         Assert.DoesNotContain("Application users", dot);
         Assert.Contains("User identifier", dot);
@@ -264,7 +264,7 @@ public sealed class DotRendererTests
             ],
             []);
 
-        var dot = Render(model, showTableComments: true, showColumnComments: true, maxCommentLength: 10);
+        var dot = Render(model, showTableComments: true, maxCommentLength: 10, columnLayout: "{name} | {pk} | {fk} | {comment}");
 
         Assert.Contains("Long tabl…", dot);
         Assert.Contains("Long colu…", dot);
@@ -277,7 +277,7 @@ public sealed class DotRendererTests
     {
         var model = CommentsModel();
 
-        var dot = Render(model, showTableComments: true, showColumnComments: true);
+        var dot = Render(model, showTableComments: true, columnLayout: "{name} | {pk} | {fk} | {comment}");
 
         Assert.Contains("Application users", dot);
         Assert.Contains("User identifier", dot);
@@ -298,7 +298,7 @@ public sealed class DotRendererTests
             ],
             []);
 
-        var dot = Render(model, showTableComments: true, showColumnComments: true);
+        var dot = Render(model, showTableComments: true, columnLayout: "{name} | {pk} | {fk} | {comment}");
 
         Assert.Contains("Application &quot;users&quot; table", dot);
         Assert.Contains("User &lt;identifier&gt; &amp; key", dot);
@@ -601,7 +601,7 @@ public sealed class DotRendererTests
                 direction,
                 style,
                 true,
-                new DiagramLayoutOptions(columnLayout, tableHeaderLayout),
+                new DiagramLayoutOptions(columnLayout ?? "{name} | {pk} | {fk}", tableHeaderLayout),
                 new DiagramShowOptions(true, false, false, true, true, showForeignKeyLabels, showSelfReferencingForeignKeys, showTableComments, showColumnComments),
                 new MermaidRenderOptions(mermaidEmitDirection),
                 new DiagramCommentRenderOptions(maxCommentLength),

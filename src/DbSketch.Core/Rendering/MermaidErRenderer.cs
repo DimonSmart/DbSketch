@@ -7,7 +7,9 @@ public sealed class MermaidErRenderer : IDiagramRenderer
 {
     public DiagramRendererCapabilities Capabilities { get; } = new(
         SupportsColumnToColumnRelationships: false,
-        SupportsCustomTableLayouts: false);
+        ColumnLayout: ColumnLayoutSupport.ProjectionOnly,
+        SupportsTableHeaderLayout: false,
+        SupportsStyledLayout: false);
 
     public string Render(DatabaseModel model, DiagramRenderOptions options)
     {
@@ -20,10 +22,11 @@ public sealed class MermaidErRenderer : IDiagramRenderer
         }
 
         builder.AppendLine();
+        var columnLayout = MermaidColumnLayoutPlan.Create(ParseColumnLayout(options.Layout.ColumnLayout));
 
         foreach (var table in model.Tables.OrderBy(table => table.FullName, StringComparer.OrdinalIgnoreCase))
         {
-            AppendTable(builder, table, options);
+            AppendTable(builder, table, options, columnLayout);
         }
 
         foreach (var foreignKey in model.ForeignKeys.OrderBy(fk => fk.Name, StringComparer.OrdinalIgnoreCase))
@@ -36,43 +39,38 @@ public sealed class MermaidErRenderer : IDiagramRenderer
 
     private static string FormatDirection(DiagramDirection direction) => direction.ToString();
 
-    private static void AppendTable(StringBuilder builder, TableModel table, DiagramRenderOptions options)
+    private static void AppendTable(StringBuilder builder, TableModel table, DiagramRenderOptions options, MermaidColumnLayoutPlan layout)
     {
         builder.AppendLine($"  {FormatEntityName(GetTableDisplayName(table, options))} {{");
         foreach (var column in table.Columns)
         {
-            builder.AppendLine($"    {FormatColumn(column, options)}");
+            builder.AppendLine($"    {FormatColumn(column, options, layout)}");
         }
 
         builder.AppendLine("  }");
         builder.AppendLine();
     }
 
-    private static string FormatColumn(ColumnModel column, DiagramRenderOptions options)
+    private static string FormatColumn(ColumnModel column, DiagramRenderOptions options, MermaidColumnLayoutPlan layout)
     {
         var parts = new List<string>
         {
-            options.Show.ColumnTypes ? NormalizeType(column.StoreType) : "column",
+            layout.HasType ? NormalizeType(column.StoreType) : "column",
             NormalizeAttributeName(column.Name)
         };
 
-        if (options.Show.PrimaryKeys && column.IsPrimaryKey)
+        if ((layout.HasKeys || layout.HasPk) && column.IsPrimaryKey)
         {
             parts.Add("PK");
         }
 
-        if (options.Show.ForeignKeys && column.IsForeignKey)
+        if ((layout.HasKeys || layout.HasFk) && column.IsForeignKey)
         {
             parts.Add("FK");
         }
 
-        if (options.Show.Nullability)
-        {
-            parts.Add(column.IsNullable ? "NULL" : "NOT_NULL");
-        }
-
         var rendered = string.Join(' ', parts);
-        var comment = options.Show.ColumnComments
+        var comment = layout.HasComment
             ? FormatAttributeComment(column.Comment, options.Comments.MaxLength)
             : null;
         return comment is null ? rendered : $"{rendered} {comment}";
@@ -168,5 +166,29 @@ public sealed class MermaidErRenderer : IDiagramRenderer
         }
 
         return prefixDigit && char.IsDigit(normalized[0]) ? $"_{normalized}" : normalized;
+    }
+
+    private static LayoutTemplate ParseColumnLayout(string? layout) =>
+        layout is null
+            ? throw new InvalidOperationException("diagram.columnLayout is required.")
+            : LayoutTemplateParser.Parse(layout, ColumnLayoutFormatter.SupportedTokens, "diagram.columnLayout");
+
+    private sealed record MermaidColumnLayoutPlan(
+        bool HasType,
+        bool HasKeys,
+        bool HasPk,
+        bool HasFk,
+        bool HasComment)
+    {
+        public static MermaidColumnLayoutPlan Create(LayoutTemplate template)
+        {
+            var tokens = template.GetTokenSequence();
+            return new MermaidColumnLayoutPlan(
+                tokens.Contains("type", StringComparer.Ordinal),
+                tokens.Contains("keys", StringComparer.Ordinal),
+                tokens.Contains("pk", StringComparer.Ordinal),
+                tokens.Contains("fk", StringComparer.Ordinal),
+                tokens.Contains("comment", StringComparer.Ordinal));
+        }
     }
 }

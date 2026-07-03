@@ -9,9 +9,9 @@ The DOT renderer is the best choice for precise technical diagrams.
 - Preserves column-to-column foreign key edges.
 - Can show or hide foreign key names on edges with `diagram.show.foreignKeyLabels`.
 - Can show or hide self-referencing foreign key edges with `diagram.show.selfReferencingForeignKeys`.
-- Renders PK/FK markers as separate table cells and left-aligns table and column text.
-- Supports table and column comments.
-- Supports styled layout tokens in `columnLayout` and `tableHeaderLayout`.
+- Supports full `columnLayout` table cells, including styled tokens and multiline cells.
+- Supports `tableHeaderLayout`.
+- Supports table comments through the default header or `tableHeaderLayout`, and column comments through `{comment}` in `columnLayout`.
 - Supports `diagram.style` presets: `classic`, `readable`, `compact`, `soft`, `blueprint`, and `contrast`.
 - Works well as source for PNG generation through Graphviz.
 
@@ -24,8 +24,8 @@ The Mermaid ER renderer is convenient for GitHub Markdown.
 - Renders relationships between entities, not exact column ports.
 - Can show or hide foreign key names on relationships with `diagram.show.foreignKeyLabels`.
 - Can show or hide self-referencing relationships with `diagram.show.selfReferencingForeignKeys`.
-- Supports column comments when enabled.
-- Ignores custom DOT layout and DOT style settings.
+- Supports `columnLayout` as a logical projection for type, name, PK/FK markers, and comments.
+- Ignores style modifiers, multiline cell structure, and `tableHeaderLayout`.
 - Does not emit table comments because Mermaid ER has no natural table comment syntax.
 
 For Mermaid ER diagrams, DbSketch does not emit `direction LR` by default. Some Markdown renderers display `direction` and `LR` as separate entities. Set `diagram.mermaid.emitDirection: true` only when your Mermaid renderer correctly supports `direction` inside `erDiagram`.
