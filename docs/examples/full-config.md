@@ -42,14 +42,9 @@ defaults:
 
     show:
       schemaName: true
-      columnTypes: true
-      nullability: true
-      primaryKeys: true
-      foreignKeys: true
       foreignKeyLabels: true
       selfReferencingForeignKeys: true
       tableComments: true
-      columnComments: true
 
     comments:
       maxLength: 80
@@ -133,6 +128,8 @@ diagrams:
 The root `provider` and `connectionString` settings are still the only required settings.
 
 Use `defaults` for settings shared by most diagrams: renderer, layout, output format, style, and comment behavior.
+
+Use `columnLayout` to control which column attributes are rendered and in what order. The `show` section is for relationship visibility and table-level display options, not for ordinary column text.
 
 Use `diagrams` when one huge database diagram would be hard to read. This is useful when tables are grouped by schema, by naming convention, or by business area, and you want several focused diagrams instead of one very large diagram.
 
