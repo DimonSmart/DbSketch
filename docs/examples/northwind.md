@@ -58,8 +58,8 @@ erDiagram
   }
 
   "northwind.order_details" {
-    integer order_id PK FK "Order that owns this line item."
-    integer product_id PK FK "Product sold on this line item."
+    integer order_id PK, FK "Order that owns this line item."
+    integer product_id PK, FK "Product sold on this line item."
     numeric_10_2 unit_price "Unit price captured at order time."
     smallint quantity "Number of product units ordered."
   }
