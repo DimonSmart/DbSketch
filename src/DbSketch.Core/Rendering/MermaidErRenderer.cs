@@ -59,14 +59,21 @@ public sealed class MermaidErRenderer : IDiagramRenderer
             NormalizeAttributeName(column.Name)
         };
 
+        var keys = new List<string>();
+
         if ((layout.HasKeys || layout.HasPk) && column.IsPrimaryKey)
         {
-            parts.Add("PK");
+            keys.Add("PK");
         }
 
         if ((layout.HasKeys || layout.HasFk) && column.IsForeignKey)
         {
-            parts.Add("FK");
+            keys.Add("FK");
+        }
+
+        if (keys.Count > 0)
+        {
+            parts.Add(string.Join(", ", keys));
         }
 
         var rendered = string.Join(' ', parts);
