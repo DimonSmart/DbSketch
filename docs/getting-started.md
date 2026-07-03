@@ -2,6 +2,8 @@
 
 DbSketch is distributed as a .NET tool. The package id is `DimonSmart.DbSketch`; the installed command is `dbsketch`.
 
+Install the .NET 10 SDK before installing or running the tool.
+
 Use this guide to create the smallest useful config and generate the first database diagram.
 
 ## 1. Create `dbsketch.yml`
@@ -10,20 +12,20 @@ Create a `dbsketch.yml` file in your repository root:
 
 ```yaml
 provider: postgres
-connectionString: "Host=localhost;Database=app;Username=app;Password=<password>"
+connectionString: "${DB_CONNECTION}"
 ```
 
 Only `provider` and `connectionString` are required. With this minimal config, DbSketch generates a Mermaid diagram wrapped in Markdown.
 
-Supported providers and example connection strings:
+Set `DB_CONNECTION` to the connection string for your database provider. Wrap the placeholder in quotes because connection strings often contain YAML-sensitive characters.
 
-| Provider | Example connection string | More examples |
-| --- | --- | --- |
-| `postgres` | `Host=localhost;Port=5432;Database=app;Username=app;Password=<password>` | [PostgreSQL](https://www.connectionstrings.com/postgresql/) |
-| `sqlserver` | `Server=localhost;Database=app;User Id=app;Password=<password>;TrustServerCertificate=True` | [SQL Server](https://www.connectionstrings.com/sql-server/) |
-| `mysql` | `Server=localhost;Database=app;Uid=app;Pwd=<password>` | [MySQL](https://www.connectionstrings.com/mysql/) |
+Supported providers:
 
-Use the connection string format for your database provider. Wrap the connection string in quotes because connection strings often contain YAML-sensitive characters.
+| Provider | More examples |
+| --- | --- |
+| `postgres` | [PostgreSQL](https://www.connectionstrings.com/postgresql/) |
+| `sqlserver` | [SQL Server](https://www.connectionstrings.com/sql-server/) |
+| `mysql` | [MySQL](https://www.connectionstrings.com/mysql/) |
 
 ## 2. Install DbSketch
 
@@ -33,11 +35,7 @@ Install DbSketch as a global .NET tool:
 dotnet tool install --global DimonSmart.DbSketch
 ```
 
-If `dnx` is available, you can also run DbSketch without installing it globally:
-
-```bash
-dnx DimonSmart.DbSketch -- generate --config dbsketch.yml
-```
+For team repositories, CI, or pinned tool versions, use a local tool manifest instead. See [CI and automation](ci.md).
 
 ## 3. Generate the diagram
 
