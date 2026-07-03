@@ -132,8 +132,12 @@ diagrams:
 
 The root `provider` and `connectionString` settings are still the only required settings.
 
-Use `defaults` when most diagrams should share the same renderer, layout, output format, or comment behavior.
+Use `defaults` for settings shared by most diagrams: renderer, layout, output format, style, and comment behavior.
 
-Use per-diagram `diagram` and `output` sections when one diagram needs a different renderer, file path, or raw output format.
+Use `diagrams` when one huge database diagram would be hard to read. This is useful when tables are grouped by schema, by naming convention, or by business area, and you want several focused diagrams instead of one very large diagram.
+
+A diagram target should describe one knowledge area: which tables belong to it, what title it should have, where the output should be written, and whether it needs a renderer or layout override.
+
+Use per-diagram `diagram` and `output` sections only when a specific diagram needs a different renderer, layout, file path, or raw output format. Otherwise, keep shared settings in `defaults`.
 
 Use `include` and `exclude` to keep diagrams focused. Foreign keys are rendered only when both related tables are included in the same diagram.
