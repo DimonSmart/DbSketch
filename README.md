@@ -1,5 +1,9 @@
 # DbSketch
 
+[![CI](https://github.com/DimonSmart/DbSketch/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/DimonSmart/DbSketch/actions/workflows/ci.yml)
+[![Release](https://github.com/DimonSmart/DbSketch/actions/workflows/release.yml/badge.svg)](https://github.com/DimonSmart/DbSketch/actions/workflows/release.yml)
+[![NuGet](https://img.shields.io/nuget/v/DimonSmart.DbSketch.svg)](https://www.nuget.org/packages/DimonSmart.DbSketch)
+
 DbSketch turns a live database into version-controlled schema documentation.
 
 It reads tables, columns, primary keys, foreign keys, and comments directly from SQL Server, PostgreSQL, or MySQL, then generates diagram-as-code files you can commit, review, render, reuse as LLM context, and refresh from CI.
