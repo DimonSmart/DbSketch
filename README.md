@@ -41,7 +41,7 @@ dotnet tool install --global DimonSmart.DbSketch
 dbsketch generate --config dbsketch.yml
 ```
 
-DbSketch also works as a local repository tool. See [Getting started](https://github.com/DimonSmart/DbSketch/blob/main/docs/getting-started.md) for local tool, one-shot, `dnx`, and CI examples.
+See [Getting started](https://github.com/DimonSmart/DbSketch/blob/main/docs/getting-started.md) for the first local run. See [CI and automation](https://github.com/DimonSmart/DbSketch/blob/main/docs/ci.md) for local tool manifests, CI examples, and non-interactive command options.
 
 ## Typical workflow
 
@@ -127,6 +127,7 @@ dot -Tsvg docs/db/schema.dot -o docs/db/schema.svg
 - [Configuration](https://github.com/DimonSmart/DbSketch/blob/main/docs/configuration.md)
 - [Renderers](https://github.com/DimonSmart/DbSketch/blob/main/docs/renderers.md)
 - [Database comments](https://github.com/DimonSmart/DbSketch/blob/main/docs/comments.md)
+- [CI and automation](https://github.com/DimonSmart/DbSketch/blob/main/docs/ci.md)
 - [Northwind example](https://github.com/DimonSmart/DbSketch/blob/main/docs/examples/northwind.md)
 - [Development](https://github.com/DimonSmart/DbSketch/blob/main/docs/development.md)
 
