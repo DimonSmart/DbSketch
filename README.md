@@ -43,6 +43,10 @@ dbsketch generate --config dbsketch.yml
 
 See [Getting started](https://github.com/DimonSmart/DbSketch/blob/main/docs/getting-started.md) for the first local run. See [CI and automation](https://github.com/DimonSmart/DbSketch/blob/main/docs/ci.md) for local tool manifests, CI examples, and non-interactive command options.
 
+## AI-assisted setup
+
+Want ChatGPT, Claude, Codex, or another coding assistant to add DbSketch to an existing repository? See [AI-assisted setup](https://github.com/DimonSmart/DbSketch/blob/main/docs/ai-setup.md) for copy-paste prompts and review guidance.
+
 ## Typical workflow
 
 1. Create `dbsketch.yml` in the repository.
@@ -125,17 +129,13 @@ dot -Tsvg docs/db/schema.dot -o docs/db/schema.svg
 
 - [Getting started](https://github.com/DimonSmart/DbSketch/blob/main/docs/getting-started.md)
 - [Configuration](https://github.com/DimonSmart/DbSketch/blob/main/docs/configuration.md)
+- [Full config example](https://github.com/DimonSmart/DbSketch/blob/main/docs/examples/full-config.md)
+- [AI-assisted setup](https://github.com/DimonSmart/DbSketch/blob/main/docs/ai-setup.md)
 - [Renderers](https://github.com/DimonSmart/DbSketch/blob/main/docs/renderers.md)
 - [Database comments](https://github.com/DimonSmart/DbSketch/blob/main/docs/comments.md)
 - [CI and automation](https://github.com/DimonSmart/DbSketch/blob/main/docs/ci.md)
 - [Northwind example](https://github.com/DimonSmart/DbSketch/blob/main/docs/examples/northwind.md)
 - [Development](https://github.com/DimonSmart/DbSketch/blob/main/docs/development.md)
-
-## Use with AI assistants
-
-Want to add DbSketch to an existing repository? Paste this into ChatGPT, Claude, or Codex:
-
-> Add DbSketch database diagram generation to this repository. Create a `dbsketch.yml` that reads `DB_CONNECTION`, generates focused database diagrams under `docs/db`, and adds a CI step to refresh them.
 
 ## Contributing
 
