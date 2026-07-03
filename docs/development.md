@@ -10,12 +10,27 @@ dotnet test DbSketch.sln
 
 ## Release
 
-Releases are created by pushing version tags in the form `vX.Y.Z`:
+Releases are created by pushing version tags in the form `vX.Y.Z`.
 
-```bash
-git tag v0.1.0
-git push origin v0.1.0
+From a clean `main` branch, use the helper script to publish the next patch version:
+
+```bat
+publish-next-version.bat
 ```
+
+Use `-Bump minor` or `-Bump major` for larger version increments:
+
+```bat
+publish-next-version.bat -Bump minor
+```
+
+To publish an exact version:
+
+```bat
+publish-next-version.bat -Version 0.2.0
+```
+
+The script fetches tags, switches to `main`, fast-forwards it from `origin`, creates an annotated `vMAJOR.MINOR.PATCH` tag, and pushes the branch and tag.
 
 The release workflow runs on tag push. It validates the tag, builds and tests the solution, packs and publishes the NuGet tool package, publishes portable Windows x64 and Linux x64 CLI binaries, writes SHA256 checksum files, and creates a GitHub Release.
 
@@ -39,6 +54,8 @@ dotnet tool exec DimonSmart.DbSketch@0.1.0 -- generate --config dbsketch.yml
 ```
 
 Portable binaries are attached to the GitHub Release.
+
+Manual integration tests are marked explicit and are not run by the normal release workflow test command.
 
 ## Git Hooks
 
