@@ -9,6 +9,8 @@ DbSketch reads tables, columns, primary keys, foreign keys, and database comment
 - [README](README.md): short overview, quick start, and main example image.
 - [Getting started](docs/getting-started.md): first local run with the minimal config.
 - [Configuration](docs/configuration.md): YAML configuration reference.
+- [Full config example](docs/examples/full-config.md): larger YAML example with comments, defaults, multiple diagrams, raw output, Mermaid, and DOT styling.
+- [AI-assisted setup](docs/ai-setup.md): copy-paste prompts for ChatGPT, Claude, Codex, or another coding assistant.
 - [Renderers](docs/renderers.md): DOT, Mermaid, Markdown, and PNG illustration notes.
 - [Database comments](docs/comments.md): comment reading and overrides.
 - [CI and automation](docs/ci.md): local tool manifests, CI examples, and non-interactive command options.
@@ -17,4 +19,4 @@ DbSketch reads tables, columns, primary keys, foreign keys, and database comment
 
 ## Suggested AI task
 
-Add DbSketch database diagram generation to this repository. Create a `dbsketch.yml` that reads `DB_CONNECTION`, generates focused database diagrams under `docs/db`, and adds a CI step to refresh them.
+Add DbSketch database diagram generation to this repository. Create a `dbsketch.yml` that reads `${DB_CONNECTION}`, generates Mermaid Markdown schema documentation under `docs/db`, adds or updates a local .NET tool manifest with `DimonSmart.DbSketch`, and documents the local command. If the repository already has CI, add a safe CI step that uses a secret named `DB_CONNECTION`.
