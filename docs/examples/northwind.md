@@ -117,33 +117,7 @@ The generated Markdown example file uses the same wrapper behavior:
 - [Generated Markdown with DOT fence](northwind.generated.md)
 - [Generated Mermaid ER source](northwind.mmd)
 
-## DOT style presets
-
-DbSketch supports these `diagram.style` presets for DOT output: `classic`, `readable`, `compact`, `soft`, `blueprint`, and `contrast`.
-
-### classic
-
-![Northwind schema rendered with classic DbSketch DOT style](../assets/northwind-style-classic.png)
-
-### readable
-
-![Northwind schema rendered with readable DbSketch DOT style](../assets/northwind-style-readable.png)
-
-### compact
-
-![Northwind schema rendered with compact DbSketch DOT style](../assets/northwind-style-compact.png)
-
-### soft
-
-![Northwind schema rendered with soft DbSketch DOT style](../assets/northwind-style-soft.png)
-
-### blueprint
-
-![Northwind schema rendered with blueprint DbSketch DOT style](../assets/northwind-style-blueprint.png)
-
-### contrast
-
-![Northwind schema rendered with contrast DbSketch DOT style](../assets/northwind-style-contrast.png)
+For a visual comparison of DOT styles, see [DOT style presets](dot-styles.md).
 
 The sample is generated from the test fixture at:
 
@@ -160,11 +134,5 @@ Example files:
 - [Generated README DOT](northwind.readme.dot)
 - [Generated Mermaid ER](northwind.mmd)
 - [Generated Markdown](northwind.generated.md)
-- [Generated classic style DOT](northwind.style.classic.dot)
-- [Generated readable style DOT](northwind.style.readable.dot)
-- [Generated compact style DOT](northwind.style.compact.dot)
-- [Generated soft style DOT](northwind.style.soft.dot)
-- [Generated blueprint style DOT](northwind.style.blueprint.dot)
-- [Generated contrast style DOT](northwind.style.contrast.dot)
 
 The PNG images are generated from DbSketch DOT output with Graphviz.
