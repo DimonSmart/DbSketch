@@ -10,7 +10,7 @@ Create a `dbsketch.yml` file in your repository root:
 
 ```yaml
 provider: postgres
-connectionString: "Host=localhost;Database=app;Username=app;Password=secret"
+connectionString: "Host=localhost;Database=app;Username=app;Password=<password>"
 ```
 
 Only `provider` and `connectionString` are required. With this minimal config, DbSketch generates a Mermaid diagram wrapped in Markdown.
@@ -31,18 +31,16 @@ Install DbSketch as a global .NET tool:
 dotnet tool install --global DimonSmart.DbSketch
 ```
 
-If `dnx` is available, you can also run DbSketch without installing it globally.
+If `dnx` is available, you can also run DbSketch without installing it globally:
+
+```bash
+dnx DimonSmart.DbSketch -- generate --config dbsketch.yml
+```
 
 ## 3. Generate the diagram
 
 ```bash
 dbsketch generate --config dbsketch.yml
-```
-
-Or with `dnx`:
-
-```bash
-dnx DimonSmart.DbSketch -- generate --config dbsketch.yml
 ```
 
 ## 4. Open the generated file
