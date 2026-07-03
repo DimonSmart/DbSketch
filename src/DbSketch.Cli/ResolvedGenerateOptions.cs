@@ -63,7 +63,7 @@ public static partial class GenerateOptionsResolver
 
     private static IReadOnlyList<ResolvedDiagramTarget> ResolveDiagrams(DbSketchConfig config, string? selectedDiagramName)
     {
-        var sourceDiagrams = config.Diagrams;
+        var sourceDiagrams = GetSourceDiagrams(config);
         if (!string.IsNullOrWhiteSpace(selectedDiagramName))
         {
             var selected = sourceDiagrams.FirstOrDefault(diagram => string.Equals(diagram.Name, selectedDiagramName, StringComparison.OrdinalIgnoreCase));
@@ -78,23 +78,30 @@ public static partial class GenerateOptionsResolver
         return sourceDiagrams.Select(diagram => ResolveDiagram(config.Defaults, diagram)).ToArray();
     }
 
+    private static IReadOnlyList<DiagramTargetConfig> GetSourceDiagrams(DbSketchConfig config) =>
+        config.Diagrams.Count > 0
+            ? config.Diagrams
+            : [new DiagramTargetConfig { Name = "main", Title = "Database schema" }];
+
     private static ResolvedDiagramTarget ResolveDiagram(DefaultsConfig defaults, DiagramTargetConfig target)
     {
+        var name = ResolveDiagramName(target);
         var diagramRenderer = DiagramRendererParser.Parse(target.Diagram?.Renderer ?? defaults.Diagram.Renderer);
         var outputFormat = OutputContainerFormatParser.Parse(target.Output?.Format ?? defaults.Output.Format);
+        var outputPath = ResolveOutputPath(name, target.Output?.Path, outputFormat, diagramRenderer);
         var direction = DiagramDirectionParser.Parse(target.Diagram?.Direction ?? defaults.Diagram.Direction);
-        var style = ParseStyle(target.Diagram?.Style ?? defaults.Diagram.Style, target.Diagram?.Style is null ? "defaults.diagram.style" : $"diagrams['{target.Name}'].diagram.style");
+        var style = ParseStyle(target.Diagram?.Style ?? defaults.Diagram.Style, target.Diagram?.Style is null ? "defaults.diagram.style" : $"diagrams['{name}'].diagram.style");
         var title = string.IsNullOrWhiteSpace(target.Title)
             ? defaults.Diagram.Title ?? "Database schema"
             : target.Title;
 
         var commentMaxLength = target.Diagram?.Comments?.MaxLength ?? defaults.Diagram.Comments.MaxLength;
-        ValidateCommentMaxLength(commentMaxLength, $"diagrams['{target.Name}'].diagram.comments.maxLength");
+        ValidateCommentMaxLength(commentMaxLength, $"diagrams['{name}'].diagram.comments.maxLength");
         var columnLayout = target.Diagram?.ColumnLayout ?? defaults.Diagram.ColumnLayout;
         var tableHeaderLayout = target.Diagram?.TableHeaderLayout ?? defaults.Diagram.TableHeaderLayout;
-        ValidateRequiredColumnLayout(columnLayout, GetLayoutConfigPath(target, target.Diagram?.ColumnLayout, "columnLayout"));
-        ValidateLayout(tableHeaderLayout, TableHeaderLayoutFormatter.SupportedTokens, GetLayoutConfigPath(target, target.Diagram?.TableHeaderLayout, "tableHeaderLayout"));
-        var dot = ResolveDotOptions(defaults.Diagram.Dot, target.Diagram?.Dot, style, target);
+        ValidateRequiredColumnLayout(columnLayout, GetLayoutConfigPath(name, target.Diagram?.ColumnLayout, "columnLayout"));
+        ValidateLayout(tableHeaderLayout, TableHeaderLayoutFormatter.SupportedTokens, GetLayoutConfigPath(name, target.Diagram?.TableHeaderLayout, "tableHeaderLayout"));
+        var dot = ResolveDotOptions(defaults.Diagram.Dot, target.Diagram?.Dot, style, name);
 
         var markdownOptions = outputFormat == OutputContainerFormat.Markdown
             ? new MarkdownRenderOptions(
@@ -104,8 +111,8 @@ public static partial class GenerateOptionsResolver
             : null;
 
         return new ResolvedDiagramTarget(
-            target.Name!,
-            target.Output!.Path!,
+            name,
+            outputPath,
             diagramRenderer,
             new OutputFormat(outputFormat, markdownOptions),
             new SchemaFilterOptions(target.Include.Tables, target.Exclude.Tables),
@@ -121,6 +128,71 @@ public static partial class GenerateOptionsResolver
                 dot));
     }
 
+    private static string ResolveDiagramName(DiagramTargetConfig target) =>
+        string.IsNullOrWhiteSpace(target.Name)
+            ? "main"
+            : target.Name.Trim();
+
+    private static string ResolveOutputPath(string diagramName, string? configuredPath, OutputContainerFormat outputFormat, DiagramFormat renderer)
+    {
+        if (!string.IsNullOrWhiteSpace(configuredPath))
+        {
+            return configuredPath;
+        }
+
+        var fileName = diagramName.Equals("main", StringComparison.OrdinalIgnoreCase)
+            ? "schema"
+            : SanitizeFileName(diagramName);
+
+        return $"docs/db/{fileName}{GetDefaultOutputExtension(outputFormat, renderer)}";
+    }
+
+    private static string GetDefaultOutputExtension(OutputContainerFormat outputFormat, DiagramFormat renderer) =>
+        outputFormat switch
+        {
+            OutputContainerFormat.Markdown => ".md",
+            OutputContainerFormat.Raw when renderer == DiagramFormat.Mermaid => ".mmd",
+            OutputContainerFormat.Raw when renderer == DiagramFormat.Dot => ".dot",
+            _ => throw new ArgumentOutOfRangeException(nameof(outputFormat), outputFormat, null)
+        };
+
+    private static string SanitizeFileName(string value)
+    {
+        var chars = new List<char>(value.Length);
+        var lastWasDash = false;
+
+        foreach (var character in value.Trim().ToLowerInvariant())
+        {
+            var replacement = character switch
+            {
+                >= 'a' and <= 'z' => character,
+                >= '0' and <= '9' => character,
+                '_' or '.' => character,
+                '-' or ' ' => '-',
+                _ => '-'
+            };
+
+            if (replacement == '-')
+            {
+                if (lastWasDash)
+                {
+                    continue;
+                }
+
+                lastWasDash = true;
+            }
+            else
+            {
+                lastWasDash = false;
+            }
+
+            chars.Add(replacement);
+        }
+
+        var sanitized = new string(chars.ToArray()).Trim('-');
+        return sanitized.Length == 0 ? "diagram" : sanitized;
+    }
+
     private static DiagramStyle ParseStyle(string? style, string path) =>
         style?.Trim().ToLowerInvariant() switch
         {
@@ -133,10 +205,10 @@ public static partial class GenerateOptionsResolver
             var value => throw new CliException($"{path} must be one of: {SupportedDiagramStyles}.")
         };
 
-    private static string GetLayoutConfigPath(DiagramTargetConfig target, string? overrideValue, string propertyName) =>
+    private static string GetLayoutConfigPath(string diagramName, string? overrideValue, string propertyName) =>
         overrideValue is null
             ? $"defaults.diagram.{propertyName}"
-            : $"diagrams['{target.Name}'].diagram.{propertyName}";
+            : $"diagrams['{diagramName}'].diagram.{propertyName}";
 
     private static void ValidateLayout(string? layout, IReadOnlySet<string> supportedTokens, string configPath)
     {
@@ -192,7 +264,7 @@ public static partial class GenerateOptionsResolver
         DotConfig defaults,
         DotOverrideConfig? overrides,
         DiagramStyle style,
-        DiagramTargetConfig target)
+        string diagramName)
     {
         var preset = GetDotPreset(style);
         var graph = new GraphvizDotGraphRenderOptions(
@@ -215,7 +287,7 @@ public static partial class GenerateOptionsResolver
             overrides?.Table?.HeaderBackground ?? defaults.Table.HeaderBackground ?? preset.Table.HeaderBackground,
             overrides?.Table?.CellPadding ?? defaults.Table.CellPadding ?? preset.Table.CellPadding);
 
-        var basePath = overrides is null ? "defaults.diagram.dot" : $"diagrams['{target.Name}'].diagram.dot";
+        var basePath = overrides is null ? "defaults.diagram.dot" : $"diagrams['{diagramName}'].diagram.dot";
         ValidateFont(graph.FontName, $"{basePath}.graph.fontName");
         ValidateFont(node.FontName, $"{basePath}.node.fontName");
         ValidateFont(edge.FontName, $"{basePath}.edge.fontName");
@@ -308,11 +380,6 @@ public static partial class GenerateOptionsResolver
 
     private static void ValidateDiagrams(DbSketchConfig config)
     {
-        if (config.Diagrams.Count == 0)
-        {
-            throw new CliException("diagrams must contain at least one diagram.");
-        }
-
         ValidateCommentMaxLength(config.Defaults.Diagram.Comments.MaxLength, "defaults.diagram.comments.maxLength");
 
         var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -326,11 +393,6 @@ public static partial class GenerateOptionsResolver
             if (!names.Add(diagram.Name.Trim()))
             {
                 throw new CliException($"Duplicate diagram name '{diagram.Name}'.");
-            }
-
-            if (string.IsNullOrWhiteSpace(diagram.Output?.Path))
-            {
-                throw new CliException($"diagrams['{diagram.Name}'].output.path is required.");
             }
         }
     }

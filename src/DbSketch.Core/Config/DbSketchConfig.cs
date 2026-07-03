@@ -38,7 +38,7 @@ public sealed class DiagramTargetConfig
 
 public sealed class OutputDefaultsConfig
 {
-    public string Format { get; init; } = "raw";
+    public string Format { get; init; } = "markdown";
     public MarkdownOutputConfig Markdown { get; init; } = new();
 }
 
@@ -66,11 +66,11 @@ public sealed class MarkdownOutputOverrideConfig
 public sealed class DiagramConfig
 {
     public string? Title { get; init; }
-    public string Renderer { get; init; } = "dot";
+    public string Renderer { get; init; } = "mermaid";
     public string Direction { get; init; } = "LR";
     public string Style { get; init; } = "classic";
     public bool Compact { get; init; } = true;
-    public string? ColumnLayout { get; init; }
+    public string? ColumnLayout { get; init; } = "{name} | {type} | {keys}";
     public string? TableHeaderLayout { get; init; }
     public DiagramShowConfig Show { get; init; } = new();
     public MermaidConfig Mermaid { get; init; } = new();

@@ -34,12 +34,14 @@ dnx DimonSmart.DbSketch -- generate --config dbsketch.yml
 
 ## Connection String
 
-Keep the connection string out of the config file and read it from the environment:
+Create `dbsketch.yml` with the provider and a connection string. Keep the connection string out of the config file and read it from the environment:
 
 ```yaml
 provider: postgres
 connectionString: "${DB_CONNECTION}"
 ```
+
+This minimal config generates one Mermaid diagram named `main`, wraps it in Markdown, and writes `docs/db/schema.md`.
 
 Then run:
 
@@ -66,7 +68,7 @@ dbsketch generate --config dbsketch.yml
   run: dotnet tool run dbsketch -- generate --config dbsketch.yml
 ```
 
-Generated files are written to each diagram's `output.path`. Put those paths under a docs folder, such as `docs/db/schema.md`, when you want schema diagrams to be reviewed with normal documentation changes.
+By default, the generated file is written to `docs/db/schema.md`. Explicit diagrams can override `output.path`; keep generated paths under a docs folder when you want schema diagrams to be reviewed with normal documentation changes.
 
 ## Useful Commands
 
@@ -82,7 +84,7 @@ dbsketch generate --config dbsketch.yml --verbose
 ```
 
 `--config` is required for `generate`.
-Use `--diagram <name>` to generate one named diagram from `diagrams`.
+Use `--diagram <name>` to generate one named diagram. If `diagrams` is omitted, the available diagram is `main`.
 Use `--dry-run` to read the schema, apply comments and filters, print table and foreign-key counts, and skip file writes.
 Use `--quiet` to suppress all non-error output.
 Use `--no-progress` to suppress progress messages while keeping warnings.

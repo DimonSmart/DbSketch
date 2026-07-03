@@ -56,29 +56,27 @@ DbSketch also works as a local repository tool. See [Getting started](https://gi
 ```yaml
 provider: postgres
 connectionString: "${DB_CONNECTION}"
+```
 
-defaults:
-  output:
-    format: markdown
-  diagram:
-    renderer: dot
-    direction: LR
-    columnLayout: "{name} | {type} | {keys} | {comment}"
+With only these two settings, DbSketch generates one Mermaid diagram named `main`, wraps it in Markdown, and writes it to `docs/db/schema.md`.
+
+Add filters or focused diagrams when the project needs them:
+
+```yaml
+provider: postgres
+connectionString: "${DB_CONNECTION}"
 
 diagrams:
   - name: main
-    title: Database schema
     include:
       tables:
         - "public.*"
     exclude:
       tables:
         - "public.__EFMigrationsHistory"
-    output:
-      path: docs/db/schema.md
 ```
 
-Start with one diagram, then add focused diagrams, comments, filters, layout settings, or Mermaid output when the project needs them. See [Configuration](https://github.com/DimonSmart/DbSketch/blob/main/docs/configuration.md) for the full YAML reference.
+Start with the minimal config, then add focused diagrams, comments, filters, layout settings, or DOT output when the project needs them. See [Configuration](https://github.com/DimonSmart/DbSketch/blob/main/docs/configuration.md) for the full YAML reference.
 
 ## Output formats
 

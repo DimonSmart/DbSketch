@@ -118,6 +118,27 @@ public sealed class ConfigTests
     }
 
     [Fact]
+    public void LoadsMinimalYamlConfig()
+    {
+        var path = WriteTempConfig("""
+            provider: postgres
+            connectionString: "${DBSKETCH_TEST_CONNECTION:-Host=localhost}"
+            """);
+
+        var config = ConfigLoader.Load(path);
+        var resolved = GenerateOptionsResolver.Resolve(config, EmptyCli(configPath: path));
+
+        Assert.Equal("postgres", resolved.Provider);
+        Assert.Equal("Host=localhost", resolved.ConnectionString);
+
+        var diagram = Assert.Single(resolved.Diagrams);
+        Assert.Equal("main", diagram.Name);
+        Assert.Equal("docs/db/schema.md", diagram.OutputPath);
+        Assert.Equal(DiagramFormat.Mermaid, diagram.DiagramRenderer);
+        Assert.Equal(OutputContainerFormat.Markdown, diagram.Output.Format);
+    }
+
+    [Fact]
     public void ThrowsReadableErrorWhenEnvVarIsMissing()
     {
         Environment.SetEnvironmentVariable("DBSKETCH_MISSING_CONNECTION", null);
@@ -178,13 +199,14 @@ public sealed class ConfigTests
     }
 
     [Fact]
-    public void ResolverRejectsMissingDiagrams()
+    public void ResolverCreatesDefaultDiagramWhenDiagramsAreMissing()
     {
         var config = ValidConfig() with { Diagrams = [] };
 
-        var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, EmptyCli()));
+        var diagram = Assert.Single(GenerateOptionsResolver.Resolve(config, EmptyCli()).Diagrams);
 
-        Assert.Equal("diagrams must contain at least one diagram.", exception.Message);
+        Assert.Equal("main", diagram.Name);
+        Assert.Equal("docs/db/schema.md", diagram.OutputPath);
     }
 
     [Fact]
@@ -215,13 +237,107 @@ public sealed class ConfigTests
     }
 
     [Fact]
-    public void ResolverRejectsDiagramWithoutOutputPath()
+    public void DiagramWithoutOutputPathUsesDefaultPathFromName()
     {
-        var config = ValidConfig() with { Diagrams = [new DiagramTargetConfig { Name = "auth", Output = new OutputOverrideConfig() }] };
+        var config = ValidConfig() with { Diagrams = [new DiagramTargetConfig { Name = "auth" }] };
 
-        var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, EmptyCli()));
+        var diagram = Assert.Single(GenerateOptionsResolver.Resolve(config, EmptyCli()).Diagrams);
 
-        Assert.Equal("diagrams['auth'].output.path is required.", exception.Message);
+        Assert.Equal("auth", diagram.Name);
+        Assert.Equal("docs/db/auth.md", diagram.OutputPath);
+    }
+
+    [Fact]
+    public void ResolverUsesDefaultsWhenOnlyProviderAndConnectionStringAreConfigured()
+    {
+        var config = new DbSketchConfig
+        {
+            Provider = "postgres",
+            ConnectionString = "Host=localhost"
+        };
+
+        var resolved = GenerateOptionsResolver.Resolve(config, EmptyCli());
+
+        Assert.Equal("postgres", resolved.Provider);
+        Assert.Equal("Host=localhost", resolved.ConnectionString);
+
+        var diagram = Assert.Single(resolved.Diagrams);
+        Assert.Equal("main", diagram.Name);
+        Assert.Equal("docs/db/schema.md", diagram.OutputPath);
+        Assert.Equal(DiagramFormat.Mermaid, diagram.DiagramRenderer);
+        Assert.Equal(OutputContainerFormat.Markdown, diagram.Output.Format);
+        Assert.Equal("mermaid", diagram.Output.Markdown?.FenceLanguage);
+        Assert.Equal("{name} | {type} | {keys}", diagram.Diagram.Layout.ColumnLayout);
+    }
+
+    [Fact]
+    public void RawMermaidDiagramWithoutOutputPathUsesMmdExtension()
+    {
+        var config = new DbSketchConfig
+        {
+            Provider = "postgres",
+            ConnectionString = "Host=localhost",
+            Defaults = new DefaultsConfig
+            {
+                Output = new OutputDefaultsConfig { Format = "raw" },
+                Diagram = new DiagramConfig { Renderer = "mermaid" }
+            },
+            Diagrams = [new DiagramTargetConfig { Name = "main" }]
+        };
+
+        var diagram = Assert.Single(GenerateOptionsResolver.Resolve(config, EmptyCli()).Diagrams);
+
+        Assert.Equal("docs/db/schema.mmd", diagram.OutputPath);
+    }
+
+    [Fact]
+    public void RawDotDiagramWithoutOutputPathUsesDotExtension()
+    {
+        var config = new DbSketchConfig
+        {
+            Provider = "postgres",
+            ConnectionString = "Host=localhost",
+            Defaults = new DefaultsConfig
+            {
+                Output = new OutputDefaultsConfig { Format = "raw" },
+                Diagram = new DiagramConfig { Renderer = "dot" }
+            },
+            Diagrams = [new DiagramTargetConfig { Name = "main" }]
+        };
+
+        var diagram = Assert.Single(GenerateOptionsResolver.Resolve(config, EmptyCli()).Diagrams);
+
+        Assert.Equal("docs/db/schema.dot", diagram.OutputPath);
+    }
+
+    [Fact]
+    public void DiagramWithoutOutputPathSanitizesName()
+    {
+        var config = ValidConfig() with { Diagrams = [new DiagramTargetConfig { Name = "auth users" }] };
+
+        var diagram = Assert.Single(GenerateOptionsResolver.Resolve(config, EmptyCli()).Diagrams);
+
+        Assert.Equal("docs/db/auth-users.md", diagram.OutputPath);
+    }
+
+    [Fact]
+    public void SelectsDefaultMainDiagramWhenDiagramsAreMissing()
+    {
+        var config = ValidConfig() with { Diagrams = [] };
+
+        var diagram = Assert.Single(GenerateOptionsResolver.Resolve(config, EmptyCli(diagramName: "main")).Diagrams);
+
+        Assert.Equal("main", diagram.Name);
+    }
+
+    [Fact]
+    public void RejectsUnknownRequestedDiagramWhenOnlyDefaultDiagramExists()
+    {
+        var config = ValidConfig() with { Diagrams = [] };
+
+        var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, EmptyCli(diagramName: "auth")));
+
+        Assert.Equal("Diagram 'auth' was not found. Available diagrams: main.", exception.Message);
     }
 
     [Fact]
@@ -740,7 +856,6 @@ public sealed class ConfigTests
         {
             Provider = "sqlserver",
             ConnectionString = "Server=config",
-            Defaults = new DefaultsConfig { Diagram = new DiagramConfig { ColumnLayout = "{name} | {type} | {keys} | {comment}" } },
             Diagrams = [Diagram("full", "schema.dot")]
         };
 
