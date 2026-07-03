@@ -74,7 +74,7 @@ public sealed class MermaidRendererTests
 
         var mermaid = Render(model, showColumnTypes: true);
 
-        Assert.Contains("int UserId PK FK", mermaid);
+        Assert.Contains("int UserId PK, FK", mermaid);
     }
 
     [Fact]
