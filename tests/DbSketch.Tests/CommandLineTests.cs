@@ -14,6 +14,7 @@ public sealed class CommandLineTests
 
         Assert.Equal(0, exitCode);
         Assert.Contains("Generate database schema diagrams from live databases.", output.ToString());
+        Assert.Contains("Supported diagram.style values: classic, readable, compact, soft, blueprint, contrast.", output.ToString());
     }
 
     [Fact]
@@ -24,6 +25,16 @@ public sealed class CommandLineTests
 
         Assert.Equal(0, exitCode);
         Assert.StartsWith("DbSketch ", output.ToString());
+    }
+
+    [Fact]
+    public async Task GenerateHelpShowsSupportedDiagramStyles()
+    {
+        var output = new StringWriter();
+        var exitCode = await InvokeAsync(["generate", "--help"], output, new StringWriter(), (_, _) => Task.FromResult(0));
+
+        Assert.Equal(0, exitCode);
+        Assert.Contains("Supported diagram.style values: classic, readable, compact, soft, blueprint, contrast.", output.ToString());
     }
 
     [Theory]

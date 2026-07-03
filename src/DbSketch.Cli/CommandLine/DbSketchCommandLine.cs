@@ -13,7 +13,7 @@ public static class DbSketchCommandLine
 
     public static RootCommand CreateRootCommand(Func<CliOptions, CancellationToken, Task<int>> handleGenerateAsync)
     {
-        var root = new RootCommand("Generate database schema diagrams from live databases.");
+        var root = new RootCommand($"Generate database schema diagrams from live databases. Supported diagram.style values: {GenerateOptionsResolver.SupportedDiagramStyles}.");
         root.SetAction(parseResult => new HelpAction().Invoke(parseResult));
 
         foreach (var versionOption in root.Options.OfType<VersionOption>())
@@ -34,7 +34,7 @@ public static class DbSketchCommandLine
         var noProgress = new Option<bool>("--no-progress") { Description = "Do not print progress messages, but still allow non-progress warnings/errors." };
         var dryRun = new Option<bool>("--dry-run") { Description = "Read schema and apply config, but do not write output." };
 
-        var command = new Command("generate", "Read a live database schema and generate a diagram.");
+        var command = new Command("generate", $"Read a live database schema and generate a diagram. Supported diagram.style values: {GenerateOptionsResolver.SupportedDiagramStyles}.");
         command.Options.Add(config);
         command.Options.Add(diagram);
         command.Options.Add(verbose);

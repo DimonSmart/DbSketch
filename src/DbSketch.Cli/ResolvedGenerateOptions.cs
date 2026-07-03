@@ -27,6 +27,8 @@ public sealed record ResolvedDiagramTarget(
 
 public static partial class GenerateOptionsResolver
 {
+    public const string SupportedDiagramStyles = "classic, readable, compact, soft, blueprint, contrast";
+
     public static ResolvedGenerateOptions Resolve(DbSketchConfig config, CliOptions cli)
     {
         if (string.IsNullOrWhiteSpace(cli.ConfigPath))
@@ -128,7 +130,7 @@ public static partial class GenerateOptionsResolver
             "soft" => DiagramStyle.Soft,
             "blueprint" => DiagramStyle.Blueprint,
             "contrast" => DiagramStyle.Contrast,
-            var value => throw new CliException($"{path} must be one of: classic, readable, compact, soft, blueprint, contrast.")
+            var value => throw new CliException($"{path} must be one of: {SupportedDiagramStyles}.")
         };
 
     private static string GetLayoutConfigPath(DiagramTargetConfig target, string? overrideValue, string propertyName) =>
