@@ -27,6 +27,31 @@ Other contributors and CI can restore the pinned tool version with:
 dotnet tool restore
 ```
 
+## Use an environment variable for the connection string
+
+For committed configs, keep the real connection string out of `dbsketch.yml` and read it from an environment variable:
+
+```yaml
+provider: postgres
+connectionString: "${DB_CONNECTION}"
+```
+
+Wrap the placeholder in quotes because connection strings often contain YAML-sensitive characters.
+
+For a local run with this config, set the variable before running DbSketch.
+
+On Bash:
+
+```bash
+export DB_CONNECTION="Host=localhost;Database=app;Username=app;Password=secret"
+```
+
+On PowerShell:
+
+```powershell
+$env:DB_CONNECTION = "Host=localhost;Database=app;Username=app;Password=secret"
+```
+
 ## GitHub Actions example
 
 This workflow restores the local tool version, reads the database connection string from a GitHub secret, and verifies that schema documentation can be generated.
