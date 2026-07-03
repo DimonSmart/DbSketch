@@ -17,6 +17,61 @@ The DOT renderer is the best choice for precise technical diagrams.
 
 GitHub does not render DOT code fences as diagrams. Commit a generated PNG when a diagram needs to be visible on a README or package page.
 
+## DOT styling
+
+Diagrams use `classic` style by default. For DOT output, set `style: readable` for a more spacious Graphviz preset:
+
+```yaml
+defaults:
+  diagram:
+    renderer: dot
+    style: readable
+    columnLayout: "{name:bold} {type:color=#666666}\n{comment:color=#666666,fontSize=9} | {keys}"
+    tableHeaderLayout: "{table:bold}\n{comment:color=#666666,fontSize=9}"
+```
+
+Supported styles:
+
+- `classic`: legacy-looking output and the default.
+- `readable`: neutral sans-serif diagram with calmer edges and padded tables.
+- `compact`: denser tables and shorter spacing for large schemas.
+- `soft`: light green-tinted headers and softer relationships.
+- `blueprint`: blue technical drawing style.
+- `contrast`: stronger borders, darker edges, and larger text.
+
+All non-classic styles enable sans-serif fonts, calmer edges, table padding, colored borders, header background color, and left-balanced multiline cells.
+
+Style presets can be overridden with low-level Graphviz options:
+
+```yaml
+defaults:
+  diagram:
+    renderer: dot
+    style: readable
+    dot:
+      graph:
+        fontName: Helvetica
+        fontSize: 16
+        nodesep: 0.55
+        ranksep: 0.9
+        backgroundColor: "#FFFFFF"
+      node:
+        fontName: Helvetica
+        fontSize: 10
+      edge:
+        fontName: Helvetica
+        fontSize: 9
+        color: "#555555"
+        penWidth: 1.1
+        arrowSize: 0.7
+      table:
+        borderColor: "#777777"
+        headerBackground: "#F1F3F5"
+        cellPadding: 4
+```
+
+For a visual comparison of the built-in styles, see [DOT style presets](examples/dot-styles.md).
+
 ## Mermaid ER
 
 The Mermaid ER renderer is convenient for GitHub Markdown.
@@ -61,20 +116,7 @@ diagrams:
       path: docs/db/schema.dot
 ```
 
-Install Graphviz:
-
-```bash
-# Windows
-winget install graphviz
-
-# macOS
-brew install graphviz
-
-# Ubuntu / Debian
-sudo apt install graphviz
-```
-
-Then render PNG or SVG from the generated DOT file:
+Install Graphviz, then render PNG or SVG from the generated DOT file:
 
 ```bash
 dot -Tpng docs/db/schema.dot -o docs/db/schema.png
