@@ -15,11 +15,13 @@ connectionString: "Host=localhost;Database=app;Username=app;Password=<password>"
 
 Only `provider` and `connectionString` are required. With this minimal config, DbSketch generates a Mermaid diagram wrapped in Markdown.
 
-Supported providers:
+Supported providers and example connection strings:
 
-- `postgres`
-- `sqlserver`
-- `mysql`
+| Provider | Example connection string | More examples |
+| --- | --- | --- |
+| `postgres` | `Host=localhost;Port=5432;Database=app;Username=app;Password=<password>` | [PostgreSQL](https://www.connectionstrings.com/postgresql/) |
+| `sqlserver` | `Server=localhost;Database=app;User Id=app;Password=<password>;TrustServerCertificate=True` | [SQL Server](https://www.connectionstrings.com/sql-server/) |
+| `mysql` | `Server=localhost;Database=app;Uid=app;Pwd=<password>` | [MySQL](https://www.connectionstrings.com/mysql/) |
 
 Use the connection string format for your database provider. Wrap the connection string in quotes because connection strings often contain YAML-sensitive characters.
 
