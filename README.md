@@ -4,6 +4,8 @@ DbSketch turns a live database into version-controlled schema documentation.
 
 It reads tables, columns, primary keys, foreign keys, and comments directly from SQL Server, PostgreSQL, or MySQL, then generates diagram-as-code files you can commit, review, render, reuse as LLM context, and refresh from CI.
 
+DbSketch is useful when both humans and AI coding assistants need a compact, reviewable schema snapshot. Instead of asking an agent to inspect the database with ad-hoc commands or parse creation scripts and migrations, you can give it generated schema documentation that already contains the relevant tables, columns, keys, relationships, and comments.
+
 ## What it produces
 
 DbSketch is a CLI documentation generator, not a visual database designer. Its primary output is text-based, Markdown-friendly documentation:
@@ -14,13 +16,13 @@ DbSketch is a CLI documentation generator, not a visual database designer. Its p
 
 These files can often be used directly in repositories, wikis, issue trackers, documentation sites, and other tools that understand diagram-as-code or Markdown-like formats.
 
-They are also useful as compact context for LLM assistants. Instead of asking an agent to inspect the database with ad-hoc commands or parse creation scripts and migrations, you can give it generated schema documentation that already contains the relevant tables, columns, keys, relationships, and comments.
+## What it looks like
 
-Compact layout, using `tableHeaderLayout: "{fullName}"` and `columnLayout: "{name}"`:
+Compact schema diagram:
 
 ![Compact DbSketch generated Northwind database schema](https://raw.githubusercontent.com/DimonSmart/DbSketch/main/docs/assets/northwind-schema-compact.png)
 
-Full layout, using `tableHeaderLayout: "{fullName} | {comment}"` and `columnLayout: "{name} | {type} | {comment} | {keys}"`:
+Detailed schema diagram with comments and column metadata:
 
 ![Full DbSketch generated Northwind database schema](https://raw.githubusercontent.com/DimonSmart/DbSketch/main/docs/assets/northwind-schema-full.png)
 
@@ -34,106 +36,27 @@ Full layout, using `tableHeaderLayout: "{fullName} | {comment}"` and `columnLayo
 - Works locally, in CI, or as a repository documentation step
 - Produces compact schema context for AI coding assistants
 
-## Quick start
-
-```bash
-dotnet tool install --global DimonSmart.DbSketch
-dbsketch generate --config dbsketch.yml
-```
-
-See [Getting started](https://github.com/DimonSmart/DbSketch/blob/main/docs/getting-started.md) for the first local run. See [CI and automation](https://github.com/DimonSmart/DbSketch/blob/main/docs/ci.md) for local tool manifests, CI examples, and non-interactive command options.
-
 ## AI-assisted setup
 
 Want ChatGPT, Claude, Codex, or another coding assistant to add DbSketch to an existing repository? See [AI-assisted setup](https://github.com/DimonSmart/DbSketch/blob/main/docs/ai-setup.md) for copy-paste prompts and review guidance.
 
-## Typical workflow
-
-1. Create `dbsketch.yml` in the repository.
-2. Read the database connection string from an environment variable such as `DB_CONNECTION`.
-3. Run `dbsketch generate --config dbsketch.yml` locally.
-4. Commit the generated files under `docs/db` or another documentation folder.
-5. Add the same command to CI when you want schema documentation to be refreshed automatically.
-
-## Starter config
-
-```yaml
-provider: postgres
-connectionString: "${DB_CONNECTION}"
-```
-
-With only these two settings, DbSketch generates one Mermaid diagram named `main`, wraps it in Markdown, and writes it to `docs/db/schema.md`.
-
-Add filters or focused diagrams when the project needs them:
-
-```yaml
-provider: postgres
-connectionString: "${DB_CONNECTION}"
-
-diagrams:
-  - name: main
-    include:
-      tables:
-        - "public.*"
-    exclude:
-      tables:
-        - "public.__EFMigrationsHistory"
-```
-
-Start with the minimal config, then add focused diagrams, comments, filters, layout settings, or DOT output when the project needs them. See [Configuration](https://github.com/DimonSmart/DbSketch/blob/main/docs/configuration.md) for the full YAML reference.
-
-## Output formats
-
-- DOT: best for precise technical diagrams and column-to-column relationships.
-- Mermaid: convenient for Markdown renderers that support Mermaid diagrams, with entity-level relationships.
-- Markdown: useful for generated docs because it wraps DOT or Mermaid in a fenced block.
-
-## Optional PNG or SVG rendering
-
-DbSketch does not require image generation. Use the generated text output directly when your documentation platform can render DOT, Mermaid, or Markdown-like diagram formats.
-
-Static images are useful for places that cannot render diagram source directly, such as package pages, PDFs, presentations, or documentation sites without Mermaid or Graphviz support. The images in this README are committed PNG files for that reason.
-
-To render DOT output as an image, first generate a raw `.dot` file:
-
-```yaml
-diagrams:
-  - name: main-dot
-    title: Database schema
-    output:
-      format: raw
-      path: docs/db/schema.dot
-```
-
-Install Graphviz:
-
-```bash
-# Windows
-winget install graphviz
-
-# macOS
-brew install graphviz
-
-# Ubuntu / Debian
-sudo apt install graphviz
-```
-
-Then render PNG or SVG from the generated DOT file:
-
-```bash
-dot -Tpng docs/db/schema.dot -o docs/db/schema.png
-dot -Tsvg docs/db/schema.dot -o docs/db/schema.svg
-```
-
 ## Documentation
 
+Start here:
+
 - [Getting started](https://github.com/DimonSmart/DbSketch/blob/main/docs/getting-started.md)
+- [AI-assisted setup](https://github.com/DimonSmart/DbSketch/blob/main/docs/ai-setup.md)
+
+Reference:
+
 - [Configuration](https://github.com/DimonSmart/DbSketch/blob/main/docs/configuration.md)
 - [Full config example](https://github.com/DimonSmart/DbSketch/blob/main/docs/examples/full-config.md)
-- [AI-assisted setup](https://github.com/DimonSmart/DbSketch/blob/main/docs/ai-setup.md)
 - [Renderers](https://github.com/DimonSmart/DbSketch/blob/main/docs/renderers.md)
 - [Database comments](https://github.com/DimonSmart/DbSketch/blob/main/docs/comments.md)
 - [CI and automation](https://github.com/DimonSmart/DbSketch/blob/main/docs/ci.md)
+
+Examples and development:
+
 - [Northwind example](https://github.com/DimonSmart/DbSketch/blob/main/docs/examples/northwind.md)
 - [Development](https://github.com/DimonSmart/DbSketch/blob/main/docs/development.md)
 
