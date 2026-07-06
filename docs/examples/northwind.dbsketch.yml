@@ -8,7 +8,7 @@ defaults:
   diagram:
     direction: LR
     compact: true
-    columnLayout: "{name} | {type} | {keys} | {comment}"
+    columnLayout: "{name} | {type} | {keys} | {nullable}"
     show:
       schemaName: true
 
@@ -212,7 +212,7 @@ diagrams:
         - "northwind.*"
     diagram:
       renderer: mermaid
-      columnLayout: "{name} | {type} | {keys} | {comment}"
+      columnLayout: "{name} | {type} | {keys} | {nullable}"
       show:
         tableComments: false
       mermaid:

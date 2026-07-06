@@ -38,7 +38,7 @@ defaults:
     style: readable
     compact: true
     tableHeaderLayout: "{fullName} | {comment}"
-    columnLayout: "{name} | {type} | {comment} | {keys}"
+    columnLayout: "{name} | {type} | {keys} | {nullable}"
 
     show:
       schemaName: true

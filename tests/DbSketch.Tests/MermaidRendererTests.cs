@@ -87,14 +87,63 @@ public sealed class MermaidRendererTests
     }
 
     [Fact]
-    public void IgnoresNullabilityToken()
+    public void RendersFullNullabilityWhenNullabilityTokenIsConfigured()
     {
-        var mermaid = Render(Model(), columnLayout: "{name} | {type} | {nullability} | {keys}");
+        var model = new DatabaseModel(
+            "sqlserver",
+            null,
+            [
+                new TableModel(
+                    "dbo",
+                    "Users",
+                    [
+                        new ColumnModel("Id", "int", false, true, false),
+                        new ColumnModel("Name", "nvarchar(100)", true, false, false)
+                    ])
+            ],
+            []);
+
+        var mermaid = Render(model, columnLayout: "{name} | {type} | {keys} | {nullability}");
+
+        Assert.Contains("int Id PK \"NOT NULL\"", mermaid);
+        Assert.Contains("nvarchar_100 Name \"NULL\"", mermaid);
+    }
+
+    [Fact]
+    public void RendersNullableMarkerWhenNullableTokenIsConfigured()
+    {
+        var model = new DatabaseModel(
+            "sqlserver",
+            null,
+            [
+                new TableModel(
+                    "dbo",
+                    "Users",
+                    [
+                        new ColumnModel("Id", "int", false, true, false),
+                        new ColumnModel("Name", "nvarchar(100)", true, false, false),
+                        new ColumnModel("Email", "nvarchar(200)", false, false, false)
+                    ])
+            ],
+            []);
+
+        var mermaid = Render(model, columnLayout: "{name} | {type} | {keys} | {nullable}");
 
         Assert.Contains("int Id PK", mermaid);
-        Assert.Contains("nvarchar_100 Name", mermaid);
-        Assert.DoesNotContain("NOT_NULL", mermaid);
-        Assert.DoesNotContain(" NULL", mermaid);
+        Assert.Contains("nvarchar_100 Name \"NULL\"", mermaid);
+        Assert.Contains("nvarchar_200 Email", mermaid);
+        Assert.DoesNotContain("int Id PK \"NULL\"", mermaid);
+        Assert.DoesNotContain("nvarchar_200 Email \"NULL\"", mermaid);
+        Assert.DoesNotContain("NOT NULL", mermaid);
+    }
+
+    [Fact]
+    public void DefaultColumnLayoutRendersNullableColumns()
+    {
+        var mermaid = Render(Model());
+
+        Assert.Contains("nvarchar_100 Name \"NULL\"", mermaid);
+        Assert.DoesNotContain("int Id PK \"NULL\"", mermaid);
     }
 
     [Fact]
@@ -188,7 +237,7 @@ public sealed class MermaidRendererTests
     }
 
     [Fact]
-    public void RendersColumnCommentsWhenEnabled()
+    public void RendersColumnCommentsWhenCommentTokenIsConfigured()
     {
         var model = new DatabaseModel(
             "sqlserver",
@@ -199,6 +248,51 @@ public sealed class MermaidRendererTests
         var mermaid = Render(model, columnLayout: "{name} | {type} | {keys} | {comment}");
 
         Assert.Contains("int Id PK \"User identifier\"", mermaid);
+    }
+
+    [Fact]
+    public void NullableMarkerTakesPrecedenceOverColumnCommentInMermaid()
+    {
+        var model = new DatabaseModel(
+            "sqlserver",
+            null,
+            [
+                new TableModel(
+                    "dbo",
+                    "Users",
+                    [
+                        new ColumnModel("Name", "nvarchar(100)", true, false, false, "Display name")
+                    ])
+            ],
+            []);
+
+        var mermaid = Render(model, columnLayout: "{name} | {type} | {nullable} | {comment}");
+
+        Assert.Contains("nvarchar_100 Name \"NULL\"", mermaid);
+        Assert.DoesNotContain("NULL; Display name", mermaid);
+        Assert.DoesNotContain("\"Display name\"", mermaid);
+    }
+
+    [Fact]
+    public void NonNullableColumnCanStillRenderCommentWhenNullableAndCommentTokensAreConfigured()
+    {
+        var model = new DatabaseModel(
+            "sqlserver",
+            null,
+            [
+                new TableModel(
+                    "dbo",
+                    "Users",
+                    [
+                        new ColumnModel("Email", "nvarchar(200)", false, false, false, "Email address")
+                    ])
+            ],
+            []);
+
+        var mermaid = Render(model, columnLayout: "{name} | {type} | {nullable} | {comment}");
+
+        Assert.Contains("nvarchar_200 Email \"Email address\"", mermaid);
+        Assert.DoesNotContain("nvarchar_200 Email \"NULL\"", mermaid);
     }
 
     [Fact]
@@ -315,7 +409,7 @@ public sealed class MermaidRendererTests
                 direction,
                 DiagramStyle.Classic,
                 true,
-                new DiagramLayoutOptions(columnLayout ?? "{name} | {type} | {keys}", tableHeaderLayout),
+                new DiagramLayoutOptions(columnLayout ?? "{name} | {type} | {keys} | {nullable}", tableHeaderLayout),
                 new DiagramShowOptions(showSchemaName, showColumnTypes, showNullability, true, true, showForeignKeyLabels, showSelfReferencingForeignKeys, showTableComments, showColumnComments),
                 new MermaidRenderOptions(emitDirection),
                 new DiagramCommentRenderOptions(maxCommentLength),

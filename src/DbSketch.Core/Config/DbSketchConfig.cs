@@ -70,7 +70,7 @@ public sealed class DiagramConfig
     public string Direction { get; init; } = "LR";
     public string Style { get; init; } = "classic";
     public bool Compact { get; init; } = true;
-    public string? ColumnLayout { get; init; } = "{name} | {type} | {keys}";
+    public string? ColumnLayout { get; init; } = "{name} | {type} | {keys} | {nullable}";
     public string? TableHeaderLayout { get; init; }
     public DiagramShowConfig Show { get; init; } = new();
     public MermaidConfig Mermaid { get; init; } = new();

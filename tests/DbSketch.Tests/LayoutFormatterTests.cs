@@ -39,6 +39,28 @@ public sealed class LayoutFormatterTests
     }
 
     [Fact]
+    public void ColumnLayoutFormatsNullableTokenOnlyForNullableColumns()
+    {
+        var template = LayoutTemplateParser.Parse(
+            "{name} {nullable}",
+            ColumnLayoutFormatter.SupportedTokens,
+            "layout");
+
+        var nullableCell = Assert.Single(ColumnLayoutFormatter.Format(
+            new ColumnModel("Name", "nvarchar(100)", true, false, false),
+            template,
+            new DiagramCommentRenderOptions(null)));
+
+        var requiredCell = Assert.Single(ColumnLayoutFormatter.Format(
+            new ColumnModel("Email", "nvarchar(200)", false, false, false),
+            template,
+            new DiagramCommentRenderOptions(null)));
+
+        Assert.Equal("Name NULL", nullableCell.Text);
+        Assert.Equal("Email", requiredCell.Text);
+    }
+
+    [Fact]
     public void TableHeaderLayoutFormatsStyledRuns()
     {
         var template = LayoutTemplateParser.Parse("{table:bold}\n{comment:color=#666666,fontSize=9}", TableHeaderLayoutFormatter.SupportedTokens, "layout");

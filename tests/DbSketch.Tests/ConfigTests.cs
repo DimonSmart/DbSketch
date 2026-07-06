@@ -268,7 +268,7 @@ public sealed class ConfigTests
         Assert.Equal(DiagramFormat.Mermaid, diagram.DiagramRenderer);
         Assert.Equal(OutputContainerFormat.Markdown, diagram.Output.Format);
         Assert.Equal("mermaid", diagram.Output.Markdown?.FenceLanguage);
-        Assert.Equal("{name} | {type} | {keys}", diagram.Diagram.Layout.ColumnLayout);
+        Assert.Equal("{name} | {type} | {keys} | {nullable}", diagram.Diagram.Layout.ColumnLayout);
     }
 
     [Theory]
@@ -742,7 +742,7 @@ public sealed class ConfigTests
 
         var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, EmptyCli()));
 
-        Assert.Equal("defaults.diagram.columnLayout contains unknown token '{foo}'. Supported tokens: {name}, {type}, {nullability}, {pk}, {fk}, {keys}, {comment}.", exception.Message);
+        Assert.Equal("defaults.diagram.columnLayout contains unknown token '{foo}'. Supported tokens: {name}, {type}, {nullable}, {nullability}, {pk}, {fk}, {keys}, {comment}.", exception.Message);
     }
 
     [Fact]
@@ -768,7 +768,7 @@ public sealed class ConfigTests
 
         var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, EmptyCli()));
 
-        Assert.Equal("diagram.columnLayout is required. Example: columnLayout: \"{name} | {type} | {keys} | {comment}\"", exception.Message);
+        Assert.Equal("diagram.columnLayout is required. Example: columnLayout: \"{name} | {type} | {keys} | {comment} | {nullable}\"", exception.Message);
     }
 
     [Fact]

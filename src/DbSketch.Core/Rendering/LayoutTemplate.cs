@@ -274,6 +274,7 @@ public static class ColumnLayoutFormatter
     {
         "name",
         "type",
+        "nullable",
         "nullability",
         "pk",
         "fk",
@@ -294,6 +295,7 @@ public static class ColumnLayoutFormatter
         {
             ["name"] = column.Name,
             ["type"] = column.StoreType,
+            ["nullable"] = column.IsNullable ? "NULL" : "",
             ["nullability"] = column.IsNullable ? "NULL" : "NOT NULL",
             ["pk"] = column.IsPrimaryKey ? "PK" : "",
             ["fk"] = column.IsForeignKey ? "FK" : "",

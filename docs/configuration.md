@@ -24,7 +24,7 @@ Main defaults:
 | `defaults.output.format` | `markdown` |
 | `defaults.diagram.renderer` | `mermaid` |
 | `defaults.diagram.direction` | `LR` |
-| `defaults.diagram.columnLayout` | `{name} \| {type} \| {keys}` |
+| `defaults.diagram.columnLayout` | `{name} \| {type} \| {keys} \| {nullable}` |
 | `diagrams` | one diagram named `main` |
 | default output path | `docs/db/schema.md` |
 
@@ -119,7 +119,7 @@ Supported diagram renderers:
 
 ## Column Layout
 
-`columnLayout` controls which column attributes are shown and in what order. It defaults to `{name} | {type} | {keys}` and must contain `{name}` when configured.
+`columnLayout` controls which column attributes are shown and in what order. It defaults to `{name} | {type} | {keys} | {nullable}` and must contain `{name}` when configured.
 
 DOT uses `columnLayout` as a full table layout. The `|` character separates table cells; use `\|` for a literal pipe and `\\` for a literal backslash.
 
@@ -128,13 +128,15 @@ Mermaid uses the same `columnLayout` as a logical projection and maps supported 
 ```yaml
 defaults:
   diagram:
-    columnLayout: "{name} | {type} | {keys} | {comment}"
+    renderer: mermaid
+    columnLayout: "{name} | {type} | {keys} | {nullable}"
 ```
 
 Supported column tokens:
 
 - `{name}`: column name.
 - `{type}`: database/store type.
+- `{nullable}`: `NULL` for nullable columns, otherwise empty.
 - `{nullability}`: `NULL` or `NOT NULL`.
 - `{pk}`: `PK` for primary key columns, otherwise empty.
 - `{fk}`: `FK` for foreign key columns, otherwise empty.
@@ -147,7 +149,19 @@ Mermaid projection rules:
 - `{type}` becomes the Mermaid attribute type. If omitted, DbSketch emits the stable placeholder type `column`.
 - `{keys}`, `{pk}`, and `{fk}` control Mermaid `PK` and `FK` markers.
 - `{comment}` controls Mermaid attribute comments.
-- `{nullability}` is ignored by Mermaid because Mermaid ER has no native nullability slot.
+- `{nullable}` renders nullable columns as the Mermaid attribute comment `"NULL"`.
+- `{nullability}` renders full nullability as Mermaid attribute comments: `"NULL"` or `"NOT NULL"`.
+
+Default Mermaid output marks only nullable columns:
+
+```mermaid
+erDiagram
+  "dbo.Users" {
+    int Id PK
+    nvarchar_100 Name "NULL"
+    nvarchar_200 Email
+  }
+```
 
 Examples:
 
@@ -155,7 +169,7 @@ Examples:
 columnLayout: "{name} | {pk}"
 columnLayout: "{name} | {pk} | {fk}"
 columnLayout: "{name} | {keys}"
-columnLayout: "{name} | {type} | {keys}"
+columnLayout: "{name} | {type} | {keys} | {nullable}"
 columnLayout: "{name}: {type} | {keys}"
 columnLayout: "{name} :: {type} | {keys}"
 columnLayout: "{name:bold,font=Times} {type:color=#666666}\n{comment:color=#666666,fontSize=9} | {keys}"

@@ -77,10 +77,28 @@ public sealed class MermaidErRenderer : IDiagramRenderer
         }
 
         var rendered = string.Join(' ', parts);
-        var comment = layout.HasComment
-            ? FormatAttributeComment(column.Comment, options.Comments.MaxLength)
-            : null;
+        var comment = FormatColumnComment(column, options, layout);
         return comment is null ? rendered : $"{rendered} {comment}";
+    }
+
+    private static string? FormatColumnComment(ColumnModel column, DiagramRenderOptions options, MermaidColumnLayoutPlan layout)
+    {
+        if (layout.HasNullable && column.IsNullable)
+        {
+            return FormatAttributeComment("NULL", options.Comments.MaxLength);
+        }
+
+        if (layout.HasNullability)
+        {
+            return FormatAttributeComment(column.IsNullable ? "NULL" : "NOT NULL", options.Comments.MaxLength);
+        }
+
+        if (layout.HasComment)
+        {
+            return FormatAttributeComment(column.Comment, options.Comments.MaxLength);
+        }
+
+        return null;
     }
 
     private static string? FormatAttributeComment(string? value, int? maxLength)
@@ -185,6 +203,8 @@ public sealed class MermaidErRenderer : IDiagramRenderer
         bool HasKeys,
         bool HasPk,
         bool HasFk,
+        bool HasNullable,
+        bool HasNullability,
         bool HasComment)
     {
         public static MermaidColumnLayoutPlan Create(LayoutTemplate template)
@@ -195,6 +215,8 @@ public sealed class MermaidErRenderer : IDiagramRenderer
                 tokens.Contains("keys", StringComparer.Ordinal),
                 tokens.Contains("pk", StringComparer.Ordinal),
                 tokens.Contains("fk", StringComparer.Ordinal),
+                tokens.Contains("nullable", StringComparer.Ordinal),
+                tokens.Contains("nullability", StringComparer.Ordinal),
                 tokens.Contains("comment", StringComparer.Ordinal));
         }
     }

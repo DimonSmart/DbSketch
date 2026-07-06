@@ -231,7 +231,7 @@ public static partial class GenerateOptionsResolver
     {
         if (string.IsNullOrWhiteSpace(layout))
         {
-            throw new CliException("diagram.columnLayout is required. Example: columnLayout: \"{name} | {type} | {keys} | {comment}\"");
+            throw new CliException("diagram.columnLayout is required. Example: columnLayout: \"{name} | {type} | {keys} | {comment} | {nullable}\"");
         }
 
         try
