@@ -465,7 +465,9 @@ public static partial class GenerateOptionsResolver
             "postgresql" => "postgres",
             "postgres" => "postgres",
             "mysql" => "mysql",
-            var value => throw new CliException($"Unknown provider '{value}'. Supported values: sqlserver, postgres, mysql.")
+            "sqlite3" => "sqlite",
+            "sqlite" => "sqlite",
+            var value => throw new CliException($"Unknown provider '{value}'. Supported values: sqlserver, postgres, mysql, sqlite.")
         };
     }
 

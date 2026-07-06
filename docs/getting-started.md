@@ -26,6 +26,7 @@ Supported providers:
 | `postgres` | [PostgreSQL](https://www.connectionstrings.com/postgresql/) |
 | `sqlserver` | [SQL Server](https://www.connectionstrings.com/sql-server/) |
 | `mysql` | [MySQL](https://www.connectionstrings.com/mysql/) |
+| `sqlite` | `Data Source=app.db` |
 
 ## 2. Install DbSketch
 

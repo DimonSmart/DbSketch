@@ -271,6 +271,22 @@ public sealed class ConfigTests
         Assert.Equal("{name} | {type} | {keys}", diagram.Diagram.Layout.ColumnLayout);
     }
 
+    [Theory]
+    [InlineData("sqlite", "sqlite")]
+    [InlineData("sqlite3", "sqlite")]
+    public void ResolverNormalizesSqliteProviderAliases(string provider, string expectedProvider)
+    {
+        var config = new DbSketchConfig
+        {
+            Provider = provider,
+            ConnectionString = "Data Source=app.db"
+        };
+
+        var resolved = GenerateOptionsResolver.Resolve(config, EmptyCli());
+
+        Assert.Equal(expectedProvider, resolved.Provider);
+    }
+
     [Fact]
     public void RawMermaidDiagramWithoutOutputPathUsesMmdExtension()
     {

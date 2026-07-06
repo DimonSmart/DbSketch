@@ -37,11 +37,28 @@ Supported providers:
 - `sqlserver`
 - `postgres`
 - `mysql`
+- `sqlite`
 
 Provider aliases:
 
 - `mssql` maps to `sqlserver`
 - `postgresql` maps to `postgres`
+- `sqlite3` maps to `sqlite`
+
+SQLite example:
+
+```yaml
+provider: sqlite
+connectionString: "Data Source=app.db"
+```
+
+SQLite tables are exposed under the SQLite database schema name. For normal file and in-memory databases, use `main` in filters:
+
+```yaml
+include:
+  tables:
+    - "main.*"
+```
 
 ## Environment Variables
 

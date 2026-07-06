@@ -5,6 +5,7 @@
     <ProjectReference Include="..\DbSketch.SqlServer\DbSketch.SqlServer.csproj" />
     <ProjectReference Include="..\DbSketch.Postgres\DbSketch.Postgres.csproj" />
     <ProjectReference Include="..\DbSketch.MySql\DbSketch.MySql.csproj" />
+    <ProjectReference Include="..\DbSketch.Sqlite\DbSketch.Sqlite.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -23,13 +24,13 @@
     <Title>DimonSmart DbSketch</Title>
     <Version>0.1.0</Version>
     <Authors>DimonSmart</Authors>
-    <Description>Generate database schema diagrams from live SQL Server, PostgreSQL, and MySQL databases as Graphviz DOT, Mermaid, or Markdown.</Description>
+    <Description>Generate database schema diagrams from live SQL Server, PostgreSQL, MySQL, and SQLite databases as Graphviz DOT, Mermaid, or Markdown.</Description>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/DimonSmart/DbSketch</PackageProjectUrl>
     <RepositoryUrl>https://github.com/DimonSmart/DbSketch</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageTags>database;schema;diagram;graphviz;dot;mermaid;markdown;cli;tool;sqlserver;postgresql;mysql;documentation</PackageTags>
+    <PackageTags>database;schema;diagram;graphviz;dot;mermaid;markdown;cli;tool;sqlserver;postgresql;mysql;sqlite;documentation</PackageTags>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
   </PropertyGroup>
 

@@ -1,6 +1,7 @@
 using DimonSmart.DbSketch.Core.Schema;
 using DimonSmart.DbSketch.MySql;
 using DimonSmart.DbSketch.Postgres;
+using DimonSmart.DbSketch.Sqlite;
 using DimonSmart.DbSketch.SqlServer;
 
 namespace DimonSmart.DbSketch.Cli;
@@ -17,6 +18,7 @@ public sealed class DatabaseSchemaReaderFactory : IDatabaseSchemaReaderFactory
         "sqlserver" => new SqlServerSchemaReader(),
         "postgres" => new PostgresSchemaReader(),
         "mysql" => new MySqlSchemaReader(),
+        "sqlite" => new SqliteSchemaReader(),
         _ => throw new CliException($"Unknown provider '{provider}'.")
     };
 }

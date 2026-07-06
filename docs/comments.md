@@ -14,6 +14,7 @@ Provider support:
 - SQL Server: `MS_Description` extended properties.
 - PostgreSQL: `COMMENT ON TABLE` and `COMMENT ON COLUMN`.
 - MySQL: `TABLE_COMMENT` and `COLUMN_COMMENT` from `information_schema`.
+- SQLite: no native comment reader; use YAML comment overrides.
 
 ## Overrides
 
