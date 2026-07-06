@@ -1,3 +1,4 @@
+using DimonSmart.DbSketch.Core.Filtering;
 using DimonSmart.DbSketch.Core.Model;
 using DimonSmart.DbSketch.Core.Schema;
 using DimonSmart.DbSketch.Sqlite;
@@ -141,6 +142,67 @@ public sealed class SqliteSchemaReaderTests
         }
     }
 
+    [Fact]
+    public async Task ReadAsync_WithReadOnlyMissingFile_FailsInsteadOfCreatingEmptyDatabase()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var dbPath = CreateTempDatabasePath();
+        var connectionString = $"Data Source={dbPath};Mode=ReadOnly";
+
+        await Assert.ThrowsAsync<SqliteException>(() =>
+            new SqliteSchemaReader().ReadAsync(
+                new DatabaseReadOptions("sqlite", connectionString),
+                cancellationToken));
+
+        Assert.False(File.Exists(dbPath));
+    }
+
+    [Fact]
+    public async Task ReadOpenConnectionAsync_ReadsAttachedDatabasesAndAllowsSchemaFiltering()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var mainDbPath = CreateTempDatabasePath();
+        var auxDbPath = CreateTempDatabasePath();
+
+        try
+        {
+            await using var connection = new SqliteConnection($"Data Source={mainDbPath}");
+            await connection.OpenAsync(cancellationToken);
+            await ExecuteSqlAsync(connection, $"""
+                attach database {ToSqlStringLiteral(auxDbPath)} as aux;
+
+                create table main.local_table
+                (
+                    id integer primary key
+                );
+
+                create table aux.external_table
+                (
+                    id integer primary key,
+                    name text not null
+                );
+                """,
+                cancellationToken);
+
+            var model = await SqliteSchemaReader.ReadOpenConnectionAsync(
+                connection,
+                new DatabaseReadOptions("sqlite", connection.ConnectionString),
+                cancellationToken);
+
+            AssertTable(model, "main", "local_table");
+            AssertTable(model, "aux", "external_table");
+
+            var filtered = new WildcardSchemaFilter().Apply(model, new SchemaFilterOptions(["aux.*"], []));
+            var table = Assert.Single(filtered.Tables);
+            Assert.Equal("aux.external_table", table.FullName);
+        }
+        finally
+        {
+            DeleteDatabase(mainDbPath);
+            DeleteDatabase(auxDbPath);
+        }
+    }
+
     private static TableModel AssertTable(DatabaseModel model, string schemaName, string tableName) =>
         Assert.Single(model.Tables, table => table.SchemaName == schemaName && table.Name == tableName);
 
@@ -158,10 +220,18 @@ public sealed class SqliteSchemaReaderTests
     {
         await using var connection = new SqliteConnection(connectionString);
         await connection.OpenAsync(cancellationToken);
+        await ExecuteSqlAsync(connection, sql, cancellationToken);
+    }
+
+    private static async Task ExecuteSqlAsync(SqliteConnection connection, string sql, CancellationToken cancellationToken)
+    {
         await using var command = connection.CreateCommand();
         command.CommandText = sql;
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
+
+    private static string ToSqlStringLiteral(string value) =>
+        "'" + value.Replace("'", "''", StringComparison.Ordinal) + "'";
 
     private static void DeleteDatabase(string dbPath)
     {

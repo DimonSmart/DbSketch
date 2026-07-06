@@ -33,6 +33,19 @@ comments:
           Email: Login email
 ```
 
+SQLite databases do not have native table or column comments. Use the SQLite schema name in overrides; for a normal database file, that schema is `main`:
+
+```yaml
+comments:
+  overrides:
+    tables:
+      - schema: main
+        name: products
+        comment: Product catalog
+        columns:
+          category_id: Category reference
+```
+
 ## Rendering
 
 ```yaml

@@ -49,8 +49,10 @@ SQLite example:
 
 ```yaml
 provider: sqlite
-connectionString: "Data Source=app.db"
+connectionString: "Data Source=app.db;Mode=ReadOnly"
 ```
+
+For existing SQLite databases, prefer `Mode=ReadOnly` so a mistyped path fails instead of creating an empty database. Plain `Data Source=app.db` is useful for tests and temporary scenarios where creating the file is expected.
 
 SQLite tables are exposed under the SQLite database schema name. For normal file and in-memory databases, use `main` in filters:
 

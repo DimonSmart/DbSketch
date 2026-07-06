@@ -26,7 +26,9 @@ Supported providers:
 | `postgres` | [PostgreSQL](https://www.connectionstrings.com/postgresql/) |
 | `sqlserver` | [SQL Server](https://www.connectionstrings.com/sql-server/) |
 | `mysql` | [MySQL](https://www.connectionstrings.com/mysql/) |
-| `sqlite` | `Data Source=app.db` |
+| `sqlite` | `Data Source=app.db;Mode=ReadOnly` |
+
+For existing SQLite databases, prefer `Mode=ReadOnly` so a mistyped path fails instead of creating an empty database. Plain `Data Source=app.db` is still useful for tests and temporary scenarios where creating the file is expected.
 
 ## 2. Install DbSketch
 

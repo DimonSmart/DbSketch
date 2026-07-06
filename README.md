@@ -6,7 +6,7 @@
 
 DbSketch turns a live database into version-controlled schema documentation.
 
-It reads tables, columns, primary keys, foreign keys, and supported native comments directly from SQL Server, PostgreSQL, MySQL, or SQLite, then generates diagram-as-code files you can commit, review, render, reuse as LLM context, and refresh from CI.
+It reads tables, columns, primary keys, and foreign keys directly from SQL Server, PostgreSQL, MySQL, or SQLite. It can include native comments where providers support them, apply YAML comment overrides, and generate diagram-as-code files you can commit, review, render, reuse as LLM context, and refresh from CI.
 
 DbSketch is useful when both humans and AI coding assistants need a compact, reviewable schema snapshot. Instead of asking an agent to inspect the database with ad-hoc commands or parse creation scripts and migrations, you can give it generated schema documentation that already contains the relevant tables, columns, keys, relationships, and comments.
 
@@ -36,7 +36,7 @@ Detailed schema diagram with comments and column metadata:
 - Generates Graphviz DOT, Mermaid ER, or Markdown-wrapped output
 - Supports multiple focused diagrams from one config
 - Preserves precise column-to-column foreign key edges in DOT
-- Can include database-native table and column comments
+- Can include native database comments where supported, and YAML comment overrides for providers such as SQLite
 - Works locally, in CI, or as a repository documentation step
 - Produces compact schema context for AI coding assistants
 

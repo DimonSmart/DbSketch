@@ -11,6 +11,11 @@ public sealed class SqliteSchemaReader : IDatabaseSchemaReader
         await using var connection = CreateConnection(options.ConnectionString);
         await connection.OpenAsync(cancellationToken);
 
+        return await ReadOpenConnectionAsync(connection, options, cancellationToken);
+    }
+
+    internal static async Task<DatabaseModel> ReadOpenConnectionAsync(SqliteConnection connection, DatabaseReadOptions options, CancellationToken cancellationToken)
+    {
         var tables = await ReadTablesAsync(connection, options.CommandTimeoutSeconds, cancellationToken);
         var primaryKeys = await ReadPrimaryKeysAsync(connection, tables, options.CommandTimeoutSeconds, cancellationToken);
         var foreignKeys = await ReadForeignKeysAsync(connection, tables, options.CommandTimeoutSeconds, cancellationToken);
