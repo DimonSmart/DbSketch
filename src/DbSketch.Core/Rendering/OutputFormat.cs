@@ -14,4 +14,4 @@ public enum OutputContainerFormat
 
 public sealed record OutputFormat(OutputContainerFormat Format, MarkdownRenderOptions? Markdown);
 
-public sealed record MarkdownRenderOptions(string FenceLanguage, string? Header, string? Footer);
+public sealed record MarkdownRenderOptions(string FenceLanguage, string? Header, string? Footer, bool ShowIndexes = false);

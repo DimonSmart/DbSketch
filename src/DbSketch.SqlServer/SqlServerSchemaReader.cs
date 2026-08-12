@@ -17,6 +17,7 @@ public sealed class SqlServerSchemaReader : IDatabaseSchemaReader
         var tables = await ReadTablesAsync(connection, options.CommandTimeoutSeconds, cancellationToken);
         var primaryKeys = await ReadPrimaryKeysAsync(connection, options.CommandTimeoutSeconds, cancellationToken);
         var foreignKeys = await ReadForeignKeysAsync(connection, options.CommandTimeoutSeconds, cancellationToken);
+        var indexes = await ReadIndexesAsync(connection, options.ReadComments, options.CommandTimeoutSeconds, cancellationToken);
         var foreignKeyColumns = foreignKeys.SelectMany(fk => fk.SourceColumns.Select(column => (fk.SourceTable.FullName, Column: column))).ToHashSet();
         var comments = options.ReadComments ? await ReadCommentsAsync(connection, options.CommandTimeoutSeconds, cancellationToken) : DatabaseComments.Empty;
         var columns = await ReadColumnsAsync(connection, primaryKeys, foreignKeyColumns, comments, options.CommandTimeoutSeconds, cancellationToken);
@@ -29,7 +30,7 @@ public sealed class SqlServerSchemaReader : IDatabaseSchemaReader
                 comments.GetTableComment(table.SchemaName, table.TableName)))
             .ToArray();
 
-        return new DatabaseModel(options.Provider, databaseName, models, foreignKeys);
+        return new DatabaseModel(options.Provider, databaseName, models, foreignKeys, indexes);
     }
 
     private static SqlConnection CreateConnection(string connectionString)
@@ -232,5 +233,32 @@ public sealed class SqlServerSchemaReader : IDatabaseSchemaReader
         }
 
         return command;
+    }
+
+    private static async Task<IReadOnlyList<IndexModel>> ReadIndexesAsync(SqlConnection connection, bool readComments, int? timeout, CancellationToken cancellationToken)
+    {
+        const string sql = """
+            select s.name, t.name, i.name, i.is_unique, i.is_primary_key, i.filter_definition,
+                   cast(ep.value as nvarchar(max)), ic.key_ordinal, ic.is_included_column, c.name, ic.is_descending_key
+            from sys.indexes i
+            join sys.tables t on t.object_id = i.object_id
+            join sys.schemas s on s.schema_id = t.schema_id
+            join sys.index_columns ic on ic.object_id = i.object_id and ic.index_id = i.index_id
+            join sys.columns c on c.object_id = ic.object_id and c.column_id = ic.column_id
+            left join sys.extended_properties ep on ep.major_id = i.object_id and ep.minor_id = i.index_id and ep.name = 'MS_Description'
+            where t.is_ms_shipped = 0 and i.name is not null
+            order by s.name, t.name, i.name, ic.is_included_column, ic.key_ordinal, ic.index_column_id;
+            """;
+        var grouped = new Dictionary<(string, string, string), (bool Unique, bool Pk, string? Filter, string? Comment, List<IndexKeyColumn> Keys, List<string> Includes)>();
+        await using var command = CreateCommand(sql, connection, timeout);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            var key = (reader.GetString(0), reader.GetString(1), reader.GetString(2));
+            if (!grouped.TryGetValue(key, out var value)) value = (reader.GetBoolean(3), reader.GetBoolean(4), reader.IsDBNull(5) ? null : reader.GetString(5), readComments && !reader.IsDBNull(6) ? reader.GetString(6) : null, [], []);
+            if (reader.GetBoolean(8)) value.Includes.Add(reader.GetString(9)); else value.Keys.Add(new IndexKeyColumn(reader.GetString(9), reader.GetBoolean(10) ? IndexSortDirection.Desc : IndexSortDirection.Asc));
+            grouped[key] = value;
+        }
+        return grouped.Select(pair => new IndexModel(new TableRef(pair.Key.Item1, pair.Key.Item2), pair.Key.Item3, pair.Value.Unique, pair.Value.Keys, pair.Value.Includes, pair.Value.Filter, pair.Value.Comment, pair.Value.Pk)).ToArray();
     }
 }

@@ -59,7 +59,7 @@ public sealed class DbSketchGenerator(
 
             var diagramText = renderer.Render(filtered, diagram.Diagram);
             var output = diagram.Output.Format == OutputContainerFormat.Markdown
-                ? MarkdownDiagramWrapper.Wrap(diagramText, diagram.Output.Markdown ?? throw new InvalidOperationException("Markdown output options are required."))
+                ? MarkdownDiagramWrapper.Wrap(diagramText, diagram.Output.Markdown ?? throw new InvalidOperationException("Markdown output options are required."), filtered.Indexes)
                 : diagramText;
 
             var fullPath = Path.GetFullPath(diagram.OutputPath);

@@ -19,6 +19,7 @@ public sealed class SqliteSchemaReader : IDatabaseSchemaReader
         var tables = await ReadTablesAsync(connection, options.CommandTimeoutSeconds, cancellationToken);
         var primaryKeys = await ReadPrimaryKeysAsync(connection, tables, options.CommandTimeoutSeconds, cancellationToken);
         var foreignKeys = await ReadForeignKeysAsync(connection, tables, options.CommandTimeoutSeconds, cancellationToken);
+        var indexes = await ReadIndexesAsync(connection, tables, options.CommandTimeoutSeconds, cancellationToken);
         var foreignKeyColumns = foreignKeys.SelectMany(fk => fk.SourceColumns.Select(column => (fk.SourceTable.FullName, Column: column))).ToHashSet();
         var columns = await ReadColumnsAsync(connection, tables, primaryKeys, foreignKeyColumns, options.CommandTimeoutSeconds, cancellationToken);
 
@@ -30,7 +31,8 @@ public sealed class SqliteSchemaReader : IDatabaseSchemaReader
                 table.TableName,
                 columns.TryGetValue(table, out var c) ? c : [],
                 Comment: null)).ToArray(),
-            foreignKeys);
+            foreignKeys,
+            indexes);
     }
 
     private static SqliteConnection CreateConnection(string connectionString)
@@ -237,6 +239,40 @@ public sealed class SqliteSchemaReader : IDatabaseSchemaReader
 
         return result;
     }
+
+    private static async Task<IReadOnlyList<IndexModel>> ReadIndexesAsync(SqliteConnection connection, IReadOnlyList<TableRef> tables, int? timeout, CancellationToken cancellationToken)
+    {
+        var result = new List<IndexModel>();
+        foreach (var table in tables)
+        {
+            var listSql = $"select name, [unique], origin, partial from pragma_index_list({QuoteSql(table.TableName)}, {QuoteSql(table.SchemaName)}) order by seq;";
+            await using var list = CreateCommand(listSql, connection, timeout);
+            await using var reader = await list.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                var name = reader.GetString(0);
+                var origin = reader.IsDBNull(2) ? "" : reader.GetString(2);
+                var keys = new List<IndexKeyColumn>();
+                var included = new List<string>();
+                var detailSql = $"select seqno, cid, name, desc, key from pragma_index_xinfo({QuoteSql(name)}, {QuoteSql(table.SchemaName)}) order by seqno;";
+                await using var detail = CreateCommand(detailSql, connection, timeout);
+                await using var details = await detail.ExecuteReaderAsync(cancellationToken);
+                while (await details.ReadAsync(cancellationToken))
+                {
+                    if (details.IsDBNull(2)) continue; // expression keys cannot be mapped to a column by SQLite metadata
+                    var column = details.GetString(2);
+                    if (details.GetInt32(4) != 0)
+                        keys.Add(new IndexKeyColumn(column, details.GetInt32(3) != 0 ? IndexSortDirection.Desc : IndexSortDirection.Asc));
+                    else
+                        included.Add(column);
+                }
+                result.Add(new IndexModel(table, name, reader.GetInt32(1) != 0, keys, included, Filter: null, Comment: null, IsPrimaryKeyBacking: origin.Equals("pk", StringComparison.OrdinalIgnoreCase)));
+            }
+        }
+        return result;
+    }
+
+    private static string QuoteSql(string value) => "'" + value.Replace("'", "''", StringComparison.Ordinal) + "'";
 
     private static string QuoteIdentifier(string value) =>
         "\"" + value.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";

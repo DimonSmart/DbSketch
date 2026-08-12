@@ -51,6 +51,7 @@ public sealed class OutputOverrideConfig
 
 public sealed class MarkdownOutputConfig
 {
+    public bool ShowIndexes { get; init; }
     public string? Header { get; init; }
     public string? Footer { get; init; }
     public string? FenceLanguage { get; init; }
@@ -58,6 +59,7 @@ public sealed class MarkdownOutputConfig
 
 public sealed class MarkdownOutputOverrideConfig
 {
+    public bool? ShowIndexes { get; init; }
     public string? Header { get; init; }
     public string? Footer { get; init; }
     public string? FenceLanguage { get; init; }

@@ -14,6 +14,7 @@ public sealed class MySqlSchemaReader : IDatabaseSchemaReader
         var tables = await ReadTablesAsync(connection, options.CommandTimeoutSeconds, cancellationToken);
         var primaryKeys = await ReadPrimaryKeysAsync(connection, options.CommandTimeoutSeconds, cancellationToken);
         var foreignKeys = await ReadForeignKeysAsync(connection, options.CommandTimeoutSeconds, cancellationToken);
+        var indexes = await ReadIndexesAsync(connection, options.CommandTimeoutSeconds, cancellationToken);
         var foreignKeyColumns = foreignKeys.SelectMany(fk => fk.SourceColumns.Select(column => (fk.SourceTable.FullName, Column: column))).ToHashSet();
         var comments = options.ReadComments ? await ReadCommentsAsync(connection, options.CommandTimeoutSeconds, cancellationToken) : DatabaseComments.Empty;
         var columns = await ReadColumnsAsync(connection, primaryKeys, foreignKeyColumns, comments, options.CommandTimeoutSeconds, cancellationToken);
@@ -26,7 +27,8 @@ public sealed class MySqlSchemaReader : IDatabaseSchemaReader
                 table.TableName,
                 columns.TryGetValue(table, out var c) ? c : [],
                 comments.GetTableComment(table.SchemaName, table.TableName))).ToArray(),
-            foreignKeys);
+            foreignKeys,
+            indexes);
     }
 
     private static MySqlConnection CreateConnection(string connectionString)
@@ -201,5 +203,27 @@ public sealed class MySqlSchemaReader : IDatabaseSchemaReader
         }
 
         return command;
+    }
+
+    private static async Task<IReadOnlyList<IndexModel>> ReadIndexesAsync(MySqlConnection connection, int? timeout, CancellationToken cancellationToken)
+    {
+        const string sql = """
+            select table_schema, table_name, index_name, non_unique, seq_in_index, column_name, collation
+            from information_schema.statistics
+            where table_schema not in ('information_schema', 'mysql', 'performance_schema', 'sys')
+            order by table_schema, table_name, index_name, seq_in_index;
+            """;
+        var rows = new Dictionary<(string, string, string), List<(string, string?)>>();
+        var unique = new Dictionary<(string, string, string), bool>();
+        await using var command = CreateCommand(sql, connection, timeout);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            var key = (reader.GetString(0), reader.GetString(1), reader.GetString(2));
+            if (!rows.TryGetValue(key, out var columns)) rows[key] = columns = [];
+            if (!reader.IsDBNull(5)) columns.Add((reader.GetString(5), reader.IsDBNull(6) ? null : reader.GetString(6)));
+            unique[key] = reader.GetInt64(3) == 0;
+        }
+        return rows.Select(pair => new IndexModel(new TableRef(pair.Key.Item1, pair.Key.Item2), pair.Key.Item3, unique[pair.Key], pair.Value.Select(column => new IndexKeyColumn(column.Item1, column.Item2 == "D" ? IndexSortDirection.Desc : column.Item2 == "A" ? IndexSortDirection.Asc : IndexSortDirection.Unspecified)).ToArray(), IsPrimaryKeyBacking: pair.Key.Item3.Equals("PRIMARY", StringComparison.OrdinalIgnoreCase))).ToArray();
     }
 }

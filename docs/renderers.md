@@ -97,6 +97,19 @@ Use `output.markdown.header: ""` to generate a Markdown file without a header.
 
 If `output.markdown.fenceLanguage` is omitted, DbSketch uses `mermaid` for the Mermaid renderer and `dot` for the DOT renderer.
 
+Set `output.markdown.showIndexes: true` (or the corresponding value under `defaults`) to add a deterministic `## Indexes` table after the diagram and before the footer. The table includes user indexes, key-column order and direction, included columns, predicates, and comments where the provider exposes them. Primary-key backing indexes are omitted. Raw output is unchanged.
+
+```yaml
+defaults:
+  output:
+    format: markdown
+    markdown:
+      showIndexes: true
+  diagram:
+    renderer: dot
+    columnLayout: "{name} | {type} | {keys} | {idx}"
+```
+
 For README and NuGet package pages, use a committed PNG image for the main illustration. Mermaid is useful in GitHub Markdown, but NuGet package README does not render Mermaid diagrams.
 
 ## PNG or SVG rendering

@@ -22,7 +22,7 @@ public sealed class GraphvizDotRenderer : IDiagramRenderer
 
         foreach (var table in model.Tables.OrderBy(table => table.FullName, StringComparer.OrdinalIgnoreCase))
         {
-            AppendTable(builder, encoder, table, options);
+            AppendTable(builder, encoder, table, model.Indexes, options);
         }
 
         foreach (var foreignKey in model.ForeignKeys.OrderBy(fk => fk.Name, StringComparer.OrdinalIgnoreCase))
@@ -125,7 +125,7 @@ public sealed class GraphvizDotRenderer : IDiagramRenderer
         builder.AppendLine();
     }
 
-    private static void AppendTable(StringBuilder builder, DotIdEncoder encoder, TableModel table, DiagramRenderOptions options)
+    private static void AppendTable(StringBuilder builder, DotIdEncoder encoder, TableModel table, IReadOnlyList<IndexModel>? indexes, DiagramRenderOptions options)
     {
         var columnTemplate = ParseColumnLayout(options.Layout.ColumnLayout);
         var headerTemplate = ParseTableHeaderLayout(options.Layout.TableHeaderLayout);
@@ -160,7 +160,7 @@ public sealed class GraphvizDotRenderer : IDiagramRenderer
 
         foreach (var column in table.Columns)
         {
-            AppendLayoutColumn(builder, encoder, table, column, options, columnTemplate);
+            AppendLayoutColumn(builder, encoder, table, column, indexes, options, columnTemplate);
         }
 
         builder.AppendLine("      </TABLE>");
@@ -216,14 +216,14 @@ public sealed class GraphvizDotRenderer : IDiagramRenderer
         builder.AppendLine("</TR></TABLE></TD></TR>");
     }
 
-    private static void AppendLayoutColumn(StringBuilder builder, DotIdEncoder encoder, TableModel table, ColumnModel column, DiagramRenderOptions options, LayoutTemplate template)
+    private static void AppendLayoutColumn(StringBuilder builder, DotIdEncoder encoder, TableModel table, ColumnModel column, IReadOnlyList<IndexModel>? indexes, DiagramRenderOptions options, LayoutTemplate template)
     {
         var portPlan = GetLayoutPortPlan(template);
         var mainPort = encoder.GetColumnPortId(table, column);
         var fkPort = column.IsForeignKey && portPlan.FkPortCellIndex is not null
             ? GetForeignKeyPortId(mainPort)
             : null;
-        var cells = ColumnLayoutFormatter.Format(column, template, options.Comments);
+        var cells = ColumnLayoutFormatter.Format(column, template, options.Comments, IndexIndicatorClassifier.Format(IndexIndicatorClassifier.Classify(table, column, indexes)));
 
         builder.Append("        <TR>");
         for (var i = 0; i < cells.Count; i++)

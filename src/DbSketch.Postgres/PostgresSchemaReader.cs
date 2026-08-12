@@ -14,6 +14,7 @@ public sealed class PostgresSchemaReader : IDatabaseSchemaReader
         var tables = await ReadTablesAsync(connection, options.CommandTimeoutSeconds, cancellationToken);
         var primaryKeys = await ReadPrimaryKeysAsync(connection, options.CommandTimeoutSeconds, cancellationToken);
         var foreignKeys = await ReadForeignKeysAsync(connection, options.CommandTimeoutSeconds, cancellationToken);
+        var indexes = await ReadIndexesAsync(connection, options.ReadComments, options.CommandTimeoutSeconds, cancellationToken);
         var foreignKeyColumns = foreignKeys.SelectMany(fk => fk.SourceColumns.Select(column => (fk.SourceTable.FullName, Column: column))).ToHashSet();
         var comments = options.ReadComments ? await ReadCommentsAsync(connection, options.CommandTimeoutSeconds, cancellationToken) : DatabaseComments.Empty;
         var columns = await ReadColumnsAsync(connection, primaryKeys, foreignKeyColumns, comments, options.CommandTimeoutSeconds, cancellationToken);
@@ -26,7 +27,8 @@ public sealed class PostgresSchemaReader : IDatabaseSchemaReader
                 table.TableName,
                 columns.TryGetValue(table, out var c) ? c : [],
                 comments.GetTableComment(table.SchemaName, table.TableName))).ToArray(),
-            foreignKeys);
+            foreignKeys,
+            indexes);
     }
 
     private static NpgsqlConnection CreateConnection(string connectionString)
@@ -214,5 +216,36 @@ public sealed class PostgresSchemaReader : IDatabaseSchemaReader
         }
 
         return command;
+    }
+
+    private static async Task<IReadOnlyList<IndexModel>> ReadIndexesAsync(NpgsqlConnection connection, bool readComments, int? timeout, CancellationToken cancellationToken)
+    {
+        const string sql = """
+            select ns.nspname, tbl.relname, idx.relname, ind.indisunique, con.contype = 'p', ind.indpred is not null,
+                   pg_get_expr(ind.indpred, ind.indrelid), obj_description(idx.oid, 'pg_class'),
+                   cols.ord, att.attname, coalesce((ind.indoption[cols.ord - 1] & 1) <> 0, false), cols.attnum,
+                   pg_get_indexdef(idx.oid, cols.ord, true)
+            from pg_index ind
+            join pg_class idx on idx.oid = ind.indexrelid
+            join pg_class tbl on tbl.oid = ind.indrelid
+            join pg_namespace ns on ns.oid = tbl.relnamespace
+            left join pg_constraint con on con.conindid = ind.indexrelid
+            join unnest(ind.indkey) with ordinality cols(attnum, ord) on true
+            left join pg_attribute att on att.attrelid = tbl.oid and att.attnum = cols.attnum
+            where ns.nspname not in ('pg_catalog', 'information_schema')
+            order by ns.nspname, tbl.relname, idx.relname, cols.ord;
+            """;
+        var grouped = new Dictionary<(string, string, string), (bool Unique, bool Pk, string? Filter, string? Comment, List<IndexKeyColumn> Keys)>();
+        await using var command = CreateCommand(sql, connection, timeout);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            var key = (reader.GetString(0), reader.GetString(1), reader.GetString(2));
+            if (!grouped.TryGetValue(key, out var value)) value = (reader.GetBoolean(3), !reader.IsDBNull(4) && reader.GetBoolean(4), reader.IsDBNull(6) ? null : reader.GetString(6), readComments && !reader.IsDBNull(7) ? reader.GetString(7) : null, []);
+            var keyText = reader.IsDBNull(9) ? reader.GetString(12) : reader.GetString(9);
+            value.Keys.Add(new IndexKeyColumn(keyText, reader.GetBoolean(10) ? IndexSortDirection.Desc : IndexSortDirection.Asc));
+            grouped[key] = value;
+        }
+        return grouped.Select(pair => new IndexModel(new TableRef(pair.Key.Item1, pair.Key.Item2), pair.Key.Item3, pair.Value.Unique, pair.Value.Keys, Filter: pair.Value.Filter, Comment: pair.Value.Comment, IsPrimaryKeyBacking: pair.Value.Pk)).ToArray();
     }
 }

@@ -141,6 +141,7 @@ Supported column tokens:
 - `{pk}`: `PK` for primary key columns, otherwise empty.
 - `{fk}`: `FK` for foreign key columns, otherwise empty.
 - `{keys}`: `PK`, `FK`, `PK FK`, or empty.
+- `{idx}`: `IDX` for one simple index, `UQ` for one simple unique index, `*` for complex index participation, otherwise empty. This is a compact DOT-only hint; see the Markdown Indexes section for full details.
 - `{comment}`: column comment, normalized and truncated by `defaults.diagram.comments.maxLength` when configured.
 
 Mermaid projection rules:
@@ -149,6 +150,7 @@ Mermaid projection rules:
 - `{type}` becomes the Mermaid attribute type. If omitted, DbSketch emits the stable placeholder type `column`.
 - `{keys}`, `{pk}`, and `{fk}` control Mermaid `PK` and `FK` markers.
 - `{comment}` controls Mermaid attribute comments.
+- `{idx}` is intentionally ignored by Mermaid ER.
 - `{nullable}` renders nullable columns as the Mermaid attribute comment `"NULL"`.
 - `{nullability}` renders full nullability as Mermaid attribute comments: `"NULL"` or `"NOT NULL"`.
 

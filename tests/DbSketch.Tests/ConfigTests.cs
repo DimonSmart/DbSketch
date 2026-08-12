@@ -742,7 +742,7 @@ public sealed class ConfigTests
 
         var exception = Assert.Throws<CliException>(() => GenerateOptionsResolver.Resolve(config, EmptyCli()));
 
-        Assert.Equal("defaults.diagram.columnLayout contains unknown token '{foo}'. Supported tokens: {name}, {type}, {nullable}, {nullability}, {pk}, {fk}, {keys}, {comment}.", exception.Message);
+        Assert.Equal("defaults.diagram.columnLayout contains unknown token '{foo}'. Supported tokens: {name}, {type}, {nullable}, {nullability}, {pk}, {fk}, {keys}, {idx}, {comment}.", exception.Message);
     }
 
     [Fact]

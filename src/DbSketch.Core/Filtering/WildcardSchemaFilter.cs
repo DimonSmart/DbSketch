@@ -21,7 +21,11 @@ public sealed class WildcardSchemaFilter : ISchemaFilter
             .Where(fk => tableNames.Contains(fk.SourceTable.FullName) && tableNames.Contains(fk.TargetTable.FullName))
             .ToArray();
 
-        return model with { Tables = included, ForeignKeys = foreignKeys };
+        var indexes = (model.Indexes ?? [])
+            .Where(index => tableNames.Contains(index.Table.FullName))
+            .ToArray();
+
+        return model with { Tables = included, ForeignKeys = foreignKeys, Indexes = indexes };
     }
 
     private static bool IsIncluded(string value, IReadOnlyList<string> patterns) =>

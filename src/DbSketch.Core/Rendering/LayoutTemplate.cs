@@ -279,18 +279,20 @@ public static class ColumnLayoutFormatter
         "pk",
         "fk",
         "keys",
+        "idx",
         "comment"
     };
 
     public static IReadOnlyList<RenderedLayoutCell> Format(
         ColumnModel column,
         LayoutTemplate template,
-        DiagramCommentRenderOptions comments) =>
+        DiagramCommentRenderOptions comments,
+        string indexIndicator = "") =>
         template.Cells
-            .Select(cell => FormatCell(cell, GetValues(column, comments)))
+            .Select(cell => FormatCell(cell, GetValues(column, comments, indexIndicator)))
             .ToArray();
 
-    private static Dictionary<string, string> GetValues(ColumnModel column, DiagramCommentRenderOptions comments) =>
+    private static Dictionary<string, string> GetValues(ColumnModel column, DiagramCommentRenderOptions comments, string indexIndicator) =>
         new(StringComparer.Ordinal)
         {
             ["name"] = column.Name,
@@ -300,6 +302,7 @@ public static class ColumnLayoutFormatter
             ["pk"] = column.IsPrimaryKey ? "PK" : "",
             ["fk"] = column.IsForeignKey ? "FK" : "",
             ["keys"] = string.Join(' ', new[] { column.IsPrimaryKey ? "PK" : null, column.IsForeignKey ? "FK" : null }.Where(value => value is not null))!,
+            ["idx"] = indexIndicator,
             ["comment"] = RenderTextNormalizer.NormalizeInlineComment(column.Comment, comments.MaxLength) ?? ""
         };
 
