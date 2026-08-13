@@ -105,7 +105,13 @@ public sealed class MermaidErRenderer : IDiagramRenderer
     private static string? FormatAttributeComment(string? value, int? maxLength)
     {
         var normalized = RenderTextNormalizer.NormalizeInlineComment(value, maxLength);
-        return normalized is null ? null : FormatQuotedLabel(normalized);
+        if (normalized is null)
+        {
+            return null;
+        }
+
+        var safeComment = normalized.Replace("\"", "'", StringComparison.Ordinal);
+        return $"\"{safeComment}\"";
     }
 
     private static void AppendForeignKey(
