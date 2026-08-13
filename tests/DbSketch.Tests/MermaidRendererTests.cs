@@ -306,7 +306,7 @@ public sealed class MermaidRendererTests
 
         var mermaid = Render(model, columnLayout: "{name} | {type} | {keys} | {comment}");
 
-        Assert.Contains("int Id PK \"User \\\"identifier\\\" Line 2\"", mermaid);
+        Assert.Contains("int Id PK \"User 'identifier' Line 2\"", mermaid);
     }
 
     [Fact]
@@ -477,7 +477,7 @@ public sealed class MermaidRendererTests
 
         var mermaid = Render(model, maxCommentLength: 18, columnLayout: "{name} | {type} | {keys} | {comment}");
 
-        Assert.Contains("int Id PK \"User \\\"identifier\\\"…\"", mermaid);
+        Assert.Contains("int Id PK \"User 'identifier'…\"", mermaid);
     }
 
     [Fact]
