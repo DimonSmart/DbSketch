@@ -310,7 +310,7 @@ public sealed class MermaidRendererTests
     }
 
     [Fact]
-    public void DoesNotRenderTableComments()
+    public void RendersTableCommentsInEntityAliases()
     {
         var model = new DatabaseModel(
             "sqlserver",
@@ -320,11 +320,11 @@ public sealed class MermaidRendererTests
 
         var mermaid = Render(model, showTableComments: true);
 
-        Assert.DoesNotContain("Application users", mermaid);
+        Assert.Contains("dbo_Users[\"dbo.Users (Application users)\"] {", mermaid);
     }
 
     [Fact]
-    public void TableCommentsFlagDoesNotAffectMermaid()
+    public void DoesNotRenderTableCommentsWhenDisabled()
     {
         var model = new DatabaseModel(
             "sqlserver",
@@ -335,7 +335,120 @@ public sealed class MermaidRendererTests
         var withoutTableComments = Render(model);
         var withTableComments = Render(model, showTableComments: true);
 
-        Assert.Equal(withoutTableComments, withTableComments);
+        Assert.Contains("\"dbo.Users\" {", withoutTableComments);
+        Assert.DoesNotContain("Application users", withoutTableComments);
+        Assert.NotEqual(withoutTableComments, withTableComments);
+    }
+
+    [Fact]
+    public void DoesNotCreateAliasForWhitespaceTableComment()
+    {
+        var model = new DatabaseModel(
+            "sqlserver",
+            null,
+            [new TableModel("dbo", "Users", [new ColumnModel("Id", "int", false, true, false)], " \r\n ")],
+            []);
+
+        var mermaid = Render(model, showTableComments: true);
+
+        Assert.Contains("\"dbo.Users\" {", mermaid);
+        Assert.DoesNotContain("dbo_Users[", mermaid);
+    }
+
+    [Fact]
+    public void RendersTableCommentsWithoutSchemaName()
+    {
+        var model = new DatabaseModel(
+            "sqlserver",
+            null,
+            [new TableModel("dbo", "Users", [new ColumnModel("Id", "int", false, true, false)], "Application users")],
+            []);
+
+        var mermaid = Render(model, showSchemaName: false, showTableComments: true);
+
+        Assert.Contains("dbo_Users[\"Users (Application users)\"] {", mermaid);
+    }
+
+    [Fact]
+    public void NormalizesTruncatesAndEscapesTableComments()
+    {
+        var model = new DatabaseModel(
+            "sqlserver",
+            null,
+            [new TableModel("dbo", "Users", [new ColumnModel("Id", "int", false, true, false)], "User \"identifier\"\nLine 2")],
+            []);
+
+        var mermaid = Render(model, showTableComments: true, maxCommentLength: 18);
+
+        Assert.Contains("dbo_Users[\"dbo.Users (User \\\"identifier\\\"…)\"] {", mermaid);
+    }
+
+    [Fact]
+    public void PreservesUnicodeTableComments()
+    {
+        var model = new DatabaseModel(
+            "sqlserver",
+            null,
+            [new TableModel("dbo", "Users", [new ColumnModel("Id", "int", false, true, false)], "Пользователи 👤")],
+            []);
+
+        var mermaid = Render(model, showTableComments: true);
+
+        Assert.Contains("dbo_Users[\"dbo.Users (Пользователи 👤)\"] {", mermaid);
+    }
+
+    [Fact]
+    public void RelationshipsUseEntityReferencesForCommentedTables()
+    {
+        var model = new DatabaseModel(
+            "sqlserver",
+            null,
+            [
+                new TableModel("dbo", "Users", [new ColumnModel("Id", "int", false, true, false)], "Application users"),
+                new TableModel("dbo", "Orders", [new ColumnModel("Id", "int", false, true, false), new ColumnModel("UserId", "int", false, false, true)], "Customer orders")
+            ],
+            [new ForeignKeyModel("FK_Orders_Users", new TableRef("dbo", "Orders"), ["UserId"], new TableRef("dbo", "Users"), ["Id"])]);
+
+        var mermaid = Render(model, showTableComments: true);
+
+        Assert.Contains("dbo_Orders }|--|| dbo_Users : \"FK_Orders_Users\"", mermaid);
+        Assert.DoesNotContain("dbo.Orders (Customer orders) }|", mermaid);
+    }
+
+    [Fact]
+    public void RelationshipsSupportOneCommentedTable()
+    {
+        var model = new DatabaseModel(
+            "sqlserver",
+            null,
+            [
+                new TableModel("dbo", "Users", [new ColumnModel("Id", "int", false, true, false)], "Application users"),
+                new TableModel("dbo", "Orders", [new ColumnModel("Id", "int", false, true, false), new ColumnModel("UserId", "int", false, false, true)])
+            ],
+            [new ForeignKeyModel("FK_Orders_Users", new TableRef("dbo", "Orders"), ["UserId"], new TableRef("dbo", "Users"), ["Id"])]);
+
+        var mermaid = Render(model, showTableComments: true);
+
+        Assert.Contains("\"dbo.Orders\" }|--|| dbo_Users : \"FK_Orders_Users\"", mermaid);
+    }
+
+    [Fact]
+    public void CreatesDistinctDeterministicIdentifiersForCollidingTableNames()
+    {
+        var model = new DatabaseModel(
+            "sqlserver",
+            null,
+            [
+                new TableModel("dbo", "A-B", [new ColumnModel("Id", "int", false, true, false), new ColumnModel("ParentId", "int", false, false, true)], "First"),
+                new TableModel("dbo", "A B", [new ColumnModel("Id", "int", false, true, false)], "Second")
+            ],
+            [new ForeignKeyModel("FK_A_B", new TableRef("dbo", "A-B"), ["ParentId"], new TableRef("dbo", "A B"), ["Id"])]);
+
+        var mermaid = Render(model, showTableComments: true);
+
+        Assert.Contains("dbo_A_B[\"dbo.A B (Second)\"] {", mermaid);
+        Assert.Contains("dbo_A_B_2[\"dbo.A-B (First)\"] {", mermaid);
+        Assert.Contains("dbo_A_B_2 }|--|| dbo_A_B : \"FK_A_B\"", mermaid);
     }
 
     [Fact]

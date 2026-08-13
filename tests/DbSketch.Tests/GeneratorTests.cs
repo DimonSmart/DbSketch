@@ -82,7 +82,8 @@ public sealed class GeneratorTests
 
         Assert.DoesNotContain("Reading database schema", console.ErrorText);
         Assert.Contains("Warning:", console.ErrorText);
-        Assert.Contains("table comments", console.ErrorText);
+        Assert.Contains("column ports", console.ErrorText);
+        Assert.DoesNotContain("table comments", console.ErrorText);
     }
 
     [Fact]

@@ -60,6 +60,13 @@ defaults:
 
 DOT supports table comments through the default header or `tableHeaderLayout`, and column comments through `{comment}` in `columnLayout`.
 Mermaid ER supports column comments when `columnLayout` contains `{comment}`.
-Mermaid ER does not emit table comments because Mermaid ER has no natural table comment syntax.
+Mermaid ER renders table comments as part of the entity display label using Mermaid entity aliases. This requires Mermaid 10.5.0 or newer.
+
+```mermaid
+erDiagram
+  dbo_Users["dbo.Users (Application users)"] {
+    int Id PK
+  }
+```
 
 `diagram.comments.maxLength` limits rendered comments after inline whitespace normalization. It is optional; by default comments are not truncated.

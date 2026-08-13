@@ -81,7 +81,7 @@ The Mermaid ER renderer is convenient for GitHub Markdown.
 - Can show or hide self-referencing relationships with `diagram.show.selfReferencingForeignKeys`.
 - Supports `columnLayout` as a logical projection for type, name, PK/FK markers, nullable markers, and comments.
 - Ignores style modifiers, multiline cell structure, and `tableHeaderLayout`.
-- Does not emit table comments because Mermaid ER has no natural table comment syntax.
+- Renders table comments in entity display labels using Mermaid entity aliases (requires Mermaid 10.5.0 or newer).
 
 When `columnLayout` contains `{nullable}`, Mermaid ER renders nullable columns as an attribute comment, for example `nvarchar_100 Name "NULL"`. Not-null columns are left unmarked by the default layout. Use `{nullability}` instead to mark every column with either `"NULL"` or `"NOT NULL"`:
 

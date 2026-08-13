@@ -23,15 +23,16 @@ public sealed class MermaidErRenderer : IDiagramRenderer
 
         builder.AppendLine();
         var columnLayout = MermaidColumnLayoutPlan.Create(ParseColumnLayout(options.Layout.ColumnLayout));
+        var entities = CreateEntities(model.Tables, options);
 
         foreach (var table in model.Tables.OrderBy(table => table.FullName, StringComparer.OrdinalIgnoreCase))
         {
-            AppendTable(builder, table, options, columnLayout);
+            AppendTable(builder, entities[table], options, columnLayout);
         }
 
         foreach (var foreignKey in model.ForeignKeys.OrderBy(fk => fk.Name, StringComparer.OrdinalIgnoreCase))
         {
-            AppendForeignKey(builder, model.Tables, foreignKey, options);
+            AppendForeignKey(builder, model.Tables, entities, foreignKey, options);
         }
 
         return builder.ToString();
@@ -39,10 +40,10 @@ public sealed class MermaidErRenderer : IDiagramRenderer
 
     private static string FormatDirection(DiagramDirection direction) => direction.ToString();
 
-    private static void AppendTable(StringBuilder builder, TableModel table, DiagramRenderOptions options, MermaidColumnLayoutPlan layout)
+    private static void AppendTable(StringBuilder builder, MermaidEntity entity, DiagramRenderOptions options, MermaidColumnLayoutPlan layout)
     {
-        builder.AppendLine($"  {FormatEntityName(GetTableDisplayName(table, options))} {{");
-        foreach (var column in table.Columns)
+        builder.AppendLine($"  {entity.Declaration} {{");
+        foreach (var column in entity.Table.Columns)
         {
             builder.AppendLine($"    {FormatColumn(column, options, layout)}");
         }
@@ -104,10 +105,15 @@ public sealed class MermaidErRenderer : IDiagramRenderer
     private static string? FormatAttributeComment(string? value, int? maxLength)
     {
         var normalized = RenderTextNormalizer.NormalizeInlineComment(value, maxLength);
-        return normalized is null ? null : $"\"{normalized.Replace("\"", "\\\"", StringComparison.Ordinal)}\"";
+        return normalized is null ? null : FormatQuotedLabel(normalized);
     }
 
-    private static void AppendForeignKey(StringBuilder builder, IReadOnlyList<TableModel> tables, ForeignKeyModel foreignKey, DiagramRenderOptions options)
+    private static void AppendForeignKey(
+        StringBuilder builder,
+        IReadOnlyList<TableModel> tables,
+        IReadOnlyDictionary<TableModel, MermaidEntity> entities,
+        ForeignKeyModel foreignKey,
+        DiagramRenderOptions options)
     {
         var source = FindTable(tables, foreignKey.SourceTable);
         var target = FindTable(tables, foreignKey.TargetTable);
@@ -122,8 +128,8 @@ public sealed class MermaidErRenderer : IDiagramRenderer
         }
 
         var sourceCardinality = IsNullableForeignKey(source, foreignKey) ? "}o" : "}|";
-        var label = options.Show.ForeignKeyLabels ? FormatEntityName(foreignKey.Name) : "\"\"";
-        builder.AppendLine($"  {FormatEntityName(GetTableDisplayName(source, options))} {sourceCardinality}--|| {FormatEntityName(GetTableDisplayName(target, options))} : {label}");
+        var label = options.Show.ForeignKeyLabels ? FormatQuotedLabel(foreignKey.Name) : "\"\"";
+        builder.AppendLine($"  {entities[source].Reference} {sourceCardinality}--|| {entities[target].Reference} : {label}");
     }
 
     private static bool IsNullableForeignKey(TableModel source, ForeignKeyModel foreignKey)
@@ -152,7 +158,70 @@ public sealed class MermaidErRenderer : IDiagramRenderer
     private static string GetTableDisplayName(TableModel table, DiagramRenderOptions options) =>
         options.Show.SchemaName ? table.FullName : table.Name;
 
-    private static string FormatEntityName(string value) => $"\"{value.Replace("\"", "\\\"", StringComparison.Ordinal)}\"";
+    private static IReadOnlyDictionary<TableModel, MermaidEntity> CreateEntities(IReadOnlyList<TableModel> tables, DiagramRenderOptions options)
+    {
+        var entities = new Dictionary<TableModel, MermaidEntity>();
+        var identifierCounts = new Dictionary<string, int>(StringComparer.Ordinal);
+
+        foreach (var table in tables.OrderBy(table => table.FullName, StringComparer.OrdinalIgnoreCase).ThenBy(table => table.FullName, StringComparer.Ordinal))
+        {
+            var comment = options.Show.TableComments
+                ? RenderTextNormalizer.NormalizeInlineComment(table.Comment, options.Comments.MaxLength)
+                : null;
+            var displayName = GetTableDisplayName(table, options);
+
+            if (comment is null)
+            {
+                var reference = FormatQuotedLabel(displayName);
+                entities.Add(table, new MermaidEntity(table, reference, reference));
+                continue;
+            }
+
+            var identifier = CreateUniqueEntityIdentifier(table, identifierCounts);
+            var declaration = $"{identifier}[{FormatQuotedLabel($"{displayName} ({comment})")}]";
+            entities.Add(table, new MermaidEntity(table, identifier, declaration));
+        }
+
+        return entities;
+    }
+
+    private static string CreateUniqueEntityIdentifier(TableModel table, IDictionary<string, int> identifierCounts)
+    {
+        var baseIdentifier = NormalizeEntityIdentifier($"{table.SchemaName}_{table.Name}");
+        identifierCounts.TryGetValue(baseIdentifier, out var count);
+        identifierCounts[baseIdentifier] = count + 1;
+        return count == 0 ? baseIdentifier : $"{baseIdentifier}_{count + 1}";
+    }
+
+    private static string FormatQuotedLabel(string value) => $"\"{value.Replace("\"", "\\\"", StringComparison.Ordinal)}\"";
+
+    private static string NormalizeEntityIdentifier(string value)
+    {
+        var builder = new StringBuilder();
+        var previousWasUnderscore = false;
+
+        foreach (var character in value)
+        {
+            if (character is >= 'A' and <= 'Z' or >= 'a' and <= 'z' or >= '0' and <= '9' or '_')
+            {
+                builder.Append(character);
+                previousWasUnderscore = false;
+            }
+            else if (!previousWasUnderscore)
+            {
+                builder.Append('_');
+                previousWasUnderscore = true;
+            }
+        }
+
+        var normalized = builder.ToString().Trim('_');
+        if (normalized.Length == 0)
+        {
+            return "entity";
+        }
+
+        return char.IsDigit(normalized[0]) ? $"_{normalized}" : normalized;
+    }
 
     private static string NormalizeType(string value)
     {
@@ -220,4 +289,6 @@ public sealed class MermaidErRenderer : IDiagramRenderer
                 tokens.Contains("comment", StringComparer.Ordinal));
         }
     }
+
+    private sealed record MermaidEntity(TableModel Table, string Reference, string Declaration);
 }

@@ -87,10 +87,6 @@ public sealed class DbSketchGenerator(
         if (!renderer.Capabilities.SupportsColumnToColumnRelationships)
         {
             progress.Warning("Mermaid ER renders relationships between entities, not between specific column ports. Use DOT for column-to-column edges.");
-            if (diagram.Diagram.Show.TableComments)
-            {
-                progress.Warning("Mermaid ER does not support table comments. Table comments will not be emitted.");
-            }
         }
 
         if (renderer.Capabilities.ColumnLayout == ColumnLayoutSupport.ProjectionOnly && MermaidLayoutWarningApplies(diagram.Diagram.Layout))
