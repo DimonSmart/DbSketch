@@ -51,6 +51,7 @@ defaults:
 
     mermaid:
       emitDirection: false
+      tableCommentsOnNewLine: true
 
     dot:
       graph:

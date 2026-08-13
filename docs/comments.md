@@ -62,9 +62,31 @@ DOT supports table comments through the default header or `tableHeaderLayout`, a
 Mermaid ER supports column comments when `columnLayout` contains `{comment}`.
 Mermaid ER renders table comments as part of the entity display label using Mermaid entity aliases. This requires Mermaid 10.5.0 or newer.
 
+By default, the table comment is appended in parentheses:
+
 ```mermaid
 erDiagram
   dbo_Users["dbo.Users (Application users)"] {
+    int Id PK
+  }
+```
+
+For Mermaid, set `diagram.mermaid.tableCommentsOnNewLine: true` to put an enabled table comment on a separate visual line. `diagram.show.tableComments` still controls whether table comments are shown at all.
+
+```yaml
+defaults:
+  diagram:
+    show:
+      tableComments: true
+    mermaid:
+      tableCommentsOnNewLine: true
+```
+
+This produces a Mermaid entity alias using `<br>`:
+
+```mermaid
+erDiagram
+  dbo_Users["dbo.Users<br>Application users"] {
     int Id PK
   }
 ```

@@ -82,6 +82,7 @@ The Mermaid ER renderer is convenient for GitHub Markdown.
 - Supports `columnLayout` as a logical projection for type, name, PK/FK markers, nullable markers, and comments.
 - Ignores style modifiers, multiline cell structure, and `tableHeaderLayout`.
 - Renders table comments in entity display labels using Mermaid entity aliases (requires Mermaid 10.5.0 or newer).
+- Can render enabled table comments on a separate visual line with `diagram.mermaid.tableCommentsOnNewLine: true`.
 
 When `columnLayout` contains `{nullable}`, Mermaid ER renders nullable columns as an attribute comment, for example `nvarchar_100 Name "NULL"`. Not-null columns are left unmarked by the default layout. Use `{nullability}` instead to mark every column with either `"NULL"` or `"NOT NULL"`:
 
@@ -91,6 +92,19 @@ defaults:
     renderer: mermaid
     columnLayout: "{name} | {type} | {keys} | {nullability}"
 ```
+
+Table comments are controlled independently by `diagram.show.tableComments`. By default an enabled table comment is appended in parentheses. To place it below the table name, enable the Mermaid-specific line-break option:
+
+```yaml
+defaults:
+  diagram:
+    show:
+      tableComments: true
+    mermaid:
+      tableCommentsOnNewLine: true
+```
+
+The generated entity declaration uses `<br>` inside the Mermaid alias, for example `dbo_Users["dbo.Users<br>Application users"]`.
 
 For Mermaid ER diagrams, DbSketch does not emit `direction LR` by default. Some Markdown renderers display `direction` and `LR` as separate entities. Set `diagram.mermaid.emitDirection: true` only when your Mermaid renderer correctly supports `direction` inside `erDiagram`.
 

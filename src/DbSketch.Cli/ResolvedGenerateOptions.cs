@@ -124,7 +124,9 @@ public static partial class GenerateOptionsResolver
                 target.Diagram?.Compact ?? defaults.Diagram.Compact,
                 new DiagramLayoutOptions(columnLayout, tableHeaderLayout),
                 ResolveShowOptions(defaults.Diagram.Show, target.Diagram?.Show),
-                new MermaidRenderOptions(target.Diagram?.Mermaid?.EmitDirection ?? defaults.Diagram.Mermaid.EmitDirection),
+                new MermaidRenderOptions(
+                    target.Diagram?.Mermaid?.EmitDirection ?? defaults.Diagram.Mermaid.EmitDirection,
+                    target.Diagram?.Mermaid?.TableCommentsOnNewLine ?? defaults.Diagram.Mermaid.TableCommentsOnNewLine),
                 new DiagramCommentRenderOptions(commentMaxLength),
                 dot));
     }

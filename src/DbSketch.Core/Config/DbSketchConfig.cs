@@ -175,11 +175,13 @@ public sealed class DotTableOverrideConfig
 public sealed class MermaidConfig
 {
     public bool EmitDirection { get; init; }
+    public bool TableCommentsOnNewLine { get; init; }
 }
 
 public sealed class MermaidOverrideConfig
 {
     public bool? EmitDirection { get; init; }
+    public bool? TableCommentsOnNewLine { get; init; }
 }
 
 public sealed class DiagramShowConfig

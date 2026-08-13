@@ -55,7 +55,9 @@ public sealed record DiagramLayoutOptions(
     string? ColumnLayout,
     string? TableHeaderLayout);
 
-public sealed record MermaidRenderOptions(bool EmitDirection);
+public sealed record MermaidRenderOptions(
+    bool EmitDirection,
+    bool TableCommentsOnNewLine = false);
 
 public sealed record DiagramCommentRenderOptions(int? MaxLength);
 

@@ -178,7 +178,10 @@ public sealed class MermaidErRenderer : IDiagramRenderer
             }
 
             var identifier = CreateUniqueEntityIdentifier(table, identifierCounts);
-            var declaration = $"{identifier}[{FormatQuotedLabel($"{displayName} ({comment})")}]";
+            var displayLabel = options.Mermaid.TableCommentsOnNewLine
+                ? $"{displayName}<br>{comment}"
+                : $"{displayName} ({comment})";
+            var declaration = $"{identifier}[{FormatQuotedLabel(displayLabel)}]";
             entities.Add(table, new MermaidEntity(table, identifier, declaration));
         }
 
