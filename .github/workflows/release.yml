@@ -31,10 +31,10 @@ jobs:
           } >> "$GITHUB_ENV"
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 10.0.x
 
@@ -84,10 +84,10 @@ jobs:
           } >> "$GITHUB_ENV"
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 10.0.x
 
@@ -149,7 +149,7 @@ jobs:
           "$hash  $asset" | Set-Content -Path "$archivePath.sha256" -NoNewline
 
       - name: Upload binary artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: DbSketch-${{ github.ref_name }}-${{ matrix.runtime }}
           path: |
@@ -180,10 +180,10 @@ jobs:
           } >> "$GITHUB_ENV"
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 10.0.x
 
@@ -237,7 +237,7 @@ jobs:
             --skip-duplicate
 
       - name: Upload package artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: DimonSmart.DbSketch-${{ github.ref_name }}-nuget
           path: ${{ runner.temp }}/packages/*.nupkg
@@ -265,12 +265,12 @@ jobs:
           } >> "$GITHUB_ENV"
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           path: artifacts
 
